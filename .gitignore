@@ -1,3 +1,4 @@
-.config
-obj
+.config/
+bin/
+obj/
 tags
