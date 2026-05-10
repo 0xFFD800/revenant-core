@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 
@@ -9,14 +12,18 @@ namespace RevenantCore.Scene;
 public interface IMortal
 {
     /// <summary>
-    /// Must be called after this object dies; does any final processing that needs to be done.
-    /// <para>Preconditions:</para>
-    /// <list type="bullet"> 
-    /// IsDead == true
-    /// </list>
+    /// Called when this mortal is first added to the scene.
+    /// </summary>
+    /// <param name="scene">The scene to which this mortal is being added.</param>
+    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
+    void Create(Scene scene, double millis);
+
+    /// <summary>
+    /// Must be called after this object or its parent dies; does any final processing that needs to be done.
     /// </summary>
     /// <param name="scene">The scene in which this mortal object exists.</param>
-    void Reap(Scene scene);
+    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
+    void Glean(Scene scene, double millis);
 
     /// <summary>
     /// Whether this object is dead.
@@ -43,8 +50,8 @@ public interface IVisible : IMortal
     /// <summary>
     /// The graphics layer in which this object will be drawn.
     /// <para>
-    /// Layer is not allowed to differ between parents an children.
-    /// If Layer changes, the change must be reflected by any parent or owner of this object.
+    /// Layer is not allowed to differ between parents an children,
+    /// nor is it allowed to vary during an object's lifespan.
     /// </para>
     /// </summary>
     DrawLayer Layer { get; }
@@ -106,4 +113,66 @@ public interface ICollideable : IMoveable
     /// </list>
     /// </summary>
     BoundingBox CollisionBox { get; }
+}
+
+/// <summary>
+/// An object which is responsible for tracking the state of a list of mortals.
+/// Subclasses are responsible for maintaining any type-specific lists by overriding the
+/// Reap method.
+/// </summary>
+public class Scythe : ITickable
+{
+    /// <summary>
+    /// The list of all mortals tracked by this object.
+    /// Must contain any mortals which exist in other object lists, 
+    /// but not any mortals which are tracked by any other scythes..
+    /// </summary>
+    private readonly IList<IMortal> mortals = [];
+    
+    public virtual bool IsDead => false;
+
+    public virtual void Create(Scene scene, double millis)
+    {
+        foreach (IMortal mortal in mortals)
+            mortal.Create(scene, millis);
+    }
+
+    public virtual void Tick(Scene scene, double millis)
+    {
+        foreach (IMortal mortal in mortals.Where(m => m.IsDead).ToArray())
+            Reap(mortal, scene, millis);
+    }
+
+    public virtual void Glean(Scene scene, double millis)
+    {
+        IMortal[] subobjects = [..mortals];
+        foreach (IMortal mortal in subobjects)
+            Reap(mortal, scene, millis);
+    }
+
+    /// <summary>
+    /// Adds a mortal subobject to be tracked.
+    /// A mortal should not be added to more than one scythe.
+    /// </summary>
+    /// <param name="mortal">The mortal to be tracked by this object.</param>
+    /// <param name="scene">The scene in which this mortal exists.</param>
+    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
+    public virtual void Add(IMortal mortal, Scene scene, double millis)
+    {
+        mortals.Add(mortal);
+        mortal.Create(scene, millis);
+    }
+
+    /// <summary>
+    /// Reaps a mortal object. 
+    /// Must call the object's Glean method and remove it from any lists this Scythe maintains.
+    /// </summary>
+    /// <param name="mortal">The mortal being reaped.</param>
+    /// <param name="scene">The scene in which the reaping is being performed.</param>
+    /// <param name="millis">The total number of milliseconds for which the game has been running.</param>
+    protected virtual void Reap(IMortal mortal, Scene scene, double millis)
+    {
+        mortals.Remove(mortal);
+        mortal.Glean(scene, millis);
+    }
 }
