@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace RevenantCore.Graphics;
 
@@ -34,13 +33,33 @@ public enum DrawLayer
 }
 
 /// <summary>
+/// A wrapper around the default SpriteBatch allowing drawing code to utilize a stack of transformation matrices.
+/// Calls to Push and Pop <em>must</em> be balanced on any given run of the Draw loop.
+/// </summary>
+public interface IScreen
+{
+    /// <summary>
+    /// Pushes a new transformation matrix.
+    /// If there is no active sprite buffer, this will create a new one with the provided matrix.
+    /// Otherwise, this will flush the existing sprite buffer and create a new one with the multiple of the current two.
+    /// </summary>
+    /// <param name="transform">The transformation matrix to apply to the new buffer.</param>
+    void Push(Matrix transform);
+
+    /// <summary>
+    /// Pop the active transformation matrix off the stack.
+    /// </summary>
+    void Pop();
+}
+
+/// <summary>
 /// Represents a viewport on a scene.
 /// Contains the information about a specific run of the Draw loop for a particular <paramref name="Layer"/>.
 /// </summary>
-/// <param name="Screen">The <see cref="SpriteBatch"/> for this run of the Draw loop.</param>
+/// <param name="Screen">The <see cref="IScreen"/> for this run of the Draw loop.</param>
 /// <param name="Millis">
 /// The total number of milliseconds for which this game has been running. 
 /// Equal to <see cref="GameTime.TotalGameTime.TotalMilliseconds"/>.
 /// </param>
 /// <param name="Layer">The layer currently being drawn.</param>
-public record View(SpriteBatch Screen, double Millis, DrawLayer Layer);
+public record View(IScreen Screen, double Millis, DrawLayer Layer);

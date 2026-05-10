@@ -3,6 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevenantCore", "RevenantCore/RevenantCore.csproj", "{D79F62D2-2FF0-C3C2-CD53-25626C500FB5}"
+Project("{2D2968FF-2A4D-4341-923E-BC53C7D8EECD}") = "RevenantCore.Tests", "RevenantCore.Tests/RevenantCore.Tests.csproj", "{40C09416-388E-4B3D-B892-772CE49E05FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

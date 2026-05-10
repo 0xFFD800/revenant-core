@@ -33,6 +33,26 @@ public class OrderedDict<K, V> where V : notnull
     }
 
     /// <summary>
+    /// Gets all values for <paramref name="key"/> as an ordered array.
+    /// </summary>
+    /// <param name="key">The key to find values for.</param>
+    /// <returns>All values for <paramref name="key"/> as an ordered array, or an empty array if none are found.</returns>
+    public V[] Get(K key)
+    {
+        return [..dict.GetValueOrDefault(key, [])];
+    }
+
+    /// <summary>
+    /// Returns whether the dictionary contains the specified key.
+    /// </summary>
+    /// <param name="key">The key to check the dictionary for.</param>
+    /// <returns>Whether <paramref name="key"/> is present in the dictionary.</returns>
+    public bool Has(K key)
+    {
+        return dict.ContainsKey(key);
+    }
+
+    /// <summary>
     /// Removes a key/value pair from the dictionary, if it exists.
     /// </summary>
     /// <param name="key">The key by which the value is identified.</param>
@@ -40,7 +60,13 @@ public class OrderedDict<K, V> where V : notnull
     /// <returns>Whether the key-value pair existed in the dictionary and could be removed</returns>
     public bool Remove(K key, V value)
     {
-        return dict.TryGetValue(key, out List<V> values) && values.Remove(value);
+        if (dict.TryGetValue(key, out List<V> values) && values.Remove(value))
+        {
+            if (values.Count == 0)
+                dict.Remove(key);
+            return true;
+        } else
+            return false;
     }
 
     /// <summary>

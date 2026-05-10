@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 
-namespace RevenantCore.Scene;
+namespace RevenantCore.Scenes;
 
 /// <summary>
 /// Represents an object with a finite lifespan, which needs to be reaped once its life is complete.
@@ -119,7 +119,7 @@ public interface ICollideable : IMoveable
 /// Subclasses are responsible for maintaining any type-specific lists by overriding the
 /// Reap method.
 /// </summary>
-public class Scythe : ITickable
+public abstract class Scythe : ITickable
 {
     /// <summary>
     /// The list of all mortals tracked by this object.
@@ -128,13 +128,9 @@ public class Scythe : ITickable
     /// </summary>
     private readonly IList<IMortal> mortals = [];
     
-    public virtual bool IsDead => false;
+    public abstract bool IsDead { get; }
 
-    public virtual void Create(Scene scene, double millis)
-    {
-        foreach (IMortal mortal in mortals)
-            mortal.Create(scene, millis);
-    }
+    public abstract void Create(Scene scene, double millis);
 
     public virtual void Tick(Scene scene, double millis)
     {
