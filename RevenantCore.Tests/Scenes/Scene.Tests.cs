@@ -67,6 +67,11 @@ public class Scene_Test
             Assert.GreaterOrEqual(matrices, 0, "IScreen.Pop called with no corresponding call to Push!");
         }
 
+        public void Draw(Sprite sprite)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Should be called after the draw loop has been run to verify calls to Push and Pop were balanced.
         /// </summary>

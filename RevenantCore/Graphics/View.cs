@@ -1,5 +1,3 @@
-using Microsoft.Xna.Framework;
-
 namespace RevenantCore.Graphics;
 
 /// <summary>
@@ -30,26 +28,6 @@ public enum DrawLayer
     /// Represents a UI overlay which is always drawn on top. Does not scroll.
     /// </summary>
     UI
-}
-
-/// <summary>
-/// A wrapper around the default SpriteBatch allowing drawing code to utilize a stack of transformation matrices.
-/// Calls to Push and Pop <em>must</em> be balanced on any given run of the Draw loop.
-/// </summary>
-public interface IScreen
-{
-    /// <summary>
-    /// Pushes a new transformation matrix.
-    /// If there is no active sprite buffer, this will create a new one with the provided matrix.
-    /// Otherwise, this will flush the existing sprite buffer and create a new one with the multiple of the current two.
-    /// </summary>
-    /// <param name="transform">The transformation matrix to apply to the new buffer.</param>
-    void Push(Matrix transform);
-
-    /// <summary>
-    /// Pop the active transformation matrix off the stack.
-    /// </summary>
-    void Pop();
 }
 
 /// <summary>
