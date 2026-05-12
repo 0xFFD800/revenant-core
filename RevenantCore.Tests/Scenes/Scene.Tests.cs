@@ -7,9 +7,14 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene : Scene
+    private class FakeScene(BoundingBox bounds) : Scene(bounds)
     {
         public int currDrawOrder = 0;
+
+        internal FakeScene() : this(new())
+        {
+
+        }
     }
 
     private class MockVisible(FakeScene fakeScene, DrawLayer layer, float z, bool isDead, int? expDrawOrder, bool expGlean) : IVisible
@@ -67,7 +72,7 @@ public class Scene_Test
             Assert.GreaterOrEqual(matrices, 0, "IScreen.Pop called with no corresponding call to Push!");
         }
 
-        public void Draw(Sprite sprite)
+        public void Draw(Drawable sprite)
         {
             throw new NotImplementedException();
         }
@@ -86,7 +91,7 @@ public class Scene_Test
         foreach (MockVisible visible in visibles)
             scene.Add(visible, scene, 0);
         scene.Tick(scene, 0);
-        MockScreen screen = new(); 
+        MockScreen screen = new();
         foreach (DrawLayer layer in Enum.GetValues<DrawLayer>())
             scene.Draw(new(screen, 0, layer));
         screen.Validate();
@@ -153,5 +158,22 @@ public class Scene_Test
         scene.Glean(scene, 0);
         foreach (MockVisible visible in visibles)
             visible.Validate();
+    }
+
+    private static void ProjectToViewport(Vector3 pos3, Vector2 expPos2, BoundingBox bounds)
+    {
+        FakeScene scene = new(bounds);
+        Vector2 pos2 = scene.ProjectToViewport(pos3);
+        Assert.AreEqual(expPos2, pos2);
+    }
+
+    [TestCase(0, 0, 0, 0, 0, TestName = "ProjectToViewport Bottom Near Left Corner")]
+    [TestCase(0, 0, 80, 20, 40, TestName = "ProjectToViewport Bottom Far Left Corner")]
+    [TestCase(320, 0, 80, 300, 40, TestName = "ProjectToViewport Bottom Far Right Corner")]
+    [TestCase(320, 0, 0, 320, 0, TestName = "ProjectToViewport Bottom Near Right Corner")]
+    // TODO: Test more cases, and test on other level bounds sizes
+    public void ProjectToViewport320x80(float x, float y, float z, float expX, float expY)
+    {
+        ProjectToViewport(new(x, y, z), new(expX, expY), new(new(0, 0, 0), new(320, 0, 80)));
     }
 }

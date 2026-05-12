@@ -10,13 +10,13 @@ namespace RevenantCore.Scenes;
 /// <summary>
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
-public class Scene : Scythe
+/// <param name="bounds">TODO: Here only temporarily, until SceneSpecs are created.</param>
+public class Scene(BoundingBox bounds) : Scythe
 {
     /// <summary>
     /// The outer bounding box of this scene.
-    /// TODO: Set based on scene spec
     /// </summary>
-    private BoundingBox bounds = new();
+    private BoundingBox bounds = bounds;
 
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -63,31 +63,35 @@ public class Scene : Scythe
             visibles.Remove(visible.Layer, visible);
     }
 
-    // TODO: Unit tests for this method
+    /// <summary>
+    /// Project <paramref name="vector"/> from the 3D area of this scene into the 2D viewport.
+    /// </summary>
+    /// <param name="vector">The 3D vector representing a position in this scene.</param>
+    /// <returns>The projection of <paramref name="vector"/> onto the 2D viewport.</returns>
     public Vector2 ProjectToViewport(Vector3 vector)
     {
         const float ratioYZ = 0.5F;
         const float ratioXZ = 0.25F;
 
         Vector2 pos2 = Vector2.Zero;
+        float zFactor = vector.Z / bounds.Max.Z;
+        float zRatio = ratioYZ * ratioXZ;
 
         // impact of vector.Z on pos2.Y
-        float impactZY = vector.Z / ratioYZ;
+        float impactZY = vector.Z * ratioYZ;
 
         // impact of vector.Y on pos2.Y
-        float impactYY = vector.Y * (vector.Z / bounds.Max.Z * (1 - (ratioYZ * ratioXZ)));
+        float impactYY = vector.Y * zFactor * (1 - zRatio);
 
-        pos2.Y = -(impactZY + impactYY);
+        pos2.Y = impactZY + impactYY;
 
         // center X of level
-        float lCX = vector.X + (bounds.Max.X / 2);
+        float lCX = bounds.Max.X / 2;
         // distance from center X of level
         float dlCX = Math.Abs(vector.X - lCX);
         // distance from center X of level after perspective is applied
-        float dlCXp = dlCX * (1 - (ratioYZ * ratioXZ));
-        Debug.Assert(dlCX > dlCXp, "Perspective grew level, rather than shrunk it!");
-        float ddlCXp = dlCX - dlCXp;
-        pos2.X = vector.X + (vector.X > lCX ? -ddlCXp : ddlCXp);
+        float dlCXp = dlCX * (1 - (zFactor * zRatio));
+        pos2.X = lCX + (vector.X < lCX ? -dlCXp : dlCXp);
 
         return pos2;
     }

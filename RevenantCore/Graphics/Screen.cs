@@ -25,10 +25,10 @@ public interface IScreen
     void Pop();
 
     /// <summary>
-    /// Draws the provided sprite to the active buffer.
+    /// Draws the provided drawable object to the active buffer.
     /// </summary>
-    /// <param name="sprite">The sprite to draw to the active buffer.</param>
-    void Draw(Sprite sprite);
+    /// <param name="drawable">The drawable object to draw to the active buffer.</param>
+    void Draw(Drawable drawable);
 }
 
 public class Screen(SpriteBatch buffer, Matrix initial) : IScreen
@@ -62,22 +62,28 @@ public class Screen(SpriteBatch buffer, Matrix initial) : IScreen
         Current = toSet;
     }
 
-    public void Draw(Sprite sprite)
+    public void Draw(Drawable drawable)
     {
-        buffer.Draw(sprite.Texture, sprite.Pos, sprite.Source, sprite.Mask, sprite.Rotation, sprite.Origin, 1F, sprite.Effects, 0);
+        drawable.Draw(buffer);
     }
 }
 
 /// <summary>
-/// A helper class which provides properties to be used by the Screen's Draw method.
+/// An item which can be drawn to a Screen.
 /// </summary>
 /// <param name="texture">The texture this sprite should draw.</param>
-public class Sprite(Texture2D texture)
+public abstract class Drawable
 {
     /// <summary>
-    /// The texture which will be drawn by this sprite.
+    /// Draws this object to the buffer.
     /// </summary>
-    public Texture2D Texture => texture;
+    /// <param name="buffer"></param>
+    public abstract void Draw(SpriteBatch buffer);
+
+    /// <summary>
+    /// Gets the size of this drawable item.
+    /// </summary>
+    internal protected abstract Vector2 Size { get; }
 
     /// <summary>
     /// The position at which this sprite will be drawn.
@@ -112,74 +118,103 @@ public class Sprite(Texture2D texture)
     /// </summary>
     public SpriteEffects Effects { get; set; } = SpriteEffects.None;
 
-    private Vector2 Base => new(Texture.Width / 2, Texture.Height);
-    private Vector2 Center => new(Texture.Width / 2, Texture.Height / 2);
+    private Vector2 Base => new(Size.X / 2, Size.Y);
+    private Vector2 Center => new(Size.X / 2, Size.Y / 2);
 
-    public Sprite SetPos(Vector2 pos)
+    public Drawable SetPos(Vector2 pos)
     {
         Pos = pos;
         return this;
     }
 
     /// <summary>
-    /// Sets the position of this sprite so its base (the midpoint of the bottom edge) is at the provided position.
+    /// Sets the position of this drawable so its base (the midpoint of the bottom edge) is at the provided position.
     /// </summary>
     /// <param name="basePos">The position to set the base of this sprite to.</param>
-    public Sprite SetBase(Vector2 basePos) => SetPos(basePos - Base);
+    public Drawable SetBase(Vector2 basePos) => SetPos(basePos - Base);
 
     /// <summary>
-    /// Sets the position of this sprite so its center is at the provided position.
+    /// Sets the position of this drawable so its center is at the provided position.
     /// </summary>
     /// <param name="center">The position to set the center of this sprite to.</param>
-    public Sprite SetCenter(Vector2 center) => SetPos(center - Center);
+    public Drawable SetCenter(Vector2 center) => SetPos(center - Center);
 
-    public Sprite SetRotation(float radians)
+    public Drawable SetRotation(float radians)
     {
         Rotation = radians;
         return this;
     }
 
-    public Sprite SetOrigin(Vector2 origin)
+    public Drawable SetOrigin(Vector2 origin)
     {
         Origin = origin;
         return this;
     }
 
     /// <summary>
-    /// Sets the origin of this sprite to its base.
+    /// Sets the origin of this drawable to its base.
     /// </summary>
-    public Sprite RotateAroundBase() => SetOrigin(Base);
+    public Drawable RotateAroundBase() => SetOrigin(Base);
 
     /// <summary>
-    /// Sets the origin of this sprite to its center.
+    /// Sets the origin of this drawable to its center.
     /// </summary>
-    public Sprite RotateAroundCenter() => SetOrigin(Center);
+    public Drawable RotateAroundCenter() => SetOrigin(Center);
 
-    public Sprite SetSource(Rectangle source)
+    public Drawable SetSource(Rectangle source)
     {
         Source = source;
         return this;
     }
 
-    public Sprite SetMask(Color mask)
+    public Drawable SetMask(Color mask)
     {
         Mask = mask;
         return this;
     }
 
-    public Sprite CombineMask(Color mask) => SetMask(Mask * mask);
+    public Drawable CombineMask(Color mask) => SetMask(Mask * mask);
 
     /// <summary>
-    /// Sets the opacity of this sprite to be the provided value.
+    /// Sets the opacity of this drawable to be the provided value.
     /// </summary>
-    /// <param name="opacity">The opacity at which to draw this sprite.</param>
-    public Sprite SetOpacity(float opacity) => SetMask(Mask * opacity);
+    /// <param name="opacity">The opacity at which to draw this drawable.</param>
+    public Drawable SetOpacity(float opacity) => SetMask(Mask * opacity);
 
-    public Sprite SetEffects(SpriteEffects effects)
+    public Drawable SetEffects(SpriteEffects effects)
     {
         Effects = effects;
         return this;
     }
 
-    public Sprite AddEffects(SpriteEffects effects) => SetEffects(Effects | effects);
+    public Drawable AddEffects(SpriteEffects effects) => SetEffects(Effects | effects);
+}
+
+/// <summary>
+/// Represents a sprite which will be drawn to the screen.
+/// </summary>
+/// <param name="texture">The texture which this Sprite should be drawn as.</param>
+public class Sprite(Texture2D texture) : Drawable
+{
+    public override void Draw(SpriteBatch buffer)
+    {
+        buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, 1, Effects, 0);
+    }
+
+    protected internal override Vector2 Size => new(texture.Width, texture.Height);
+}
+
+/// <summary>
+/// Represents text which will be drawn to the screen.
+/// </summary>
+/// <param name="text">The text to be drawn.</param>
+/// <param name="font">The font which should be used to render <paramref name="text"/>.</param>
+public class DrawableText(string text, SpriteFont font) : Drawable
+{
+    public override void Draw(SpriteBatch buffer)
+    {
+        buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, 1, Effects, 0);
+    }
+
+    protected internal override Vector2 Size => font.MeasureString(text);
 }
