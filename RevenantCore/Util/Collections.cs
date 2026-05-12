@@ -8,7 +8,7 @@ namespace RevenantCore.Util;
 /// </summary>
 /// <typeparam name="K">The key type of the dictionary, which may identify multiple values.</typeparam>
 /// <typeparam name="V">The value type of the dictionary, which will be stored in ordered lists.</typeparam>
-public class OrderedDict<K, V> where V : notnull
+public class OrderedDict<K, V> where K : notnull where V : notnull
 {
     private readonly Dictionary<K, List<V>> dict = [];
 
@@ -21,11 +21,12 @@ public class OrderedDict<K, V> where V : notnull
     /// <returns>Whether the key-value pair was unique and thus could be added to the dictionary.</returns>
     public bool Add(K key, V value)
     {
-        if (!dict.TryGetValue(key, out List<V> values))
+        if (!dict.TryGetValue(key, out List<V>? values))
         {
             values = [];
             dict.Add(key, values);
-        } else if (values.Contains(value))
+        }
+        else if (values.Contains(value))
             return false;
 
         values.Add(value);
@@ -39,7 +40,7 @@ public class OrderedDict<K, V> where V : notnull
     /// <returns>All values for <paramref name="key"/> as an ordered array, or an empty array if none are found.</returns>
     public V[] Get(K key)
     {
-        return [..dict.GetValueOrDefault(key, [])];
+        return [.. dict.GetValueOrDefault(key, [])];
     }
 
     /// <summary>
@@ -60,12 +61,13 @@ public class OrderedDict<K, V> where V : notnull
     /// <returns>Whether the key-value pair existed in the dictionary and could be removed</returns>
     public bool Remove(K key, V value)
     {
-        if (dict.TryGetValue(key, out List<V> values) && values.Remove(value))
+        if (dict.TryGetValue(key, out List<V>? values) && values.Remove(value))
         {
             if (values.Count == 0)
                 dict.Remove(key);
             return true;
-        } else
+        }
+        else
             return false;
     }
 
