@@ -7,14 +7,9 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene(BoundingBox bounds) : Scene(bounds)
+    private class FakeScene : Scene
     {
         public int currDrawOrder = 0;
-
-        internal FakeScene() : this(new())
-        {
-
-        }
     }
 
     private class MockVisible(FakeScene fakeScene, DrawLayer layer, float z, bool isDead, int? expDrawOrder, bool expGlean) : IVisible
@@ -97,12 +92,15 @@ public class Scene_Test
         screen.Validate();
         foreach (MockVisible visible in visibles)
             visible.Validate();
+
+        Assert.False(scene.IsDead, "Scenes currently should never die");
     }
 
     [Test(Description = "Draw should not raise an exception when drawn with an empty list.")]
     public void Draw_NoVisibles_NoRaise()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         Assert.DoesNotThrow(() => RunDrawLoop(scene, []));
     }
 
@@ -110,6 +108,7 @@ public class Scene_Test
     public void Draw_Live_Drawn()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         RunDrawLoop(scene, [new(scene, DrawLayer.Scene, 0, false, 0, false)]);
     }
 
@@ -117,6 +116,7 @@ public class Scene_Test
     public void Draw_Dead_Gleaned()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         RunDrawLoop(scene, [new(scene, DrawLayer.Scene, 0, true, null, true)]);
     }
 
@@ -124,6 +124,7 @@ public class Scene_Test
     public void Draw_Layer_Order()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         RunDrawLoop(scene, [
             new(scene, DrawLayer.UI,         0, false, 4, false),
             new(scene, DrawLayer.Background, 0, false, 1, false),
@@ -137,6 +138,7 @@ public class Scene_Test
     public void Draw_Z_Order()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         RunDrawLoop(scene, [
             new(scene, DrawLayer.UI,    1, false, 2, false),
             new(scene, DrawLayer.UI,    0, false, 3, false),
@@ -149,6 +151,7 @@ public class Scene_Test
     public void Glean_All_Gleaned()
     {
         FakeScene scene = new();
+        scene.Create(scene, 0);
         MockVisible[] visibles = [
             new(scene, DrawLayer.Scene, 0, false, null, true),    // Live object
             new(scene, DrawLayer.Background, 0, true, null, true) // Dead object
@@ -158,22 +161,5 @@ public class Scene_Test
         scene.Glean(scene, 0);
         foreach (MockVisible visible in visibles)
             visible.Validate();
-    }
-
-    private static void ProjectToViewport(Vector3 pos3, Vector2 expPos2, BoundingBox bounds)
-    {
-        FakeScene scene = new(bounds);
-        Vector2 pos2 = scene.ProjectToViewport(pos3);
-        Assert.AreEqual(expPos2, pos2);
-    }
-
-    [TestCase(0, 0, 0, 0, 0, TestName = "ProjectToViewport Bottom Near Left Corner")]
-    [TestCase(0, 0, 80, 20, 40, TestName = "ProjectToViewport Bottom Far Left Corner")]
-    [TestCase(320, 0, 80, 300, 40, TestName = "ProjectToViewport Bottom Far Right Corner")]
-    [TestCase(320, 0, 0, 320, 0, TestName = "ProjectToViewport Bottom Near Right Corner")]
-    // TODO: Test more cases, and test on other level bounds sizes
-    public void ProjectToViewport320x80(float x, float y, float z, float expX, float expY)
-    {
-        ProjectToViewport(new(x, y, z), new(expX, expY), new(new(0, 0, 0), new(320, 0, 80)));
     }
 }

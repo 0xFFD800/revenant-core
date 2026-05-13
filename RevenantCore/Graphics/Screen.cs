@@ -173,8 +173,6 @@ public abstract class Drawable
         return this;
     }
 
-    public Drawable CombineMask(Color mask) => SetMask(Mask * mask);
-
     /// <summary>
     /// Sets the opacity of this drawable to be the provided value.
     /// </summary>

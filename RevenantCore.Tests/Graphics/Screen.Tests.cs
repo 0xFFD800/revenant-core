@@ -48,4 +48,25 @@ public class Drawable_Test
         Drawable drawable = new FakeDrawable(new(w, h)).RotateAroundCenter();
         Assert.AreEqual(new Vector2(expX, expY), drawable.Origin);
     }
+
+    [Test]
+    public void TestBuilder()
+    {
+        Drawable drawable = new FakeDrawable(new(1, 1))
+            .SetPos(new(1, 1))
+            .SetRotation(1)
+            .SetOrigin(new(1, 1))
+            .SetMask(Color.Black)
+            .SetOpacity(0.5F)
+            .SetEffects(SpriteEffects.FlipHorizontally)
+            .AddEffects(SpriteEffects.FlipVertically);
+        Assert.AreEqual(new Vector2(1, 1), drawable.Pos);
+        Assert.AreEqual(1, drawable.Rotation);
+        Assert.AreEqual(new Vector2(1, 1), drawable.Origin);
+        Assert.AreEqual(null, drawable.Source);
+        drawable.SetSource(new(0, 0, 1, 1));
+        Assert.AreEqual(new Rectangle(0, 0, 1, 1), drawable.Source);
+        Assert.AreEqual(Color.Black * 0.5F, drawable.Mask);
+        Assert.AreEqual(SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically, drawable.Effects);
+    }
 }
