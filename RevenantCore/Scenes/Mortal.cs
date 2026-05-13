@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
+using RevenantCore.Util;
 
 namespace RevenantCore.Scenes;
 
@@ -14,15 +15,15 @@ public interface IMortal
     /// Called when this mortal is first added to the scene.
     /// </summary>
     /// <param name="scene">The scene to which this mortal is being added.</param>
-    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
-    void Create(Scene scene, double millis);
+    /// <param name="time">The time record of the current frame, derived from <see cref="GameTime"/>.</param>
+    void Create(Scene scene, FrameTime time);
 
     /// <summary>
     /// Must be called after this object or its parent dies; does any final processing that needs to be done.
     /// </summary>
     /// <param name="scene">The scene in which this mortal object exists.</param>
-    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
-    void Glean(Scene scene, double millis);
+    /// <param name="time">The time record of the current frame, derived from <see cref="GameTime"/>.</param>
+    void Glean(Scene scene, FrameTime time);
 
     /// <summary>
     /// Whether this object is dead.
@@ -73,11 +74,8 @@ public interface ITickable : IMortal
     /// Updates this object for one run of the Update loop.
     /// </summary>
     /// <param name="scene">The scene in which this object exists.</param>
-    /// <param name="millis">
-    /// The total number of milliseconds for which this game has been running.
-    /// Equal to <see cref="GameTime.TotalGameTime.TotalMilliseconds"/>.
-    /// </param>
-    void Tick(Scene scene, double millis);
+    /// <param name="time">The time record of the current frame, derived from <see cref="GameTime"/>.</param>
+    void Tick(Scene scene, FrameTime time);
 }
 
 /// <summary>
@@ -112,6 +110,17 @@ public interface ICollideable : IMoveable
     /// </list>
     /// </summary>
     BoundingBox CollisionBox { get; }
+
+    /// <summary>
+    /// The mass of this object in kg. A null mass means this object is fixed in position or travelling at a fixed rate.
+    /// </summary>
+    float? Mass { get; }
+
+    /// <summary>
+    /// The velocity of this object in px/ms. 
+    /// Since there are 32 pixels per meter, 1 px/ms = 31.25 m/s.
+    /// </summary>
+    Vector2 Velocity { get; set; }
 }
 
 /// <summary>
@@ -124,25 +133,25 @@ public abstract class Scythe : ITickable
     /// <summary>
     /// The list of all mortals tracked by this object.
     /// Must contain any mortals which exist in other object lists, 
-    /// but not any mortals which are tracked by any other scythes..
+    /// but not any mortals which are tracked by any other scythes.
     /// </summary>
     private readonly IList<IMortal> mortals = [];
     
     public abstract bool IsDead { get; }
 
-    public abstract void Create(Scene scene, double millis);
+    public abstract void Create(Scene scene, FrameTime time);
 
-    public virtual void Tick(Scene scene, double millis)
+    public virtual void Tick(Scene scene, FrameTime time)
     {
         foreach (IMortal mortal in mortals.Where(m => m.IsDead).ToArray())
-            Reap(mortal, scene, millis);
+            Reap(mortal, scene, time);
     }
 
-    public virtual void Glean(Scene scene, double millis)
+    public virtual void Glean(Scene scene, FrameTime time)
     {
         IMortal[] subobjects = [..mortals];
         foreach (IMortal mortal in subobjects)
-            Reap(mortal, scene, millis);
+            Reap(mortal, scene, time);
     }
 
     /// <summary>
@@ -151,11 +160,11 @@ public abstract class Scythe : ITickable
     /// </summary>
     /// <param name="mortal">The mortal to be tracked by this object.</param>
     /// <param name="scene">The scene in which this mortal exists.</param>
-    /// <param name="millis">The total number of milliseconds for which this game has been running.</param>
-    public virtual void Add(IMortal mortal, Scene scene, double millis)
+    /// <param name="time">The time record of the current frame, derived from <see cref="GameTime"/>.</param>
+    public virtual void Add(IMortal mortal, Scene scene, FrameTime time)
     {
         mortals.Add(mortal);
-        mortal.Create(scene, millis);
+        mortal.Create(scene, time);
     }
 
     /// <summary>
@@ -164,10 +173,10 @@ public abstract class Scythe : ITickable
     /// </summary>
     /// <param name="mortal">The mortal being reaped.</param>
     /// <param name="scene">The scene in which the reaping is being performed.</param>
-    /// <param name="millis">The total number of milliseconds for which the game has been running.</param>
-    protected virtual void Reap(IMortal mortal, Scene scene, double millis)
+    /// <param name="time">The time record of the current frame, derived from <see cref="GameTime"/>.</param>
+    protected virtual void Reap(IMortal mortal, Scene scene, FrameTime time)
     {
         mortals.Remove(mortal);
-        mortal.Glean(scene, millis);
+        mortal.Glean(scene, time);
     }
 }

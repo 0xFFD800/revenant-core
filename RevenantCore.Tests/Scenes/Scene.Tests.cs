@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
+using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Scenes;
 
@@ -21,7 +22,7 @@ public class Scene_Test
         public float Z => z;
         public bool IsDead => isDead;
 
-        public void Create(Scene scene, double millis)
+        public void Create(Scene scene, FrameTime time)
         {
             created = true;
             Assert.AreSame(this.scene, scene, "Visible was not created for the expected scene!");
@@ -35,7 +36,7 @@ public class Scene_Test
             Assert.AreEqual(expDrawOrder.Value, scene.currDrawOrder++, "Visible was not drawn in the expected order!");
         }
 
-        public void Glean(Scene scene, double millis)
+        public void Glean(Scene scene, FrameTime time)
         {
             gleaned = true;
             Assert.IsTrue(expGlean, "This visible did not expect to be gleaned!");
@@ -84,8 +85,8 @@ public class Scene_Test
     private static void RunDrawLoop(Scene scene, MockVisible[] visibles)
     {
         foreach (MockVisible visible in visibles)
-            scene.Add(visible, scene, 0);
-        scene.Tick(scene, 0);
+            scene.Add(visible, scene, new(new()));
+        scene.Tick(scene, new(new()));
         MockScreen screen = new();
         foreach (DrawLayer layer in Enum.GetValues<DrawLayer>())
             scene.Draw(new(screen, 0, layer));
@@ -100,7 +101,7 @@ public class Scene_Test
     public void Draw_NoVisibles_NoRaise()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         Assert.DoesNotThrow(() => RunDrawLoop(scene, []));
     }
 
@@ -108,7 +109,7 @@ public class Scene_Test
     public void Draw_Live_Drawn()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         RunDrawLoop(scene, [new(scene, DrawLayer.Scene, 0, false, 0, false)]);
     }
 
@@ -116,7 +117,7 @@ public class Scene_Test
     public void Draw_Dead_Gleaned()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         RunDrawLoop(scene, [new(scene, DrawLayer.Scene, 0, true, null, true)]);
     }
 
@@ -124,7 +125,7 @@ public class Scene_Test
     public void Draw_Layer_Order()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         RunDrawLoop(scene, [
             new(scene, DrawLayer.UI,         0, false, 4, false),
             new(scene, DrawLayer.Background, 0, false, 1, false),
@@ -138,7 +139,7 @@ public class Scene_Test
     public void Draw_Z_Order()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         RunDrawLoop(scene, [
             new(scene, DrawLayer.UI,    1, false, 2, false),
             new(scene, DrawLayer.UI,    0, false, 3, false),
@@ -151,14 +152,14 @@ public class Scene_Test
     public void Glean_All_Gleaned()
     {
         FakeScene scene = new();
-        scene.Create(scene, 0);
+        scene.Create(scene, new(new()));
         MockVisible[] visibles = [
             new(scene, DrawLayer.Scene, 0, false, null, true),    // Live object
             new(scene, DrawLayer.Background, 0, true, null, true) // Dead object
         ];
         foreach (MockVisible visible in visibles)
-            scene.Add(visible, scene, 0);
-        scene.Glean(scene, 0);
+            scene.Add(visible, scene, new(new()));
+        scene.Glean(scene, new(new()));
         foreach (MockVisible visible in visibles)
             visible.Validate();
     }

@@ -16,11 +16,21 @@ public class Scene : Scythe
     /// </summary>
     private readonly OrderedDict<DrawLayer, IVisible> visibles = new();
 
+    /// <summary>
+    /// All objects in this view with collision boxes.
+    /// </summary>
+    private readonly List<ICollideable> collideables = [];
+
     public override bool IsDead => false;
 
-    public override void Create(Scene scene, double millis)
+    public override void Create(Scene scene, FrameTime time)
     {
         Debug.Assert(scene == this);
+    }
+
+    private void DoPhysics()
+    {
+        // TODO
     }
 
     public void Draw(View view)
@@ -32,26 +42,31 @@ public class Scene : Scythe
         // view.Screen.Pop();
     }
 
-    public override void Tick(Scene scene, double millis)
+    public override void Tick(Scene scene, FrameTime time)
     {
         Debug.Assert(scene == this);
         visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
-        base.Tick(scene, millis);
+        DoPhysics();
+        base.Tick(scene, time);
     }
 
-    public override void Add(IMortal mortal, Scene scene, double millis)
+    public override void Add(IMortal mortal, Scene scene, FrameTime time)
     {
         Debug.Assert(scene == this);
-        base.Add(mortal, scene, millis);
+        base.Add(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Add(visible.Layer, visible); 
+        if (mortal is ICollideable collideable)
+            collideables.Add(collideable);
     }
 
-    protected override void Reap(IMortal mortal, Scene scene, double millis)
+    protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
     {
         Debug.Assert(scene == this);
-        base.Reap(mortal, scene, millis);
+        base.Reap(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Remove(visible.Layer, visible);
+        if (mortal is ICollideable collideable)
+            collideables.Remove(collideable);
     }
 }
