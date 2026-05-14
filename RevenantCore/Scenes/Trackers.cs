@@ -6,7 +6,7 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Scenes;
 
-public class Tracker<T>(T initialValue, int queueDepth, double queueInterval, Func<T> supplier, Func<T, T, FrameTime, T> interpolate) : ITickable
+public abstract class Tracker<T>(T initialValue, int queueDepth, double queueInterval) : ITickable
     where T : notnull, IEquatable<T>
 {
     private double lastUpdate = 0;
@@ -16,10 +16,12 @@ public class Tracker<T>(T initialValue, int queueDepth, double queueInterval, Fu
 
     public bool IsDead => false;
     public T CurrValue { get; private set; } = initialValue;
+    protected abstract T NextTarget { get; }
+    protected bool QueueEmpty => queue.Count == 0;
 
     public void Create(Scene scene, FrameTime time)
     {
-        queue.Enqueue(supplier());
+        queue.Enqueue(NextTarget);
         lastUpdate = time.Millis;
     }
 
@@ -32,8 +34,8 @@ public class Tracker<T>(T initialValue, int queueDepth, double queueInterval, Fu
     {
         if (time.Millis - lastUpdate > queueInterval)
         {
-            T nextTarget = supplier();
-            if (queue.Count == 0 || !queue.Last().Equals(nextTarget))
+            T nextTarget = NextTarget;
+            if (QueueEmpty || !queue.Last().Equals(nextTarget))
                 queue.Enqueue(nextTarget);
             if (queue.Count > queueDepth)
             {
@@ -45,24 +47,30 @@ public class Tracker<T>(T initialValue, int queueDepth, double queueInterval, Fu
 
         if (currTarget != null && hasCurrTarget)
         {
-            CurrValue = interpolate(CurrValue, currTarget, time);
+            CurrValue = Interpolate(CurrValue, currTarget, time);
             if (CurrValue.Equals(currTarget))
                 hasCurrTarget = false;
         }
     }
+
+    protected abstract T Interpolate(T current, T target, FrameTime time);
 }
 
-public class MoveableTracker(IMoveable toTrack, int queueDepth, double queueInterval, double speed) : Tracker<Vector3>(toTrack.Position, queueDepth, queueInterval,
-    () => toTrack.Position,
-    (current, target, time) =>
+public class MoveableTracker(IMoveable toTrack, int queueDepth, double queueInterval, double speed, double smoothing) : Tracker<Vector3>(toTrack.Position, queueDepth, queueInterval)
+{
+    protected override Vector3 NextTarget => toTrack.Position;
+
+    protected override Vector3 Interpolate(Vector3 current, Vector3 target, FrameTime time)
     {
         double dist = time.MillisElapsed * speed;
         Vector3 trip = target - current;
-        if (trip.Length() < dist)
+        float length = trip.Length();
+        trip.Normalize();
+        if (length > dist * smoothing || QueueEmpty)
+            return current + trip * (float)dist;
+        else if (length <= dist && QueueEmpty)
             return target;
         else
-        {
-            trip.Normalize();
-            return current + trip * (float)dist;
-        }
-    });
+            return current + trip * (length / (float)smoothing);
+    }
+}
