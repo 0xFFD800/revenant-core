@@ -120,7 +120,7 @@ public interface ICollideable : IMoveable
     /// The velocity of this object in px/ms. 
     /// Since there are 32 pixels per meter, 1 px/ms = 31.25 m/s.
     /// </summary>
-    Vector2 Velocity { get; set; }
+    Vector3 Velocity { get; set; }
 }
 
 /// <summary>
