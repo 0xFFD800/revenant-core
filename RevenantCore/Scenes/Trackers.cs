@@ -6,7 +6,7 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Scenes;
 
-public abstract class Tracker<T>(T initialValue, int queueDepth, double queueInterval) : ITickable
+public abstract class Tracker<T>(T initialValue, uint queueDepth, double queueInterval) : ITickable
     where T : notnull, IEquatable<T>
 {
     private double lastUpdate = 0;
@@ -14,7 +14,7 @@ public abstract class Tracker<T>(T initialValue, int queueDepth, double queueInt
     private bool hasCurrTarget = false;
     private T? currTarget;
 
-    public bool IsDead => false;
+    public abstract bool IsDead { get; }
     public T CurrValue { get; private set; } = initialValue;
     protected abstract T NextTarget { get; }
     protected bool QueueEmpty => queue.Count == 0;
@@ -56,8 +56,20 @@ public abstract class Tracker<T>(T initialValue, int queueDepth, double queueInt
     protected abstract T Interpolate(T current, T target, FrameTime time);
 }
 
-public class MoveableTracker(IMoveable toTrack, int queueDepth, double queueInterval, double speed, double smoothing) : Tracker<Vector3>(toTrack.Position, queueDepth, queueInterval)
+/// <summary>
+/// A tracker which follows a moveable through 3D space within a scene.
+/// </summary>
+/// <param name="toTrack">The moveable object to track. toTrack should own this tracker as a subobject.</param>
+/// <param name="queueDepth">The depth of the queue to maintain (i.e., how many positions to track).</param>
+/// <param name="queueInterval">The interval between enqueueing new positions, in milliseconds.</param>
+/// <param name="speed">The maximum speed at which the tracker will move.</param>
+/// <param name="smoothing">
+/// The distance at which to begin decelerating the tracker's speed to zero.
+/// A value of 1 means no smoothing; values less than 1 are not allowed.
+/// </param>
+public class MoveableTracker(IMoveable toTrack, uint queueDepth, double queueInterval, double speed, double smoothing) : Tracker<Vector3>(toTrack.Position, queueDepth, queueInterval)
 {
+    public override bool IsDead => toTrack.IsDead;
     protected override Vector3 NextTarget => toTrack.Position;
 
     protected override Vector3 Interpolate(Vector3 current, Vector3 target, FrameTime time)
@@ -66,11 +78,13 @@ public class MoveableTracker(IMoveable toTrack, int queueDepth, double queueInte
         Vector3 trip = target - current;
         float length = trip.Length();
         trip.Normalize();
-        if (length > dist * smoothing || QueueEmpty)
-            return current + trip * (float)dist;
-        else if (length <= dist && QueueEmpty)
-            return target;
+        double smoothedDist = !QueueEmpty 
+                || length > smoothing 
+                || length < dist / smoothing
+            ? dist : length / smoothing;
+        if (length > smoothedDist)
+            return current + trip * (float)smoothedDist;
         else
-            return current + trip * (length / (float)smoothing);
+            return target;
     }
 }
