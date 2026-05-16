@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -16,6 +17,7 @@ public interface ISpriteBuffer
     void DrawString(SpriteFont font, string text, Vector2 pos, Color mask, float rotation, Vector2 origin, SpriteEffects effects);
 }
 
+[ExcludeFromCodeCoverage]
 internal class SpriteBuffer(SpriteBatch batch) : ISpriteBuffer
 {
     public void Begin(Matrix transform)
@@ -234,7 +236,8 @@ public abstract class Drawable
 /// Represents a sprite which will be drawn to the screen.
 /// </summary>
 /// <param name="texture">The texture which this Sprite should be drawn as.</param>
-public class Sprite(Texture2D texture) : Drawable
+[ExcludeFromCodeCoverage]
+internal class Sprite(Texture2D texture) : Drawable
 {
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -249,7 +252,8 @@ public class Sprite(Texture2D texture) : Drawable
 /// </summary>
 /// <param name="text">The text to be drawn.</param>
 /// <param name="font">The font which should be used to render <paramref name="text"/>.</param>
-public class DrawableText(string text, SpriteFont font) : Drawable
+[ExcludeFromCodeCoverage]
+internal class DrawableText(string text, SpriteFont font) : Drawable
 {
     public override void Draw(ISpriteBuffer buffer)
     {
