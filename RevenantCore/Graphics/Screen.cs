@@ -6,7 +6,41 @@ using Microsoft.Xna.Framework.Graphics;
 namespace RevenantCore.Graphics;
 
 /// <summary>
-/// A wrapper around the default SpriteBatch allowing drawing code to utilize a stack of transformation matrices.
+/// Wraps any used methods of SpriteBatch to allow client code to be tested.
+/// </summary>
+public interface ISpriteBuffer
+{
+    void Begin(Matrix transform);
+    void End();
+    void Draw(Texture2D texture, Vector2 pos, Rectangle? source, Color mask, float rotation, Vector2 origin, SpriteEffects effects);
+    void DrawString(SpriteFont font, string text, Vector2 pos, Color mask, float rotation, Vector2 origin, SpriteEffects effects);
+}
+
+internal class SpriteBuffer(SpriteBatch batch) : ISpriteBuffer
+{
+    public void Begin(Matrix transform)
+    {
+        batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
+    }
+
+    public void End()
+    {
+        batch.End();
+    }
+
+    public void Draw(Texture2D texture, Vector2 pos, Rectangle? source, Color mask, float rotation, Vector2 origin, SpriteEffects effects)
+    {
+        batch.Draw(texture, pos, source, mask, rotation, origin, 1, effects, 0);
+    }
+
+    public void DrawString(SpriteFont font, string text, Vector2 pos, Color mask, float rotation, Vector2 origin, SpriteEffects effects)
+    {
+        batch.DrawString(font, text, pos, mask, rotation, origin, 1, effects, 0);
+    }
+}
+
+/// <summary>
+/// A wrapper around ISpriteBuffer allowing drawing code to utilize a stack of transformation matrices.
 /// Calls to Push and Pop <em>must</em> be balanced on any given run of the Draw loop.
 /// </summary>
 public interface IScreen
@@ -31,22 +65,25 @@ public interface IScreen
     void Draw(Drawable drawable);
 }
 
-public class Screen(SpriteBatch buffer, Matrix initial) : IScreen
+public class Screen(ISpriteBuffer buffer, Matrix initial) : IScreen
 {
-    private bool firstPush = true;
+    /// <summary>
+    /// Whether the buffer is currently drawing.
+    /// </summary>
+    private bool drawing = false;
     private readonly Stack<Matrix> stack = [];
     private Matrix Current
     {
         get;
         set
         {
-            if (firstPush)
-                firstPush = false;
+            if (!drawing)
+                drawing = true;
             else
                 buffer.End();
 
             field = value;
-            buffer.Begin(samplerState: SamplerState.PointClamp, transformMatrix: value);
+            buffer.Begin(value);
         }
     } = initial;
 
@@ -58,8 +95,11 @@ public class Screen(SpriteBatch buffer, Matrix initial) : IScreen
 
     public void Pop()
     {
-        Debug.Assert(stack.TryPop(out Matrix toSet) && !firstPush, "Unbalanced calls to Push and Pop!");
+        Debug.Assert(stack.TryPop(out Matrix toSet) && drawing, "Unbalanced calls to Push and Pop!");
         Current = toSet;
+        drawing = stack.Count > 0;
+        if (!drawing)
+            buffer.End();
     }
 
     public void Draw(Drawable drawable)
@@ -78,7 +118,7 @@ public abstract class Drawable
     /// Draws this object to the buffer.
     /// </summary>
     /// <param name="buffer"></param>
-    public abstract void Draw(SpriteBatch buffer);
+    public abstract void Draw(ISpriteBuffer buffer);
 
     /// <summary>
     /// Gets the size of this drawable item.
@@ -194,9 +234,9 @@ public abstract class Drawable
 /// <param name="texture">The texture which this Sprite should be drawn as.</param>
 public class Sprite(Texture2D texture) : Drawable
 {
-    public override void Draw(SpriteBatch buffer)
+    public override void Draw(ISpriteBuffer buffer)
     {
-        buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, 1, Effects, 0);
+        buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, Effects);
     }
 
     protected internal override Vector2 Size => new(texture.Width, texture.Height);
@@ -209,9 +249,9 @@ public class Sprite(Texture2D texture) : Drawable
 /// <param name="font">The font which should be used to render <paramref name="text"/>.</param>
 public class DrawableText(string text, SpriteFont font) : Drawable
 {
-    public override void Draw(SpriteBatch buffer)
+    public override void Draw(ISpriteBuffer buffer)
     {
-        buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, 1, Effects, 0);
+        buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, Effects);
     }
 
     protected internal override Vector2 Size => font.MeasureString(text);

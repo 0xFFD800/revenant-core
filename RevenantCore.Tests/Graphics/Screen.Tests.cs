@@ -4,12 +4,47 @@ using RevenantCore.Graphics;
 
 namespace RevenantCore.Tests.Graphics;
 
+file class FakeSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
+{
+    private bool drawing = false;
+    private Matrix? actMatrix;
+
+    public void Begin(Matrix transform)
+    {
+        Assert.False(drawing, "Begin called while already drawing");
+        actMatrix = transform;
+        drawing = true;
+    }
+
+    public void End()
+    {
+        Assert.True(drawing, "End called while not drawing");
+        drawing = false;
+    }
+
+    public void Draw(Texture2D texture, Vector2 pos, Rectangle? source, Color mask, float rotation, Vector2 origin, SpriteEffects effects)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void DrawString(SpriteFont font, string text, Vector2 pos, Color mask, float rotation, Vector2 origin, SpriteEffects effects)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Validate()
+    {
+        Assert.AreEqual(expMatrix, actMatrix);
+        Assert.AreEqual(expDrawing, drawing);
+    }
+}
+
 [TestFixture]
 public class Drawable_Test
 {
     private class FakeDrawable(Vector2 size) : Drawable
     {
-        public override void Draw(SpriteBatch buffer)
+        public override void Draw(ISpriteBuffer buffer)
         {
             throw new NotImplementedException();
         }
@@ -68,5 +103,18 @@ public class Drawable_Test
         Assert.AreEqual(new Rectangle(0, 0, 1, 1), drawable.Source);
         Assert.AreEqual(Color.Black * 0.5F, drawable.Mask);
         Assert.AreEqual(SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically, drawable.Effects);
+    }
+}
+
+[TestFixture]
+public class Screen_Test
+{
+    [Test]
+    public void TestInitial()
+    {
+        FakeSpriteBuffer buffer = new(null, false);
+        Matrix initial = new();
+        _ = new Screen(buffer, initial);
+        buffer.Validate();
     }
 }
