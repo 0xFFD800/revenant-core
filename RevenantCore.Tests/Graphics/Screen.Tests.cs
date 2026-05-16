@@ -4,7 +4,7 @@ using RevenantCore.Graphics;
 
 namespace RevenantCore.Tests.Graphics;
 
-file class FakeSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
+file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
 {
     private bool drawing = false;
     private Matrix? actMatrix;
@@ -19,6 +19,7 @@ file class FakeSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     public void End()
     {
         Assert.True(drawing, "End called while not drawing");
+        actMatrix = null;
         drawing = false;
     }
 
@@ -39,24 +40,33 @@ file class FakeSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     }
 }
 
+file class MockDrawable(Vector2 size, bool expDrawn) : Drawable
+{
+    bool drawn = false;
+    internal ISpriteBuffer? Buffer { get; private set; } = null;
+
+    public override void Draw(ISpriteBuffer buffer)
+    {
+        drawn = true;
+        Buffer = buffer;
+    }
+
+    protected override Vector2 Size => size;
+
+    public void Validate()
+    {
+        Assert.AreEqual(expDrawn, drawn);
+    }
+}
+
 [TestFixture]
 public class Drawable_Test
 {
-    private class FakeDrawable(Vector2 size) : Drawable
-    {
-        public override void Draw(ISpriteBuffer buffer)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override Vector2 Size => size;
-    }
-
     [TestCase(1, 1, 2, 2, 1.5F, 1F, TestName = "SetBase 1x1 -> (2,2)")]
     [TestCase(0, 0, 0, 0, 0, 0, TestName = "SetBase 0x0 -> (0,0)")]
     public void SetBase(float w, float h, float x, float y, float expX, float expY)
     {
-        Drawable drawable = new FakeDrawable(new(w, h)).SetBase(new(x, y));
+        Drawable drawable = new MockDrawable(new(w, h), false).SetBase(new(x, y));
         Assert.AreEqual(new Vector2(expX, expY), drawable.Pos);
     }
 
@@ -64,7 +74,7 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, 0, 0, TestName = "SetCenter 0x0 -> (0,0)")]
     public void SetCenter(float w, float h, float x, float y, float expX, float expY)
     {
-        Drawable drawable = new FakeDrawable(new(w, h)).SetCenter(new(x, y));
+        Drawable drawable = new MockDrawable(new(w, h), false).SetCenter(new(x, y));
         Assert.AreEqual(new Vector2(expX, expY), drawable.Pos);
     }
 
@@ -72,7 +82,7 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, TestName = "RotateAroundBase 0x0")]
     public void RotateAroundBase(float w, float h, float expX, float expY)
     {
-        Drawable drawable = new FakeDrawable(new(w, h)).RotateAroundBase();
+        Drawable drawable = new MockDrawable(new(w, h), false).RotateAroundBase();
         Assert.AreEqual(new Vector2(expX, expY), drawable.Origin);
     }
 
@@ -80,14 +90,14 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, TestName = "RotateAroundCenter 0x0")]
     public void RotateAroundCenter(float w, float h, float expX, float expY)
     {
-        Drawable drawable = new FakeDrawable(new(w, h)).RotateAroundCenter();
+        Drawable drawable = new MockDrawable(new(w, h), false).RotateAroundCenter();
         Assert.AreEqual(new Vector2(expX, expY), drawable.Origin);
     }
 
     [Test]
     public void TestBuilder()
     {
-        Drawable drawable = new FakeDrawable(new(1, 1))
+        Drawable drawable = new MockDrawable(new(1, 1), false)
             .SetPos(new(1, 1))
             .SetRotation(1)
             .SetOrigin(new(1, 1))
@@ -109,12 +119,73 @@ public class Drawable_Test
 [TestFixture]
 public class Screen_Test
 {
-    [Test]
-    public void TestInitial()
+    [Test(Description = "Screen should not begin drawing with no push or pop operations")]
+    public void NoPush_NoBegin()
     {
-        FakeSpriteBuffer buffer = new(null, false);
-        Matrix initial = new();
-        _ = new Screen(buffer, initial);
+        MockSpriteBuffer buffer = new(null, false);
+        _ = new Screen(buffer);
         buffer.Validate();
+    }
+
+    [Test(Description = "Pop with no corresponding Push should raise an exception")]
+    public void Pop_NoPush_Raises()
+    {
+        Screen screen = new(new MockSpriteBuffer(null, false));
+        Assert.Throws<InvalidOperationException>(screen.Pop);
+    }
+
+    [Test(Description = "A single push with no pop should continue the draw cycle")]
+    public void Push_NoPop_Drawing()
+    {
+        MockSpriteBuffer buffer = new(Matrix.CreateTranslation(0, 0, 1), true);
+        Screen screen = new(buffer);
+        screen.Push(Matrix.CreateTranslation(0, 0, 1));
+        buffer.Validate();
+    }
+
+    [Test(Description = "Balanced pushes and pops should end the draw cycle")]
+    public void Push_Pop_NotDrawing()
+    {
+        MockSpriteBuffer buffer = new(null, false);
+        Screen screen = new(buffer);
+        screen.Push(Matrix.CreateTranslation(0, 0, 1));
+        screen.Pop();
+        buffer.Validate();
+    }
+    
+    [Test(Description = "Multiple pushes with no corresponding pop should combine their matrices")]
+    public void PushTwo_NoPop_Combine()
+    {
+        MockSpriteBuffer buffer = new(Matrix.CreateTranslation(1, 0, 1), true);
+        Screen screen = new(buffer);
+        screen.Push(Matrix.CreateTranslation(1, 0, 0));
+        screen.Push(Matrix.CreateTranslation(0, 0, 1));
+        buffer.Validate();
+    }
+
+    [Test(Description = "One pop after two pushes should restore the matrix after the first push")]
+    public void PushTwo_PopOne_Restore()
+    {
+        Matrix firstPush = Matrix.CreateTranslation(1, 0, 0);
+        MockSpriteBuffer buffer = new(firstPush, true);
+        Screen screen = new(buffer);
+        screen.Push(firstPush);
+        screen.Push(Matrix.CreateTranslation(0, 0, 1));
+        screen.Pop();
+        buffer.Validate();
+    }
+
+    [Test(Description = "Calling \"Draw\" on a drawable should pass its buffer on")]
+    public void Draw_PassBuffer()
+    {
+        MockSpriteBuffer buffer = new(null, false);
+        Screen screen = new(buffer);
+        screen.Push(Matrix.Identity);
+        MockDrawable drawable = new(Vector2.One, true);
+        screen.Draw(drawable);
+        screen.Pop();
+        drawable.Validate();
+        buffer.Validate();
+        Assert.AreSame(buffer, drawable.Buffer);
     }
 }

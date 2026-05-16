@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -65,7 +65,7 @@ public interface IScreen
     void Draw(Drawable drawable);
 }
 
-public class Screen(ISpriteBuffer buffer, Matrix initial) : IScreen
+public class Screen(ISpriteBuffer buffer)
 {
     /// <summary>
     /// Whether the buffer is currently drawing.
@@ -85,7 +85,7 @@ public class Screen(ISpriteBuffer buffer, Matrix initial) : IScreen
             field = value;
             buffer.Begin(value);
         }
-    } = initial;
+    } = Matrix.Identity;
 
     public void Push(Matrix transform)
     {
@@ -95,10 +95,12 @@ public class Screen(ISpriteBuffer buffer, Matrix initial) : IScreen
 
     public void Pop()
     {
-        Debug.Assert(stack.TryPop(out Matrix toSet) && drawing, "Unbalanced calls to Push and Pop!");
-        Current = toSet;
+        if (!stack.TryPop(out Matrix toSet) || !drawing)
+            throw new InvalidOperationException("Unbalanced calls to Push and Pop!");
         drawing = stack.Count > 0;
-        if (!drawing)
+        if (drawing)
+            Current = toSet;
+        else
             buffer.End();
     }
 
