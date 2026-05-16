@@ -13,7 +13,12 @@ public class Scene_Test
         public int currDrawOrder = 0;
     }
 
-    private class MockVisible(FakeScene fakeScene, DrawLayer layer, float z, bool isDead, int? expDrawOrder, bool expGlean) : IVisible
+    private interface IMockMortal : IMortal
+    {
+        void Validate();
+    }
+
+    private class MockVisible(FakeScene fakeScene, DrawLayer layer, float z, bool isDead, int? expDrawOrder, bool expGlean) : IMockMortal, IVisible
     {
         private readonly FakeScene scene = fakeScene;
         private bool created, gleaned, drawn = false;
@@ -79,6 +84,37 @@ public class Scene_Test
         public void Validate()
         {
             Assert.AreEqual(0, matrices, "Unbalanced calls to Push and Pop after draw loop!");
+        }
+    }
+
+    private class MockCollideable(bool isDead, bool expGlean) : IMockMortal, ICollideable
+    {
+        private bool created, gleaned = false;
+    
+        public BoundingBox CollisionBox => throw new NotImplementedException();
+
+        public float? Mass => throw new NotImplementedException();
+
+        public Vector3 Velocity { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public Vector3 Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public bool IsDead => isDead;
+
+        public void Create(Scene scene, FrameTime time)
+        {
+            created = true;
+        }
+
+        public void Glean(Scene scene, FrameTime time)
+        {
+            gleaned = true;
+            Assert.IsTrue(expGlean, "This collideable did not expect to be gleaned!");
+        }
+
+        public void Validate()
+        {
+            Assert.True(created, "Collideable object was never created!");
+            Assert.AreEqual(expGlean, gleaned, "Collideable object was not in the correct gleaning state!");
         }
     }
 
@@ -153,14 +189,16 @@ public class Scene_Test
     {
         FakeScene scene = new();
         scene.Create(scene, new(new()));
-        MockVisible[] visibles = [
-            new(scene, DrawLayer.Scene, 0, false, null, true),    // Live object
-            new(scene, DrawLayer.Background, 0, true, null, true) // Dead object
+        IMockMortal[] mortals = [
+            new MockVisible(scene, DrawLayer.Scene, 0, false, null, true),     // Live visible
+            new MockVisible(scene, DrawLayer.Background, 0, true, null, true), // Dead visible
+            new MockCollideable(false, true),                                  // Live collideable
+            new MockCollideable(false, true)                                   // Dead collideable
         ];
-        foreach (MockVisible visible in visibles)
-            scene.Add(visible, scene, new(new()));
+        foreach (IMockMortal mortal in mortals)
+            scene.Add(mortal, scene, new(new()));
         scene.Glean(scene, new(new()));
-        foreach (MockVisible visible in visibles)
-            visible.Validate();
+        foreach (IMockMortal mortal in mortals)
+            mortal.Validate();
     }
 }
