@@ -117,6 +117,18 @@ public interface ICollideable : IMoveable
     float? Mass { get; }
 
     /// <summary>
+    /// The proportion of energy this object will absorb from a collision with it.
+    /// A null MaterialAbsorption means it will absorb all energy from collisions; 1 means all energy will be reflected.
+    /// </summary>
+    float? MaterialAbsorption { get; }
+
+    /// <summary>
+    /// The proportion of energy this object will absorb from an object moving parallel along its bounds.
+    /// A null Friction means it will absorb all energy from such an object; 1 means it will absorb none.
+    /// </summary>
+    float? Friction { get; }
+
+    /// <summary>
     /// The velocity of this object in px/ms. 
     /// Since there are 32 pixels per meter, 1 px/ms = 31.25 m/s.
     /// </summary>
@@ -136,7 +148,7 @@ public abstract class Scythe : ITickable
     /// but not any mortals which are tracked by any other scythes.
     /// </summary>
     private readonly IList<IMortal> mortals = [];
-    
+
     public abstract bool IsDead { get; }
 
     public abstract void Create(Scene scene, FrameTime time);
@@ -149,7 +161,7 @@ public abstract class Scythe : ITickable
 
     public virtual void Glean(Scene scene, FrameTime time)
     {
-        IMortal[] subobjects = [..mortals];
+        IMortal[] subobjects = [.. mortals];
         foreach (IMortal mortal in subobjects)
             Reap(mortal, scene, time);
     }

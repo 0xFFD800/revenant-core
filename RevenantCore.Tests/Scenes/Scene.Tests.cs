@@ -87,16 +87,27 @@ public class Scene_Test
         }
     }
 
-    private class MockCollideable(bool isDead, bool expGlean) : IMockMortal, ICollideable
+    private class MockCollideable(Vector3 pos, Vector3 velocity, Vector3 size, float? mass, float? absorption, float? friction, bool isDead, bool expGlean, Vector3 expPos, Vector3 expVelocity) : IMockMortal, ICollideable
     {
         private bool created, gleaned = false;
-    
-        public BoundingBox CollisionBox => throw new NotImplementedException();
 
-        public float? Mass => throw new NotImplementedException();
+        /// <summary>
+        /// Constructor overload for tests which don't care about position and velocity information.
+        /// </summary>
+        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, null, null, null, isDead, expGlean, Vector3.Zero, Vector3.Zero)
+        {
 
-        public Vector3 Velocity { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public Vector3 Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        }
+
+        private Vector3 BottomLeft => Position - new Vector3(size.X / 2, 0, size.Z / 2);
+        public BoundingBox CollisionBox => new(BottomLeft, BottomLeft + size);
+
+        public float? Mass => mass;
+        public float? MaterialAbsorption => absorption;
+        public float? Friction => friction;
+
+        public Vector3 Velocity { get; set; } = velocity;
+        public Vector3 Position { get; set; } = pos;
 
         public bool IsDead => isDead;
 
@@ -114,7 +125,9 @@ public class Scene_Test
         public void Validate()
         {
             Assert.True(created, "Collideable object was never created!");
-            Assert.AreEqual(expGlean, gleaned, "Collideable object was not in the correct gleaning state!");
+            Assert.AreEqual(expGlean, gleaned);
+            Assert.AreEqual(expPos, Position);
+            Assert.AreEqual(expVelocity, Velocity);
         }
     }
 

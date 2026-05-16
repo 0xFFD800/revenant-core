@@ -23,14 +23,31 @@ public class Scene : Scythe
 
     public override bool IsDead => false;
 
-    public override void Create(Scene scene, FrameTime time)
+    private void ApplyCollisions()
     {
-        Debug.Assert(scene == this);
+        // TODO
+    }
+
+    private void ApplyFriction()
+    {
+        // TODO
+    }
+
+    private void MoveObjects()
+    {
+        // TODO
     }
 
     private void DoPhysics()
     {
-        // TODO
+        ApplyCollisions();
+        ApplyFriction();
+        MoveObjects();
+    }
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        Debug.Assert(scene == this);
     }
 
     public void Draw(View view)
