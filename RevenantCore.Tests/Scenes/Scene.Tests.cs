@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
@@ -10,8 +9,13 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene : Scene
+    private class FakeScene(SceneSpec spec) : Scene(spec)
     {
+        internal FakeScene() : this(new())
+        {
+
+        }
+
         public int currDrawOrder = 0;
     }
 
@@ -89,14 +93,14 @@ public class Scene_Test
         }
     }
 
-    private class MockCollideable(Vector3 pos, Vector3 velocity, Vector3 size, MaterialSpec material, bool isDead, bool expGlean, Vector3 expPos, Vector3 expVelocity) : IMockMortal, ICollideable
+    private class MockCollideable(Vector3 pos, Vector3 velocity, Vector3 acceleration, Vector3 size, MaterialSpec material, bool isDead, bool expGlean, Vector3 expPos, Vector3 expVelocity) : IMockMortal, ICollideable
     {
         private bool created, gleaned = false;
 
         /// <summary>
         /// Constructor overload for tests which don't care about position and velocity information.
         /// </summary>
-        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, new(), isDead, expGlean, Vector3.Zero, Vector3.Zero)
+        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, new(), isDead, expGlean, Vector3.Zero, Vector3.Zero)
         {
 
         }
@@ -105,6 +109,7 @@ public class Scene_Test
         public BoundingBox CollisionBox => new(BottomLeft, BottomLeft + size);
 
         public MaterialSpec Material => material;
+        public Vector3 Acceleration { get; set; } = acceleration;
         public Vector3 Velocity { get; set; } = velocity;
         public Vector3 Position { get; set; } = pos;
 
@@ -127,6 +132,7 @@ public class Scene_Test
             Assert.AreEqual(expGlean, gleaned);
             Assert.AreEqual(expPos, Position);
             Assert.AreEqual(expVelocity, Velocity);
+            Assert.AreEqual(Vector3.Zero, Acceleration);
         }
     }
 
@@ -218,7 +224,7 @@ public class Scene_Test
     {
         foreach (MockCollideable collideable in collideables)
             scene.Add(collideable, scene, new(new()));
-        scene.Tick(scene, new(new()));
+        scene.Tick(scene, new(new(new(0, 0, 0, 0, 10), new())));
         foreach (MockCollideable collideable in collideables)
             collideable.Validate();
 
@@ -231,19 +237,23 @@ public class Scene_Test
         FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(Vector3.Zero,       Vector3.UnitX, Vector3.One, new(), false, false, Vector3.UnitX,      Vector3.UnitX),
-            new(Vector3.UnitZ * 10, Vector3.UnitZ, Vector3.One, new(), false, false, Vector3.UnitZ * 11, Vector3.UnitZ)
+            new(Vector3.Zero,        Vector3.UnitX, Vector3.Zero, Vector3.One, new(), false, false, Vector3.UnitX *  10, Vector3.UnitX),
+            new(Vector3.UnitZ * 100, Vector3.UnitZ, Vector3.Zero, Vector3.One, new(), false, false, Vector3.UnitZ * 110, Vector3.UnitZ)
         ]);
     }
 
-    [TestCase(0.3136F, 0, 1, 0, 0, 0, 0.6864F, 0, 0.3136F, TestName = "Gravity (current velocity at 0)")]
-    [TestCase(0.1F, 0, 1, 1, 1, 1, 1.9F, 1, 0.9F, TestName = "Gravity (current velocity at 1)")]
-    [TestCase(0F, 0, 1, 0, 0, 0, 1, 0, 0, TestName = "Gravity (scene with zero gravity)")]
-    public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float expPosX, float expPosY, float expVelX, float expVelY)
+    [TestCase(0.2F, 0, 20, 0, 0, 0, 0, 0, 10, 0, -2, TestName = "Gravity (current velocity at 0)")]
+    [TestCase(0.1F, 0, 1, 5, 10, 0, 0, 50, 96, 5, 9, TestName = "Gravity (current velocity at 1)")]
+    [TestCase(0.1F, 0, 10, 0, 0, 1, 1, 50, 55, 10, 9, TestName = "Gravity (nonzero acceleration)")]
+    [TestCase(0.0F, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
+    public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float currAccX, float currAccY, float expPosX, float expPosY, float expVelX, float expVelY)
     {
-        FakeScene scene = new();
+        FakeScene scene = new(new()
+        {
+            Gravity = gravity
+        });
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 0), new(currVelX, currVelY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 0), new(expVelX, expVelY, 0))]);
+        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 0), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 0), new(expVelX, expVelY, 0))]);
     }
 
     [Test(Description = "Dead objects should be gleaned and not ticked")]
@@ -251,7 +261,7 @@ public class Scene_Test
     {
         FakeScene scene = new();
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.One, new(), true, true, Vector3.Zero, Vector3.UnitX)]);
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new(), true, true, Vector3.Zero, Vector3.UnitX)]);
     }
 }
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using RevenantCore.Graphics;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Scenes;
@@ -8,7 +9,7 @@ namespace RevenantCore.Scenes;
 /// <summary>
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
-public class Scene : Scythe
+public class Scene(SceneSpec spec) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -22,6 +23,11 @@ public class Scene : Scythe
     private readonly List<ICollideable> collideables = [];
 
     public override bool IsDead => false;
+
+    private void ApplyGravity()
+    {
+        // TODO
+    }
 
     private void ApplyCollisions()
     {
@@ -40,6 +46,7 @@ public class Scene : Scythe
 
     private void DoPhysics()
     {
+        ApplyGravity();
         ApplyCollisions();
         ApplyFriction();
         MoveObjects();
@@ -47,7 +54,7 @@ public class Scene : Scythe
 
     public override void Create(Scene scene, FrameTime time)
     {
-        Debug.Assert(scene == this);
+        Trace.Assert(scene == this);
     }
 
     public void Draw(View view)
@@ -61,7 +68,7 @@ public class Scene : Scythe
 
     public override void Tick(Scene scene, FrameTime time)
     {
-        Debug.Assert(scene == this);
+        Trace.Assert(scene == this);
         visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
         DoPhysics();
         base.Tick(scene, time);
@@ -69,7 +76,7 @@ public class Scene : Scythe
 
     public override void Add(IMortal mortal, Scene scene, FrameTime time)
     {
-        Debug.Assert(scene == this);
+        Trace.Assert(scene == this);
         base.Add(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Add(visible.Layer, visible); 
@@ -79,7 +86,7 @@ public class Scene : Scythe
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
     {
-        Debug.Assert(scene == this);
+        Trace.Assert(scene == this);
         base.Reap(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Remove(visible.Layer, visible);

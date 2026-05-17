@@ -118,6 +118,13 @@ public interface ICollideable : IMoveable
     MaterialSpec Material { get; }
 
     /// <summary>
+    /// The average acceleration of this object over a single run of the Tick loop.
+    /// The scene handles the application of gravity.
+    /// This is cleared out after each run of the Tick loop (as it is an average value).
+    /// </summary>
+    Vector3 Acceleration { get; set; }
+
+    /// <summary>
     /// The velocity of this object in px/ms. 
     /// Since there are 32 pixels per meter, 1 px/ms = 31.25 m/s.
     /// </summary>
