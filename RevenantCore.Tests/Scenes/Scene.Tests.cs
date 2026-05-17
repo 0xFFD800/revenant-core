@@ -259,8 +259,8 @@ public class Scene_Test
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
     [TestCase(1, 0, 1, 1, 0, 0, TestName = "Friction (full friction floor)")]
     [TestCase(0, 1, 1, 1, 0, 0, TestName = "Friction (full friction collideable)")]
-    [TestCase(0.5F, 0.5F, 1, 0.025F, 10, 1, TestName = "Friction (friction erases acceleration)")]
-    [TestCase(0.5F, 0.5F, 1, 0, 8.75F, 0.75F, TestName = "Friction (friction decelerates)")]
+    [TestCase(0.5F, 0.5F, 1, 0.075F, 10, 1, TestName = "Friction (friction erases acceleration)")]
+    [TestCase(0.5F, 0.5F, 1, 0, 6.25F, 0.25F, TestName = "Friction (friction decelerates)")]
     [TestCase(0.5F, 0.5F, 0, 0, 0, 0, TestName = "Friction (unmoving object)")]
     public void Tick_Floor_Friction(float floorFriction, float collideableFriction, float currVel, float currAcc, float expPos, float expVel)
     {
@@ -273,6 +273,44 @@ public class Scene_Test
         });
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
+    }
+
+    [Test(Description = "An object should not move if its velocity does not exceed its static friction")]
+    public void Tick_Floor_StaticFriction()
+    {
+        FakeScene scene = new(new());
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F }, false, false, Vector3.Zero, Vector3.Zero)]);
+    }
+
+    [Test(Description = "An object falling with walls on two sides and other collideables on two sides should input friction from all of them.")]
+    public void Tick_Collideable_Friction()
+    {
+        MaterialSpec material = new()
+        {
+            Friction = 0.75F
+        };
+        FakeScene scene = new(new()
+        {
+            Bounds = new()
+            {
+                X = 10,
+                Y = 10, 
+                Z = 10
+            },  
+            Gravity = 0.1F,
+            LeftWall = material,
+            FarWall = material
+        });
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [
+            // The object which is descending
+            new(new(0, 5, 9), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0, -11.1875234375F, 9), new(0, -1.2373046875F, 0)),
+            // The object on the near side of the descending object
+            new(new(0, 0, 8), Vector3.Zero,  Vector3.Zero, new(1, 10, 1), material, false, false, new(0, 0, 8), Vector3.Zero),
+            // The object to the right of the descending object
+            new(new(1, 0, 9), Vector3.Zero,  Vector3.Zero, new(1, 10, 1), material, false, false, new(1, 0, 9), Vector3.Zero)
+        ]);
     }
 
     [Test(Description = "Dead objects should be gleaned and not ticked")]

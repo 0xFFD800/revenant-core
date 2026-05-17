@@ -22,9 +22,15 @@ public class MaterialSpec
     /// The proportion of energy this object will absorb from a colliding object traveling parallel to it.
     /// Must be between 0 and 1.
     /// 0 means no friction, 1 means it will instantaneously absorb all energy.
-    /// Friction is applied to acceleration using the following formula: Acceleration -= (Velocity * Friction / time.ElapsedMillis)
+    /// Friction applied from multiple objects using the formula: 1 - ((1 - Friction_1) * (1 - Friction_2) * ...)
+    /// Friction is applied to acceleration using the following formula: Acceleration = sign(Acceleration) * (Abs(Acceleration) - Abs(Velocity * Friction / time.ElapsedMillis))
     /// </summary>
     public float Friction { get; set; } = 0;
+
+    /// <summary>
+    /// The threshold of velocity at which this object will be stopped from moving, in px/ms.
+    /// </summary>
+    public float StaticFriction { get; set; } = 0.001F;
 }
 
 /// <summary>
