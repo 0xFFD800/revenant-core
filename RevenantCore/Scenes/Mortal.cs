@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Scenes;
@@ -112,21 +113,9 @@ public interface ICollideable : IMoveable
     BoundingBox CollisionBox { get; }
 
     /// <summary>
-    /// The mass of this object in kg. A null mass means this object is fixed in position or travelling at a fixed rate.
+    /// The material of this object, including information about its friction and mass.
     /// </summary>
-    float? Mass { get; }
-
-    /// <summary>
-    /// The proportion of energy this object will absorb from a collision with it.
-    /// A null MaterialAbsorption means it will absorb all energy from collisions; 1 means all energy will be reflected.
-    /// </summary>
-    float? MaterialAbsorption { get; }
-
-    /// <summary>
-    /// The proportion of energy this object will absorb from an object moving parallel along its bounds.
-    /// A null Friction means it will absorb all energy from such an object; 1 means it will absorb none.
-    /// </summary>
-    float? Friction { get; }
+    MaterialSpec Material { get; }
 
     /// <summary>
     /// The velocity of this object in px/ms. 

@@ -1,6 +1,8 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Scenes;
@@ -87,14 +89,14 @@ public class Scene_Test
         }
     }
 
-    private class MockCollideable(Vector3 pos, Vector3 velocity, Vector3 size, float? mass, float? absorption, float? friction, bool isDead, bool expGlean, Vector3 expPos, Vector3 expVelocity) : IMockMortal, ICollideable
+    private class MockCollideable(Vector3 pos, Vector3 velocity, Vector3 size, MaterialSpec material, bool isDead, bool expGlean, Vector3 expPos, Vector3 expVelocity) : IMockMortal, ICollideable
     {
         private bool created, gleaned = false;
 
         /// <summary>
         /// Constructor overload for tests which don't care about position and velocity information.
         /// </summary>
-        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, null, null, null, isDead, expGlean, Vector3.Zero, Vector3.Zero)
+        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, new(), isDead, expGlean, Vector3.Zero, Vector3.Zero)
         {
 
         }
@@ -102,10 +104,7 @@ public class Scene_Test
         private Vector3 BottomLeft => Position - new Vector3(size.X / 2, 0, size.Z / 2);
         public BoundingBox CollisionBox => new(BottomLeft, BottomLeft + size);
 
-        public float? Mass => mass;
-        public float? MaterialAbsorption => absorption;
-        public float? Friction => friction;
-
+        public MaterialSpec Material => material;
         public Vector3 Velocity { get; set; } = velocity;
         public Vector3 Position { get; set; } = pos;
 
@@ -213,5 +212,62 @@ public class Scene_Test
         scene.Glean(scene, new(new()));
         foreach (IMockMortal mortal in mortals)
             mortal.Validate();
+    }
+
+    private static void RunCollisionsLoop(Scene scene, MockCollideable[] collideables)
+    {
+        foreach (MockCollideable collideable in collideables)
+            scene.Add(collideable, scene, new(new()));
+        scene.Tick(scene, new(new()));
+        foreach (MockCollideable collideable in collideables)
+            collideable.Validate();
+
+        Assert.False(scene.IsDead, "Scenes currently should never die");
+    }
+
+    [Test(Description = "If there are no collisions or friction and the objects are at floor level, objects should just be moved")]
+    public void Tick_NoCollisions_Move()
+    {
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [
+            new(Vector3.Zero,       Vector3.UnitX, Vector3.One, new(), false, false, Vector3.UnitX,      Vector3.UnitX),
+            new(Vector3.UnitZ * 10, Vector3.UnitZ, Vector3.One, new(), false, false, Vector3.UnitZ * 11, Vector3.UnitZ)
+        ]);
+    }
+
+    [TestCase(0.3136F, 0, 1, 0, 0, 0, 0.6864F, 0, 0.3136F, TestName = "Gravity (current velocity at 0)")]
+    [TestCase(0.1F, 0, 1, 1, 1, 1, 1.9F, 1, 0.9F, TestName = "Gravity (current velocity at 1)")]
+    [TestCase(0F, 0, 1, 0, 0, 0, 1, 0, 0, TestName = "Gravity (scene with zero gravity)")]
+    public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float expPosX, float expPosY, float expVelX, float expVelY)
+    {
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 0), new(currVelX, currVelY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 0), new(expVelX, expVelY, 0))]);
+    }
+
+    [Test(Description = "Dead objects should be gleaned and not ticked")]
+    public void Tick_Dead_Gleaned()
+    {
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.One, new(), true, true, Vector3.Zero, Vector3.UnitX)]);
+    }
+}
+
+[TestFixture]
+public class Vector3Spec_Test
+{
+    [TestCase(0, 0, 0, TestName = "(0, 0, 0)")]
+    [TestCase(1, 1, 1, TestName = "(1, 1, 1)")]
+    public void DataMatchesSpec(float x, float y, float z)
+    {
+        Vector3Spec spec = new()
+        {
+            X = x,
+            Y = y,
+            Z = z
+        };
+        Assert.AreEqual(new Vector3(x, y, z), spec.Data);
     }
 }
