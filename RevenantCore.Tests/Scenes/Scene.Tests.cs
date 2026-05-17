@@ -256,6 +256,25 @@ public class Scene_Test
         RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 0), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 0), new(expVelX, expVelY, 0))]);
     }
 
+    [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
+    [TestCase(1, 0, 1, 1, 0, 0, TestName = "Friction (full friction floor)")]
+    [TestCase(0, 1, 1, 1, 0, 0, TestName = "Friction (full friction collideable)")]
+    [TestCase(0.5F, 0.5F, 1, 0.025F, 10, 1, TestName = "Friction (friction erases acceleration)")]
+    [TestCase(0.5F, 0.5F, 1, 0, 8.75F, 0.75F, TestName = "Friction (friction decelerates)")]
+    [TestCase(0.5F, 0.5F, 0, 0, 0, 0, TestName = "Friction (unmoving object)")]
+    public void Tick_Floor_Friction(float floorFriction, float collideableFriction, float currVel, float currAcc, float expPos, float expVel)
+    {
+        FakeScene scene = new(new()
+        {
+            Floor = new()
+            {
+                Friction = floorFriction
+            }
+        });
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
+    }
+
     [Test(Description = "Dead objects should be gleaned and not ticked")]
     public void Tick_Dead_Gleaned()
     {

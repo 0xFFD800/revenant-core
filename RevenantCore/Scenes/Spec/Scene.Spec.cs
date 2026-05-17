@@ -19,10 +19,12 @@ public class MaterialSpec
     public float? MaterialAbsorption { get; set; } = null;
 
     /// <summary>
-    /// The proportion of energy this object will absorb from an object moving parallel along its bounds.
-    /// A null Friction means it will absorb all energy from such an object; 1 means it will absorb none.
+    /// The proportion of energy this object will absorb from a colliding object traveling parallel to it.
+    /// Must be between 0 and 1.
+    /// 0 means no friction, 1 means it will instantaneously absorb all energy.
+    /// Friction is applied to acceleration using the following formula: Acceleration -= (Velocity * Friction / time.ElapsedMillis)
     /// </summary>
-    public float? Friction { get; set; } = 1;
+    public float Friction { get; set; } = 0;
 }
 
 /// <summary>
