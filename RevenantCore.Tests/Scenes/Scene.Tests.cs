@@ -340,37 +340,33 @@ public class Scene_Test
         RunCollisionsLoop(scene, [new(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
     }
 
-    [TestCase(1, 1, 1, 1, 4, 16, 1, -1, 6, 14, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
-    // TODO: more test cases
-    public void Tick_Collideable_CollideStraight(float? mass1, float? mass2, float? absorption1, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
+    [TestCase(1F, 1F, 4, 17, 1, -1, 6, 15, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
+    [TestCase(1F, 0.5F, 4, 17, 1, -1, 8, 13, -0.5F, 0.5F, TestName = "Collide Straight (Absorption)")]
+    [TestCase(0.5F, 1F, 0, 31, 3, -3, 5, 36, -2, 4, TestName = "Collide Straight (Different Masses)")]
+    [TestCase(1F, 1F, 0, 31, 4, -2, 10, 41, -2, 4, TestName = "Collide Straight (Different Speeds)")]
+    public void Tick_Collideable_CollideStraight(float? mass2, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(new(pos1, 0, 0), new(vel1, 0, 0), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption1, Mass = mass1 }, false, false, new(expPos1, 0, 0), new(expVel1, 0, 0)),
+            new(new(pos1, 0, 0), new(vel1, 0, 0), Vector3.Zero, Vector3.One, new(), false, false, new(expPos1, 0, 0), new(expVel1, 0, 0)),
             new(new(pos2, 0, 0), new(vel2, 0, 0), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, 0), new(expVel2, 0, 0))
         ]);
     }
 
-    // TODO: test cases
-    public void Tick_Collideable_CollideDiagonal(float? mass1, float? mass2, float? absorption1, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
+    [TestCase(1F, 1F, 10, 10, 23, 27, 0.75F, 1, -0.75F, -1, 14.5F, 16, 18.5F, 21, -0.75F, -1, 0.75F, 1, TestName = "Collide Diagonal (same mass, no absorption)")]
+    [TestCase(1F, 0.5F, 10, 10, 23, 27, 0.75F, 1, -0.75F, -1, 15.25F, 17, 17.75F, 20, -0.375F, -0.5F, 0.375F, 0.5F, TestName = "Collide Diagonal (Absorption)")]
+    [TestCase(0.5F, 1F, 10, 10, 46, 59, 2.25F, 3, -2.25F, -3, 24.5F, 30, 33.5F, 42, -1.5F, -2, 3, 4, TestName = "Collide Diagonal (Different Masses)")]
+    [TestCase(1F, 1F, 0, 10, 17, 18, 1.25F, 0, -0.75F, -1, 8.5F, 10, 13.5F, 8, -0.75F, 0, 1.25F, -1, TestName = "Collide Oblique (same mass, no absorption)")]
+    [TestCase(1F, 0.5F, 0, 10, 17, 18, 1.25F, 0, -0.75F, -1, 9.25F, 10, 12.25F, 8, -0.375F, 0, 0.625F, -1F, TestName = "Collide Oblique (Absorption)")]
+    [TestCase(0.5F, 1F, 0, 30, 49, 55, 3.75F, 0, -2.25F, -3, 27.75F, 30, 46, 28, -1.125F, 0, 7.5F, -1, TestName = "Collide Oblique (Different Masses)")]
+    public void Tick_Collideable_CollideOblique(float? mass2, float? absorption2, float posX1, float posZ1, float posX2, float posZ2, float velX1, float velZ1, float velX2, float velZ2, float expPosX1, float expPosX2, float expPosZ1, float expPosZ2, float expVelX1, float expVelX2, float expVelZ1, float expVelZ2)
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(new(pos1, 0, pos1), new(vel1, 0, vel1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption1, Mass = mass1 }, false, false, new(expPos1, 0, expPos1), new(expVel1, 0, expVel1)),
-            new(new(pos2, 0, pos2), new(vel2, 0, vel2), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, expPos2), new(expVel2, 0, expVel2))
-        ]);
-    }
-
-    // TODO: test cases
-    public void Tick_Collideable_Ricochet(float? mass1, float? mass2, float? absorption1, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPosX1, float expPosX2, float expPosZ1, float expPosZ2, float expVelX1, float expVelX2, float expVelZ1, float expVelZ2)
-    {
-        FakeScene scene = new(new());
-        scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
-            new(new(pos1, 0, 10), new(vel1, 0, 0), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption1, Mass = mass1 }, false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
-            new(new(pos2, 0, 5),  new(vel2, 0, 1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPosX2, 0, expPosZ2), new(expVelX2, 0, expVelZ2))
+            new(new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new(), false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
+            new(new(posX2, 0, posZ2), new(velX2, 0, velZ2), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPosX2, 0, expPosZ2), new(expVelX2, 0, expVelZ2))
         ]);
     }
 
