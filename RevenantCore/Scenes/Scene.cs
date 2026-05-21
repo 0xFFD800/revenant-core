@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Security.Claims;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
@@ -31,36 +34,53 @@ public class Scene(SceneSpec spec) : Scythe
         c.Acceleration -= Vector3.UnitY * spec.Gravity;
     }
 
-    private void ApplyCollisions(ICollideable first, ICollideable second)
-    {
-        // TODO
-    }
-
-    private void ApplyFriction(ICollideable c)
-    {
-        // TODO
-    }
-
-    private static Vector3 Abs(Vector3 v) => new(Math.Abs(v.X), Math.Abs(v.Y), Math.Abs(v.Z));
-
-    private static void MoveObject(ICollideable c, double millis)
+    private static Vector3 GetNextPos(ICollideable c, double millis)
     {
         Vector3 totalVel = c.Velocity * (float)millis;
         Vector3 totalAcc = c.Acceleration * (float)millis;
-        c.Position += totalVel + (0.5F * totalAcc * Abs(totalAcc));
-        c.Velocity += totalAcc;
+        return c.Position + totalVel + (0.5F * totalAcc * totalAcc.Abs());
+    }
+
+    private record struct Collision(double RemMillis, Vector3 Friction);
+
+    private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    {
+        Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
+        Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
+        if ((first.CollisionBox + np1).Intersects(second.CollisionBox + np2))
+            throw new NotImplementedException();
+        // Otherwise do nothing...?
+    }
+
+    private static void ApplyFriction(ICollideable c, Collision cl)
+    {
+        Vector3 a = c.Acceleration.Abs();
+        c.Acceleration = c.Acceleration.Sign() * (a - (c.Velocity * cl.Friction / (float)cl.RemMillis).Abs().Clamp(Vector3.Zero, a));
+    }
+
+    private static void MoveObject(ICollideable c, double millis)
+    {
+        c.Position = GetNextPos(c, millis);
+        c.Velocity += c.Acceleration * (float)millis;
         c.Acceleration = Vector3.Zero;
     }
 
     private void DoPhysics(double millis)
     {
+        Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.Zero))];
+        for (int i = 0; i < collideables.Count; i++)
+        {
+            ICollideable ci = collideables[i];
+            ApplyGravity(ci);
+            for (int j = i + 1; j < collideables.Count; j++)
+                ApplyCollisions(ci, collideables[j], ref collisions[i], ref collisions[j]);
+        }
+
         for (int i = 0; i < collideables.Count; i++)
         {
             ICollideable c = collideables[i];
-            ApplyGravity(c);
-            for (int j = i + 1; j < collideables.Count; j++)
-                ApplyCollisions(c, collideables[j]);
-            MoveObject(c, millis);
+            ApplyFriction(c, collisions[i]);
+            MoveObject(c, collisions[i].RemMillis);
         }
     }
 
