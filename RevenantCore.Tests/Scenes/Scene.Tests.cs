@@ -224,7 +224,7 @@ public class Scene_Test
     {
         foreach (MockCollideable collideable in collideables)
             scene.Add(collideable, scene, new(new()));
-        scene.Tick(scene, new(new(new(0, 0, 0, 0, 10), new())));
+        scene.Tick(scene, new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10))));
         foreach (MockCollideable collideable in collideables)
             collideable.Validate();
 
@@ -242,10 +242,10 @@ public class Scene_Test
         ]);
     }
 
-    [TestCase(0.2F, 0, 20, 0, 0, 0, 0, 0, 10, 0, -2, TestName = "Gravity (current velocity at 0)")]
-    [TestCase(0.1F, 0, 1, 5, 10, 0, 0, 50, 96, 5, 9, TestName = "Gravity (current velocity at 1)")]
-    [TestCase(0.1F, 0, 10, 0, 0, 1, 1, 50, 55, 10, 9, TestName = "Gravity (nonzero acceleration)")]
-    [TestCase(0.0F, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
+    [TestCase(0.2F, 0, 20, 0, 0, 0, 0, 0, 18, 0, -2, TestName = "Gravity (current velocity at 0)")]
+    [TestCase(0.1F, 0, 1, 5, 10, 0, 0, 50, 100.5F, 5, 9, TestName = "Gravity (current velocity at 1)")]
+    [TestCase(0.1F, 0, 10, 0, 0, 1, 1, 50, 50.5F, 10, 9, TestName = "Gravity (nonzero acceleration)")]
+    [TestCase(0.0F, 0, 1, 1, 0, 0, 0, 10, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
     public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float currAccX, float currAccY, float expPosX, float expPosY, float expVelX, float expVelY)
     {
         FakeScene scene = new(new()
