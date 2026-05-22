@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Security.Claims;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
@@ -68,6 +66,7 @@ public class Scene(SceneSpec spec) : Scythe
     private void DoPhysics(double millis)
     {
         Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.Zero))];
+        // Need to handle walls... add them as collideables?
         for (int i = 0; i < collideables.Count; i++)
         {
             ICollideable ci = collideables[i];
