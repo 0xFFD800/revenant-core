@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 
 namespace RevenantCore.Scenes.Spec;
@@ -60,6 +63,11 @@ public class Vector3Spec
 }
 
 /// <summary>
+/// An enum representing the sides on which walls border the scene.
+/// </summary>
+public enum WallSide { Floor, Near, Far, Left, Right }
+
+/// <summary>
 /// Defines base data about a scene.
 /// </summary>
 public class SceneSpec
@@ -75,33 +83,32 @@ public class SceneSpec
     };
 
     /// <summary>
-    /// The material of the scene's floor (Y = 0).
+    /// The materials for the walls to this scene.
     /// </summary>
-    public MaterialSpec Floor { get; set; } = new();
-
-    /// <summary>
-    /// The material of the scene's near wall (Z = 0).
-    /// </summary>
-    public MaterialSpec NearWall { get; set; } = new();
-
-    /// <summary>
-    /// The material of the scene's far wall (Z = Bounds.Z).
-    /// </summary>
-    public MaterialSpec FarWall { get; set; } = new();
-
-    /// <summary>
-    /// The material of the scene's left wall (X = 0).
-    /// </summary>
-    public MaterialSpec LeftWall { get; set; } = new();
-
-    /// <summary>
-    /// The material of the scene's right wall (X = Bounds.X).
-    /// </summary>
-    public MaterialSpec RightWall { get; set; } = new();
+    public Dictionary<WallSide, MaterialSpec> Walls { get; set; } = new()
+    {
+        { WallSide.Floor, new() },
+        { WallSide.Near, new() },
+        { WallSide.Far, new() },
+        { WallSide.Left, new() },
+        { WallSide.Right, new() }
+    };
 
     /// <summary>
     /// The gravitational acceleration in this scene, in px/ms^2.
     /// Since there are 32 pixels per meter, the default value is equal to 9.8 m/s^2 (gravitational acceleration on Earth).
     /// </summary>
     public float Gravity { get; set; } = 0.3136F;
+
+    /// <summary>
+    /// The options with which this spec should be serialized and deserialized.
+    /// </summary>
+    public static JsonSerializerOptions SerializerOptions => new()
+    {
+        WriteIndented = true,
+        Converters =
+        {
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+        }
+    };
 }

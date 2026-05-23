@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -24,6 +25,14 @@ public class Scene(SceneSpec spec) : Scythe
     /// All objects in this view with collision boxes.
     /// </summary>
     private readonly List<ICollideable> collideables = [];
+
+    /// <summary>
+    /// A dictionary of the walls of this scene.
+    /// The walls should also be added to <see cref="collideables"/>, as well as the scene's mortal tracker.
+    /// </summary>
+    private readonly ImmutableDictionary<WallSide, Wall> walls = Enum.GetValues<WallSide>()
+        .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
+        .ToImmutableDictionary();
 
     public override bool IsDead => false;
 
@@ -86,6 +95,8 @@ public class Scene(SceneSpec spec) : Scythe
     public override void Create(Scene scene, FrameTime time)
     {
         Trace.Assert(scene == this);
+        foreach (Wall wall in walls.Values)
+            Add(wall, scene, time);
     }
 
     public void Draw(View view)
@@ -123,5 +134,53 @@ public class Scene(SceneSpec spec) : Scythe
             visibles.Remove(visible.Layer, visible);
         if (mortal is ICollideable collideable)
             collideables.Remove(collideable);
+    }
+}
+
+/// <summary>
+/// Walls are immovable collideables which can be suspended if need be.
+/// </summary>
+/// <param name="origin">The bottom near left corner of the collideable.</param>
+/// <param name="bounds">The size of this wall in 3 dimensions.</param>
+/// <param name="material">The material this wall is made out of.</param>
+public class Wall(WallSide side, SceneSpec scene) : ICollideable
+{
+    private readonly Vector3 origin = side switch
+    {
+        WallSide.Floor => Vector3.UnitY * -scene.Bounds.Y,
+        WallSide.Near => Vector3.UnitZ * -scene.Bounds.Z,
+        WallSide.Far => Vector3.UnitZ * scene.Bounds.Z,
+        WallSide.Left => Vector3.UnitX * -scene.Bounds.X,
+        WallSide.Right => Vector3.UnitX * scene.Bounds.X,
+        _ => throw new ArgumentOutOfRangeException("Unsupported side " + Enum.GetName(side))
+    };
+    private readonly Vector3 bounds = scene.Bounds.Data;
+    private readonly MaterialSpec material = scene.Walls[side];
+
+    /// <summary>
+    /// If the wall is suspended, objects cannot collide with it.
+    /// This is intended to allow entities to travel through a door on a specific wall.
+    /// Walls should only be suspended during active cutscenes, not during gameplay.
+    /// </summary>
+    public bool Suspended { get; set; } = false;
+    private Vector3 CurrBounds => Suspended ? Vector3.Zero : bounds;
+    public BoundingBox CollisionBox => new(origin, origin + CurrBounds);
+
+    public MaterialSpec Material => material;
+
+    public Vector3 Acceleration { get => Vector3.Zero; set { } }
+    public Vector3 Velocity { get => Vector3.Zero; set { } }
+    public Vector3 Position { get => origin + (bounds / 2); set { } }
+
+    public bool IsDead => false;
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        Suspended = false;
+    }
+
+    public void Glean(Scene scene, FrameTime time)
+    {
+        Suspended = true;
     }
 }

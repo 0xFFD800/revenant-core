@@ -264,13 +264,12 @@ public class Scene_Test
     [TestCase(0.5F, 0.5F, 0, 0, 0, 0, TestName = "Friction (unmoving object)")]
     public void Tick_Floor_Friction(float floorFriction, float collideableFriction, float currVel, float currAcc, float expPos, float expVel)
     {
-        FakeScene scene = new(new()
+        SceneSpec spec = new();
+        spec.Walls[WallSide.Floor] = new()
         {
-            Floor = new()
-            {
-                Friction = floorFriction
-            }
-        });
+            Friction = floorFriction
+        };
+        FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
     }
@@ -290,18 +289,20 @@ public class Scene_Test
         {
             Friction = 0.75F
         };
-        FakeScene scene = new(new()
+        SceneSpec spec = new()
         {
             Bounds = new()
             {
                 X = 10,
-                Y = 10, 
+                Y = 10,
                 Z = 10
-            },  
+            },
             Gravity = 0.1F,
-            LeftWall = material,
-            FarWall = material
-        });
+        };
+        spec.Walls[WallSide.Left] = material;
+        spec.Walls[WallSide.Far] = material;
+
+        FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
             // The object which is descending
@@ -323,19 +324,20 @@ public class Scene_Test
     [TestCase(2F, 2F, 5, 0, -1, 1, 1.25F, 10, 0.25F, 1, TestName = "Collide with Wall (indirect; some absorbed)", Description = "Collision should only absorb velocity parallel to the wall")]
     public void Tick_Collideable_Wall(float? wallAbsorption, float? collideableAbsorption, float currPosX, float currPosZ, float currVelX, float currVelZ, float expPosX, float expPosZ, float expVelX, float expVelZ)
     {
-        FakeScene scene = new(new()
+        SceneSpec spec = new()
         {
             Bounds = new()
             {
                 X = 10,
-                Y = 10, 
+                Y = 10,
                 Z = 10
-            },  
-            LeftWall = new()
-            {
-                MaterialAbsorption = wallAbsorption
             }
-        });
+        };
+        spec.Walls[WallSide.Left] = new()
+        {
+            MaterialAbsorption = wallAbsorption
+        };
+        FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [new(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
     }
