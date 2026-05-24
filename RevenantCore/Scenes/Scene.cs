@@ -52,7 +52,14 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static double FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
     {
-        throw new NotImplementedException();
+        Vector3 c = intersection.Center;
+        Ray rc1f = new(c1.Position, c - c1.Position);
+        Ray rc2f = new(c2.Position, c - c2.Position);
+        Ray rc1b = new(c, c - c1.Position);
+        Ray rc2b = new(c, c - c2.Position);
+        float m1 = (intersection.Intersects(rc1f) - intersection.Intersects(rc1b)) ?? 0;
+        float m2 = (intersection.Intersects(rc2f) - intersection.Intersects(rc2b)) ?? 0;
+        return m1 + ((m2 - m1) / 2);
     }
 
     private static void UpdateFriction(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
@@ -72,6 +79,21 @@ public class Scene(SceneSpec spec) : Scythe
         if (np1.FindIntersection(np2, out BoundingBox? intersection))
         {
             Trace.Assert(intersection.HasValue);
+            UpdateFriction(first, second, ref curr1, ref curr2);
+            if (first.Velocity.Length() < second.Material.StaticFriction)
+            {
+                first.Velocity = Vector3.Zero;                
+                first.Acceleration = Vector3.Zero;                
+                return;
+            }
+            if (second.Velocity.Length() < second.Material.StaticFriction)
+            {
+                second.Velocity = Vector3.Zero;                
+                second.Acceleration = Vector3.Zero;                
+                return;
+            }
+            if (intersection.Value.IsEmpty)
+                return;
             double midpoint = FindMidpoint(first, second, intersection.Value);
 
             first.Position = GetNextPos(first, midpoint);
@@ -91,7 +113,6 @@ public class Scene(SceneSpec spec) : Scythe
                 first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
                 second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
             }
-            UpdateFriction(first, second, ref curr1, ref curr2);
             curr1.RemMillis -= midpoint;
             curr2.RemMillis -= midpoint;
         }
@@ -147,10 +168,10 @@ public class Scene(SceneSpec spec) : Scythe
 
     public override void Tick(Scene scene, FrameTime time)
     {
+        base.Tick(scene, time);
         Trace.Assert(scene == this);
         visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
         DoPhysics(time.MillisElapsed);
-        base.Tick(scene, time);
     }
 
     public override void Add(IMortal mortal, Scene scene, FrameTime time)

@@ -242,10 +242,10 @@ public class Scene_Test
         ]);
     }
 
-    [TestCase(0.2F, 0, 20, 0, 0, 0, 0, 0, 18, 0, -2, TestName = "Gravity (current velocity at 0)")]
-    [TestCase(0.1F, 0, 1, 5, 10, 0, 0, 50, 100.5F, 5, 9, TestName = "Gravity (current velocity at 1)")]
-    [TestCase(0.1F, 0, 10, 0, 0, 1, 1, 50, 50.5F, 10, 9, TestName = "Gravity (nonzero acceleration)")]
-    [TestCase(0.0F, 0, 1, 1, 0, 0, 0, 10, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
+    [TestCase(0.2F, 10, 20, 0, 0, 0, 0, 10, 18, 0, -2, TestName = "Gravity (current velocity at 0)")]
+    [TestCase(0.1F, 10, 1, 5, 10, 0, 0, 60, 100.5F, 5, 9, TestName = "Gravity (current velocity at 1)")]
+    [TestCase(0.1F, 10, 10, 0, 0, 1, 1, 60, 50.5F, 10, 9, TestName = "Gravity (nonzero acceleration)")]
+    [TestCase(0.0F, 10, 1, 1, 0, 0, 0, 20, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
     public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float currAccX, float currAccY, float expPosX, float expPosY, float expVelX, float expVelY)
     {
         FakeScene scene = new(new()
@@ -253,7 +253,7 @@ public class Scene_Test
             Gravity = gravity
         });
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 0), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 0), new(expVelX, expVelY, 0))]);
+        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
     }
 
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
