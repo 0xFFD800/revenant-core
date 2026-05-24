@@ -100,7 +100,7 @@ public class Scene_Test
         /// <summary>
         /// Constructor overload for tests which don't care about position and velocity information.
         /// </summary>
-        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, new(), isDead, expGlean, Vector3.Zero, Vector3.Zero)
+        internal MockCollideable(bool isDead, bool expGlean) : this(Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, new() { Mass = 1 }, isDead, expGlean, Vector3.Zero, Vector3.Zero)
         {
 
         }
@@ -237,8 +237,8 @@ public class Scene_Test
         FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(Vector3.Zero,        Vector3.UnitX, Vector3.Zero, Vector3.One, new(), false, false, Vector3.UnitX *  10, Vector3.UnitX),
-            new(Vector3.UnitZ * 100, Vector3.UnitZ, Vector3.Zero, Vector3.One, new(), false, false, Vector3.UnitZ * 110, Vector3.UnitZ)
+            new(Vector3.Zero,        Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, Vector3.UnitX *  10, Vector3.UnitX),
+            new(Vector3.UnitZ * 100, Vector3.UnitZ, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, Vector3.UnitZ * 110, Vector3.UnitZ)
         ]);
     }
 
@@ -253,7 +253,7 @@ public class Scene_Test
             Gravity = gravity
         });
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new(), false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
+        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new() { Mass = 1 }, false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
     }
 
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
@@ -271,7 +271,7 @@ public class Scene_Test
         };
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction, Mass = 1 }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
     }
 
     [Test(Description = "An object should not move if its velocity does not exceed its static friction")]
@@ -279,7 +279,7 @@ public class Scene_Test
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F }, false, false, Vector3.Zero, Vector3.Zero)]);
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, Vector3.Zero, Vector3.Zero)]);
     }
 
     [Test(Description = "An object falling with walls on two sides and other collideables on two sides should input friction from all of them.")]
@@ -287,7 +287,8 @@ public class Scene_Test
     {
         MaterialSpec material = new()
         {
-            Friction = 0.75F
+            Friction = 0.75F,
+            Mass = 1
         };
         SceneSpec spec = new()
         {
@@ -377,7 +378,7 @@ public class Scene_Test
     {
         FakeScene scene = new();
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new(), true, true, Vector3.Zero, Vector3.UnitX)]);
+        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, true, true, Vector3.Zero, Vector3.UnitX)]);
     }
 }
 

@@ -74,24 +74,27 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
-        BoundingBox np1 = first.CollisionBox  + GetNextPos(first, curr1.RemMillis)  - first.Position;
-        BoundingBox np2 = second.CollisionBox + GetNextPos(second, curr2.RemMillis) - second.Position;
-        if (np1.FindIntersection(np2, out BoundingBox? intersection))
+        Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
+        Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
+        if ((first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2, out BoundingBox? intersection))
         {
             Trace.Assert(intersection.HasValue);
+            bool handled = false;
+            if (np1.Length() < second.Material.StaticFriction)
+            {
+                first.Velocity = Vector3.Zero;
+                first.Acceleration = Vector3.Zero;
+                handled = true;
+            }
+            if (np2.Length() < first.Material.StaticFriction)
+            {
+                second.Velocity = Vector3.Zero;
+                second.Acceleration = Vector3.Zero;
+                handled = true;
+            }
+            if (handled)
+                return;
             UpdateFriction(first, second, ref curr1, ref curr2);
-            if (first.Velocity.Length() < second.Material.StaticFriction)
-            {
-                first.Velocity = Vector3.Zero;                
-                first.Acceleration = Vector3.Zero;                
-                return;
-            }
-            if (second.Velocity.Length() < second.Material.StaticFriction)
-            {
-                second.Velocity = Vector3.Zero;                
-                second.Acceleration = Vector3.Zero;                
-                return;
-            }
             if (intersection.Value.IsEmpty)
                 return;
             double midpoint = FindMidpoint(first, second, intersection.Value);
@@ -134,10 +137,14 @@ public class Scene(SceneSpec spec) : Scythe
     private void DoPhysics(double millis)
     {
         Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.One))];
+        // Only collideables with a defined mass should be affected by gravity.
+        foreach (ICollideable c in collideables)
+            if (c.Material.Mass.HasValue)
+                ApplyGravity(c);
+
         for (int i = 0; i < collideables.Count; i++)
         {
             ICollideable ci = collideables[i];
-            ApplyGravity(ci);
             for (int j = i + 1; j < collideables.Count; j++)
                 ApplyCollisions(ci, collideables[j], ref collisions[i], ref collisions[j]);
         }
