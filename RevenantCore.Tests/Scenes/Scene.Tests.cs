@@ -237,8 +237,8 @@ public class Scene_Test
         FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(Vector3.Zero,        Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, Vector3.UnitX *  10, Vector3.UnitX),
-            new(Vector3.UnitZ * 100, Vector3.UnitZ, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, Vector3.UnitZ * 110, Vector3.UnitZ)
+            new(new(1, 0, 1),   Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(11, 0, 1),   Vector3.UnitX),
+            new(new(1, 0, 101), Vector3.UnitZ, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(1,  0, 111), Vector3.UnitZ)
         ]);
     }
 

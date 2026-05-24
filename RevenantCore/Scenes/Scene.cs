@@ -52,11 +52,13 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static double FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
     {
-        Vector3 c = intersection.Center;
-        Ray rc1f = new(c1.Position, c - c1.Position);
-        Ray rc2f = new(c2.Position, c - c2.Position);
-        Ray rc1b = new(c, c - c1.Position);
-        Ray rc2b = new(c, c - c2.Position);
+        Vector3 c1c = c1.CollisionBox.Center;
+        Vector3 c2c = c2.CollisionBox.Center;
+        Vector3 ic = intersection.Center;
+        Ray rc1f = new(c1c, ic - c1c);
+        Ray rc2f = new(c2c, ic - c2c);
+        Ray rc1b = new(ic, ic - c1c);
+        Ray rc2b = new(ic, ic - c2c);
         float m1 = (intersection.Intersects(rc1f) - intersection.Intersects(rc1b)) ?? 0;
         float m2 = (intersection.Intersects(rc2f) - intersection.Intersects(rc2b)) ?? 0;
         return m1 + ((m2 - m1) / 2);
@@ -72,6 +74,37 @@ public class Scene(SceneSpec spec) : Scythe
         curr2.Friction *= normal2 * (1 - first.Material.Friction);
     }
 
+    private static void HandleSlide(BoundingBox? intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    {
+        Trace.Assert(intersection.HasValue);
+        throw new NotImplementedException();
+    }
+
+    private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    {
+        double midpoint = FindMidpoint(first, second, intersection);
+
+        first.Position = GetNextPos(first, midpoint);
+        second.Position = GetNextPos(second, midpoint);
+
+        float? m1 = first.Material.Mass;
+        float? m2 = second.Material.Mass;
+        float massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : 0;
+        float massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : 0;
+        float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
+        if (!absorption.HasValue)
+            first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
+        else
+        {
+            first.Velocity = second.Velocity * massRatio1 / absorption.Value;
+            second.Velocity = first.Velocity * massRatio2 / absorption.Value;
+            first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
+            second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
+        }
+        curr1.RemMillis -= midpoint;
+        curr2.RemMillis -= midpoint;
+    }
+
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
         Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
@@ -79,45 +112,27 @@ public class Scene(SceneSpec spec) : Scythe
         if ((first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2, out BoundingBox? intersection))
         {
             Trace.Assert(intersection.HasValue);
-            bool handled = false;
-            if (np1.Length() < second.Material.StaticFriction)
+            bool sf1 = np1.Length() < second.Material.StaticFriction;
+            bool sf2 = np2.Length() < first.Material.StaticFriction;
+            if (sf1)
             {
                 first.Velocity = Vector3.Zero;
                 first.Acceleration = Vector3.Zero;
-                handled = true;
             }
-            if (np2.Length() < first.Material.StaticFriction)
+            if (sf2)
             {
                 second.Velocity = Vector3.Zero;
                 second.Acceleration = Vector3.Zero;
-                handled = true;
             }
-            if (handled)
+            if (sf1 && sf2)
                 return;
             UpdateFriction(first, second, ref curr1, ref curr2);
             if (intersection.Value.IsEmpty)
                 return;
-            double midpoint = FindMidpoint(first, second, intersection.Value);
-
-            first.Position = GetNextPos(first, midpoint);
-            second.Position = GetNextPos(second, midpoint);
-
-            float? m1 = first.Material.Mass;
-            float? m2 = second.Material.Mass;
-            float massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : 0;
-            float massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : 0;
-            float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
-            if (!absorption.HasValue)
-                first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
+            if (first.CollisionBox.FindIntersection(second.CollisionBox, out BoundingBox? currIntersection))
+                HandleSlide(currIntersection, first, second, ref curr1, ref curr2);
             else
-            {
-                first.Velocity = second.Velocity * massRatio1 / absorption.Value;
-                second.Velocity = first.Velocity * massRatio2 / absorption.Value;
-                first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
-                second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
-            }
-            curr1.RemMillis -= midpoint;
-            curr2.RemMillis -= midpoint;
+                HandleCollide(intersection.Value, first, second, ref curr1, ref curr2);
         }
     }
 
