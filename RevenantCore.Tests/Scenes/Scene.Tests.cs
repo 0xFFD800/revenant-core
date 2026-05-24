@@ -279,7 +279,7 @@ public class Scene_Test
         };
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction, Mass = 1 }, false, false, Vector3.UnitX * expPos, Vector3.UnitX * expVel)]);
+        RunCollisionsLoop(scene, [new(new(1, 0, 1), Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction, Mass = 1 }, false, false, new Vector3(expPos + 1, 0, 1), Vector3.UnitX * expVel)]);
     }
 
     [Test(Description = "An object should not move if its velocity does not exceed its static friction")]

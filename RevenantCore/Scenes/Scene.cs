@@ -64,14 +64,14 @@ public class Scene(SceneSpec spec) : Scythe
         return m1 + ((m2 - m1) / 2);
     }
 
-    private static void UpdateFriction(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    private static void UpdateFriction(ICollideable c, float friction, ref Collision cl)
     {
-        Vector3 normal1 = first.Velocity;
-        Vector3 normal2 = second.Velocity;
-        normal1.Normalize();
-        normal2.Normalize();
-        curr1.Friction *= normal1 * (1 - second.Material.Friction);
-        curr2.Friction *= normal2 * (1 - first.Material.Friction);
+        Vector3 normal = c.Velocity;
+        if (normal != Vector3.Zero)
+        {
+            normal.Normalize();
+            cl.Friction *= normal * (1 - friction);
+        }
     }
 
     private static void HandleSlide(BoundingBox? intersection, ICollideable first, ICollideable second)
@@ -154,7 +154,8 @@ public class Scene(SceneSpec spec) : Scythe
         if ((first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2, out BoundingBox? intersection))
         {
             Trace.Assert(intersection.HasValue);
-            UpdateFriction(first, second, ref curr1, ref curr2);
+            UpdateFriction(first, second.Material.Friction, ref curr1);
+            UpdateFriction(second, first.Material.Friction, ref curr2);
             if (intersection.Value.IsEmpty)
                 return;
             if (first.CollisionBox.FindIntersection(second.CollisionBox, out BoundingBox? currIntersection))
