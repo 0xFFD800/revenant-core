@@ -234,7 +234,15 @@ public class Scene_Test
     [Test(Description = "If there are no collisions or friction and the objects are at floor level, objects should just be moved")]
     public void Tick_NoCollisions_Move()
     {
-        FakeScene scene = new();
+        FakeScene scene = new(new()
+        {
+            Bounds =
+            {
+                X = 1000,
+                Y = 1000,
+                Z = 1000
+            }
+        });
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
             new(new(1, 0, 1),   Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(11, 0, 1),   Vector3.UnitX),
@@ -279,7 +287,7 @@ public class Scene_Test
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, Vector3.Zero, Vector3.Zero)]);
+        RunCollisionsLoop(scene, [new(new(1, 0, 1), Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, new(1, 0, 1), Vector3.Zero)]);
     }
 
     [Test(Description = "An object falling with walls on two sides and other collideables on two sides should input friction from all of them.")]

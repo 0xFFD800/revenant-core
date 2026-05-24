@@ -74,10 +74,52 @@ public class Scene(SceneSpec spec) : Scythe
         curr2.Friction *= normal2 * (1 - first.Material.Friction);
     }
 
-    private static void HandleSlide(BoundingBox? intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    private static void HandleSlide(BoundingBox? intersection, ICollideable first, ICollideable second)
     {
         Trace.Assert(intersection.HasValue);
-        throw new NotImplementedException();
+
+        // Determine the direction of the occlusion
+        Vector3 b = intersection.Value.Max - intersection.Value.Min;
+        float shift;
+        Vector3 dir;
+        if (b.X <= b.Y && b.X <= b.Z)
+        {
+            shift = b.X;
+            dir = Vector3.UnitX;
+        }
+        else if (b.Y <= b.X && b.Y <= b.Z)
+        {
+            shift = b.Y;
+            dir = Vector3.UnitY;
+        }
+        else
+        {
+            shift = b.Z;
+            dir = Vector3.UnitZ;
+        }
+
+        // Eliminate occlusion by shifting according to mass ratio
+        float? m1 = first.Material.Mass;
+        float? m2 = second.Material.Mass;
+        Vector3 sign = -(dir * (second.Position - first.Position)).Sign();
+        if (sign == Vector3.Zero)
+            sign = Vector3.One * dir;
+        if (m1.HasValue && !m2.HasValue)
+            first.Position += shift * dir * -sign;
+        else if (m2.HasValue && !m1.HasValue)
+            second.Position += shift * dir * sign;
+        else if (m1.HasValue && m2.HasValue)
+        {
+            first.Position += shift * dir * (m1.Value / (m1.Value + m2.Value)) * -sign;
+            second.Position += shift * dir * (m2.Value / (m1.Value + m2.Value)) * sign;
+        }
+
+        // Eliminate velocity and acceleration in the direction in which the occlusion had been
+        dir = Vector3.One - dir;
+        first.Velocity *= dir;
+        first.Acceleration *= dir;
+        second.Velocity *= dir;
+        second.Acceleration *= dir;
     }
 
     private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
@@ -112,25 +154,11 @@ public class Scene(SceneSpec spec) : Scythe
         if ((first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2, out BoundingBox? intersection))
         {
             Trace.Assert(intersection.HasValue);
-            bool sf1 = np1.Length() < second.Material.StaticFriction;
-            bool sf2 = np2.Length() < first.Material.StaticFriction;
-            if (sf1)
-            {
-                first.Velocity = Vector3.Zero;
-                first.Acceleration = Vector3.Zero;
-            }
-            if (sf2)
-            {
-                second.Velocity = Vector3.Zero;
-                second.Acceleration = Vector3.Zero;
-            }
-            if (sf1 && sf2)
-                return;
             UpdateFriction(first, second, ref curr1, ref curr2);
             if (intersection.Value.IsEmpty)
                 return;
             if (first.CollisionBox.FindIntersection(second.CollisionBox, out BoundingBox? currIntersection))
-                HandleSlide(currIntersection, first, second, ref curr1, ref curr2);
+                HandleSlide(currIntersection, first, second);
             else
                 HandleCollide(intersection.Value, first, second, ref curr1, ref curr2);
         }
@@ -140,6 +168,13 @@ public class Scene(SceneSpec spec) : Scythe
     {
         Vector3 a = c.Acceleration.Abs();
         c.Acceleration = c.Acceleration.Sign() * (a - (c.Velocity * (Vector3.One - cl.Friction) / (float)cl.RemMillis).Abs().Clamp(Vector3.Zero, a));
+
+        // If this object's velocity after this tick will be less than its static friction, set its velocity and acceleration to zero now as it should not be moved
+        if ((c.Velocity + c.Acceleration * (float)cl.RemMillis).Length() <= c.Material.StaticFriction)
+        {
+            c.Velocity = Vector3.Zero;
+            c.Acceleration = Vector3.Zero;
+        }
     }
 
     private static void MoveObject(ICollideable c, double millis)
