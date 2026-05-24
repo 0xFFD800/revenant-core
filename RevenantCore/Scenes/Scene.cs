@@ -50,7 +50,7 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static double FindMidpoint(ICollideable first, ICollideable second, float ratio) 
+    private static double FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
     {
         throw new NotImplementedException();
     }
@@ -67,19 +67,12 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
-        Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
-        Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
-        if ((first.CollisionBox + np1).Intersects(second.CollisionBox + np2))
+        BoundingBox np1 = first.CollisionBox  + GetNextPos(first, curr1.RemMillis)  - first.Position;
+        BoundingBox np2 = second.CollisionBox + GetNextPos(second, curr2.RemMillis) - second.Position;
+        if (np1.FindIntersection(np2, out BoundingBox? intersection))
         {
-            double midpoint;
-            if (np1.Length() == 0)
-            {
-                if (np2.Length() == 0)
-                    return;
-                midpoint = FindMidpoint(second, first, np1.Length() / np2.Length());
-            }
-            else
-                midpoint = FindMidpoint(first, second, np2.Length() / np1.Length());
+            Trace.Assert(intersection.HasValue);
+            double midpoint = FindMidpoint(first, second, intersection.Value);
 
             first.Position = GetNextPos(first, midpoint);
             second.Position = GetNextPos(second, midpoint);

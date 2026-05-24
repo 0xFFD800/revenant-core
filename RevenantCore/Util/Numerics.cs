@@ -17,7 +17,21 @@ public static class NumericsExtension
     extension(BoundingBox box)
     {
         public BoundingBox Add(Vector3 vec) => new(box.Min + vec, box.Max + vec);
+
+        public bool FindIntersection(BoundingBox b2, out BoundingBox? intersection)
+        {
+            intersection = !box.Intersects(b2) ? null : new(VectorMath.Max(box.Min, b2.Min), VectorMath.Min(box.Max, b2.Max));
+            return intersection.HasValue;
+        }
         
         public static BoundingBox operator +(BoundingBox b, Vector3 vec) => Add(b, vec);
+
+        public static BoundingBox operator -(BoundingBox b, Vector3 vec) => Add(b, -vec);
     }
+}
+
+public static class VectorMath
+{
+    public static Vector3 Max(Vector3 v1, Vector3 v2) => new(Math.Max(v1.X, v2.X), Math.Max(v1.Y, v2.Y), Math.Max(v1.Z, v2.Z));
+    public static Vector3 Min(Vector3 v1, Vector3 v2) => new(Math.Min(v1.X, v2.X), Math.Min(v1.Y, v2.Y), Math.Min(v1.Z, v2.Z));
 }
