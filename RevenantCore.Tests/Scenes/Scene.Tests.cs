@@ -397,3 +397,5 @@ public class Vector3Spec_Test
         Assert.AreEqual(new Vector3(x, y, z), spec.Data);
     }
 }
+
+// Need to test suspended wall collisions...

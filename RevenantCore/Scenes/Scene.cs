@@ -50,7 +50,10 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static double FindMidpoint(ICollideable first, ICollideable second, float ratio) => throw new NotImplementedException();
+    private static double FindMidpoint(ICollideable first, ICollideable second, float ratio) 
+    {
+        throw new NotImplementedException();
+    }
 
     private static void UpdateFriction(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
@@ -80,29 +83,25 @@ public class Scene(SceneSpec spec) : Scythe
 
             first.Position = GetNextPos(first, midpoint);
             second.Position = GetNextPos(second, midpoint);
-            if (!first.Material.Mass.HasValue)
-                throw new NotImplementedException();
-            else if (!second.Material.Mass.HasValue)
-                throw new NotImplementedException();
-            else 
+
+            float? m1 = first.Material.Mass;
+            float? m2 = second.Material.Mass;
+            float massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : 0;
+            float massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : 0;
+            float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
+            if (!absorption.HasValue)
+                first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
+            else
             {
-                float massRatio = first.Material.Mass.Value / second.Material.Mass.Value;
-                float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
-                if (!absorption.HasValue)
-                    first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
-                else
-                {
-                    first.Velocity = second.Velocity / massRatio / absorption.Value; 
-                    second.Velocity = first.Velocity * massRatio / absorption.Value;
-                    first.Acceleration = second.Acceleration / massRatio / absorption.Value; 
-                    second.Acceleration = first.Acceleration * massRatio / absorption.Value;
-                }
+                first.Velocity = second.Velocity * massRatio1 / absorption.Value;
+                second.Velocity = first.Velocity * massRatio2 / absorption.Value;
+                first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
+                second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
             }
             UpdateFriction(first, second, ref curr1, ref curr2);
             curr1.RemMillis -= midpoint;
             curr2.RemMillis -= midpoint;
-        } else if (first.CollisionBox.Expand(0.1F).Intersects(second.CollisionBox.Expand(0.1F)))
-            UpdateFriction(first, second, ref curr1, ref curr2);
+        }
     }
 
     private static void ApplyFriction(ICollideable c, Collision cl)

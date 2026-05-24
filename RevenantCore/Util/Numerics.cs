@@ -18,8 +18,6 @@ public static class NumericsExtension
     {
         public BoundingBox Add(Vector3 vec) => new(box.Min + vec, box.Max + vec);
         
-        public BoundingBox Expand(float size) => new(box.Min - new Vector3(size), box.Max + new Vector3(size));
-        
         public static BoundingBox operator +(BoundingBox b, Vector3 vec) => Add(b, vec);
     }
 }
