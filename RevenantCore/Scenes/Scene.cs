@@ -50,19 +50,65 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
+    private static double FindMidpoint(ICollideable first, ICollideable second, float ratio) => throw new NotImplementedException();
+
+    private static void UpdateFriction(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    {
+        Vector3 normal1 = first.Velocity;
+        Vector3 normal2 = second.Velocity;
+        normal1.Normalize();
+        normal2.Normalize();
+        curr1.Friction *= normal1 * (1 - second.Material.Friction);
+        curr2.Friction *= normal2 * (1 - first.Material.Friction);
+    }
+
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
         Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
         Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
         if ((first.CollisionBox + np1).Intersects(second.CollisionBox + np2))
-            throw new NotImplementedException();
-        // Otherwise do nothing...?
+        {
+            double midpoint;
+            if (np1.Length() == 0)
+            {
+                if (np2.Length() == 0)
+                    return;
+                midpoint = FindMidpoint(second, first, np1.Length() / np2.Length());
+            }
+            else
+                midpoint = FindMidpoint(first, second, np2.Length() / np1.Length());
+
+            first.Position = GetNextPos(first, midpoint);
+            second.Position = GetNextPos(second, midpoint);
+            if (!first.Material.Mass.HasValue)
+                throw new NotImplementedException();
+            else if (!second.Material.Mass.HasValue)
+                throw new NotImplementedException();
+            else 
+            {
+                float massRatio = first.Material.Mass.Value / second.Material.Mass.Value;
+                float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
+                if (!absorption.HasValue)
+                    first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
+                else
+                {
+                    first.Velocity = second.Velocity / massRatio / absorption.Value; 
+                    second.Velocity = first.Velocity * massRatio / absorption.Value;
+                    first.Acceleration = second.Acceleration / massRatio / absorption.Value; 
+                    second.Acceleration = first.Acceleration * massRatio / absorption.Value;
+                }
+            }
+            UpdateFriction(first, second, ref curr1, ref curr2);
+            curr1.RemMillis -= midpoint;
+            curr2.RemMillis -= midpoint;
+        } else if (first.CollisionBox.Expand(0.1F).Intersects(second.CollisionBox.Expand(0.1F)))
+            UpdateFriction(first, second, ref curr1, ref curr2);
     }
 
     private static void ApplyFriction(ICollideable c, Collision cl)
     {
         Vector3 a = c.Acceleration.Abs();
-        c.Acceleration = c.Acceleration.Sign() * (a - (c.Velocity * cl.Friction / (float)cl.RemMillis).Abs().Clamp(Vector3.Zero, a));
+        c.Acceleration = c.Acceleration.Sign() * (a - (c.Velocity * (Vector3.One - cl.Friction) / (float)cl.RemMillis).Abs().Clamp(Vector3.Zero, a));
     }
 
     private static void MoveObject(ICollideable c, double millis)
@@ -74,8 +120,7 @@ public class Scene(SceneSpec spec) : Scythe
 
     private void DoPhysics(double millis)
     {
-        Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.Zero))];
-        // Need to handle walls... add them as collideables?
+        Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.One))];
         for (int i = 0; i < collideables.Count; i++)
         {
             ICollideable ci = collideables[i];
