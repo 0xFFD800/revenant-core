@@ -266,9 +266,9 @@ public class Scene_Test
 
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
     [TestCase(1, 0, 1, 1, 0, 0, TestName = "Friction (full friction floor)")]
-    [TestCase(0, 1, 1, 1, 0, 0, TestName = "Friction (full friction collideable)")]
-    [TestCase(0.5F, 0.5F, 1, 0.075F, 10, 1, TestName = "Friction (friction erases acceleration)")]
-    [TestCase(0.5F, 0.5F, 1, 0, 6.25F, 0.25F, TestName = "Friction (friction decelerates)")]
+    [TestCase(0, 1, 1, 1, 60, 11, TestName = "Friction (full friction collideable)", Description = "A collideable's own friction should not impact its acceleration")]
+    [TestCase(0.5F, 0.5F, 1, 1, 17.5F, 5.5F, TestName = "Friction (friction affects acceleration)")]
+    [TestCase(0.5F, 0.5F, 1, 0, 5, 0.5F, TestName = "Friction (friction decelerates)")]
     [TestCase(0.5F, 0.5F, 0, 0, 0, 0, TestName = "Friction (unmoving object)")]
     public void Tick_Floor_Friction(float floorFriction, float collideableFriction, float currVel, float currAcc, float expPos, float expVel)
     {
@@ -295,7 +295,7 @@ public class Scene_Test
     {
         MaterialSpec material = new()
         {
-            Friction = 0.75F,
+            Friction = 0.1F,
             Mass = 1
         };
         SceneSpec spec = new()
@@ -303,7 +303,7 @@ public class Scene_Test
             Bounds = new()
             {
                 X = 10,
-                Y = 10,
+                Y = 100,
                 Z = 10
             },
             Gravity = 0.1F,
@@ -315,11 +315,11 @@ public class Scene_Test
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
             // The object which is descending
-            new(new(0, 5, 9), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0, -11.1875234375F, 9), new(0, -1.2373046875F, 0)),
+            new(new(0.5F, 15, 9.5F), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0.5F, 8.223767F, 9.5F), new(0, -1.3121998F, 0)),
             // The object on the near side of the descending object
-            new(new(0, 0, 8), Vector3.Zero,  Vector3.Zero, new(1, 10, 1), material, false, false, new(0, 0, 8), Vector3.Zero),
+            new(new(0.5F, 0, 8.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(0.5F, 0, 8.5F), Vector3.Zero),
             // The object to the right of the descending object
-            new(new(1, 0, 9), Vector3.Zero,  Vector3.Zero, new(1, 10, 1), material, false, false, new(1, 0, 9), Vector3.Zero)
+            new(new(1.5F, 0, 9.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(1.5F, 0, 9.5F), Vector3.Zero)
         ]);
     }
 

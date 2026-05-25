@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
@@ -50,7 +51,7 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static double FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
+    private static float FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
     {
         Vector3 c1c = c1.CollisionBox.Center;
         Vector3 c2c = c2.CollisionBox.Center;
@@ -124,10 +125,12 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
-        double midpoint = FindMidpoint(first, second, intersection);
+        float midpoint = FindMidpoint(first, second, intersection);
+        double p1 = midpoint * curr1.RemMillis;
+        double p2 = midpoint * curr2.RemMillis;
 
-        first.Position = GetNextPos(first, midpoint);
-        second.Position = GetNextPos(second, midpoint);
+        first.Position = GetNextPos(first, p1);
+        second.Position = GetNextPos(second, p2);
 
         float? m1 = first.Material.Mass;
         float? m2 = second.Material.Mass;
@@ -143,8 +146,8 @@ public class Scene(SceneSpec spec) : Scythe
             first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
             second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
         }
-        curr1.RemMillis -= midpoint;
-        curr2.RemMillis -= midpoint;
+        curr1.RemMillis -= p1;
+        curr2.RemMillis -= p2;
     }
 
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
@@ -165,10 +168,13 @@ public class Scene(SceneSpec spec) : Scythe
         }
     }
 
+    private static Vector3 ApplyFrictionTo(Vector3 v, Collision cl) =>
+        v.Sign() * (v.Abs() - (v.Abs() * (Vector3.One - cl.Friction)).Abs().Clamp(Vector3.Zero, v.Abs()));
+
     private static void ApplyFriction(ICollideable c, Collision cl)
     {
-        Vector3 a = c.Acceleration.Abs();
-        c.Acceleration = c.Acceleration.Sign() * (a - (c.Velocity * (Vector3.One - cl.Friction) / (float)cl.RemMillis).Abs().Clamp(Vector3.Zero, a));
+        c.Velocity = ApplyFrictionTo(c.Velocity, cl);
+        c.Acceleration = ApplyFrictionTo(c.Acceleration, cl);
 
         // If this object's velocity after this tick will be less than its static friction, set its velocity and acceleration to zero now as it should not be moved
         if ((c.Velocity + c.Acceleration * (float)cl.RemMillis).Length() <= c.Material.StaticFriction)
