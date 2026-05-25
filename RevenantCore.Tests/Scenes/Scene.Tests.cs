@@ -351,17 +351,17 @@ public class Scene_Test
         RunCollisionsLoop(scene, [new(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
     }
 
-    [TestCase(1F, 1F, 4, 17, 1, -1, 6, 15, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
-    [TestCase(1F, 0.5F, 4, 17, 1, -1, 8, 13, -0.5F, 0.5F, TestName = "Collide Straight (Absorption)")]
-    [TestCase(0.5F, 1F, 0, 31, 3, -3, 5, 36, -2, 4, TestName = "Collide Straight (Different Masses)")]
-    [TestCase(1F, 1F, 0, 31, 4, -2, 10, 41, -2, 4, TestName = "Collide Straight (Different Speeds)")]
+    [TestCase(1F, 1F, 14, 36, 1, -1, 16, 34, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
+    [TestCase(1F, 0.5F, 9, 22, 1, -1, 13, 18, -0.5F, 0.5F, TestName = "Collide Straight (Absorption)")]
+    [TestCase(0.5F, 1F, 5, 36, 3, -3, 10, 41, -2, 4, TestName = "Collide Straight (Different Masses)")]
+    [TestCase(1F, 1F, 5, 36, 4, -2, 15, 46, -2, 4, TestName = "Collide Straight (Different Speeds)")]
     public void Tick_Collideable_CollideStraight(float? mass2, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(new(pos1, 0, 0), new(vel1, 0, 0), Vector3.Zero, Vector3.One, new(), false, false, new(expPos1, 0, 0), new(expVel1, 0, 0)),
-            new(new(pos2, 0, 0), new(vel2, 0, 0), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, 0), new(expVel2, 0, 0))
+            new(new(pos1, 0, 40), new(vel1, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel1), new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPos1, 0, 40), new(expVel1, 0, 0)),
+            new(new(pos2, 0, 40), new(vel2, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel2), new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, 40), new(expVel2, 0, 0))
         ]);
     }
 

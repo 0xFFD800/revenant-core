@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Cryptography;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
@@ -51,18 +50,12 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static float FindMidpoint(ICollideable c1, ICollideable c2, BoundingBox intersection)
+    private static float FindMidpoint(Vector3 trip, BoundingBox intersection)
     {
-        Vector3 c1c = c1.CollisionBox.Center;
-        Vector3 c2c = c2.CollisionBox.Center;
         Vector3 ic = intersection.Center;
-        Ray rc1f = new(c1c, ic - c1c);
-        Ray rc2f = new(c2c, ic - c2c);
-        Ray rc1b = new(ic, ic - c1c);
-        Ray rc2b = new(ic, ic - c2c);
-        float m1 = (intersection.Intersects(rc1f) - intersection.Intersects(rc1b)) ?? 0;
-        float m2 = (intersection.Intersects(rc2f) - intersection.Intersects(rc2b)) ?? 0;
-        return m1 + ((m2 - m1) / 2);
+        Ray rc = new(ic - trip, trip);
+        float m = intersection.Intersects(rc) ?? 0;
+        return m;
     }
 
     private static void UpdateFriction(ICollideable c, float friction, ref Collision cl)
@@ -123,11 +116,10 @@ public class Scene(SceneSpec spec) : Scythe
         second.Acceleration *= dir;
     }
 
-    private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
+    private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, Vector3 trip1, Vector3 trip2, ref Collision curr1, ref Collision curr2)
     {
-        float midpoint = FindMidpoint(first, second, intersection);
-        double p1 = midpoint * curr1.RemMillis;
-        double p2 = midpoint * curr2.RemMillis;
+        double p1 = FindMidpoint(trip1, intersection) * curr1.RemMillis;
+        double p2 = FindMidpoint(trip2, intersection) * curr2.RemMillis;
 
         first.Position = GetNextPos(first, p1);
         second.Position = GetNextPos(second, p2);
@@ -141,10 +133,12 @@ public class Scene(SceneSpec spec) : Scythe
             first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
         else
         {
+            Vector3 v1 = first.Velocity;
             first.Velocity = second.Velocity * massRatio1 / absorption.Value;
-            second.Velocity = first.Velocity * massRatio2 / absorption.Value;
+            second.Velocity = v1 * massRatio2 / absorption.Value;
+            Vector3 a1 = first.Acceleration;
             first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
-            second.Acceleration = first.Acceleration * massRatio2 / absorption.Value;
+            second.Acceleration = a1 * massRatio2 / absorption.Value;
         }
         curr1.RemMillis -= p1;
         curr2.RemMillis -= p2;
@@ -164,7 +158,7 @@ public class Scene(SceneSpec spec) : Scythe
             if (first.CollisionBox.FindIntersection(second.CollisionBox, out BoundingBox? currIntersection))
                 HandleSlide(currIntersection, first, second);
             else
-                HandleCollide(intersection.Value, first, second, ref curr1, ref curr2);
+                HandleCollide(intersection.Value, first, second, np1, np2, ref curr1, ref curr2);
         }
     }
 
