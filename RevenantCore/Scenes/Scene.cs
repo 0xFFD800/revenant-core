@@ -50,12 +50,14 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static float FindMidpoint(Vector3 trip, BoundingBox intersection)
+    private static float FindMidpoint(Vector3 trip, BoundingBox box, BoundingBox intersection)
     {
         Vector3 ic = intersection.Center;
         Ray rc = new(ic - trip, trip);
-        float m = intersection.Intersects(rc) ?? 0;
-        return m;
+        Ray rb = new(ic, -trip);
+        float mc = intersection.Intersects(rc) ?? 0;
+        float mb = box.Intersects(rb) ?? 0;
+        return Math.Min(mc, mb);
     }
 
     private static void UpdateFriction(ICollideable c, float friction, ref Collision cl)
@@ -118,8 +120,8 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, Vector3 trip1, Vector3 trip2, ref Collision curr1, ref Collision curr2)
     {
-        double p1 = FindMidpoint(trip1, intersection) * curr1.RemMillis;
-        double p2 = FindMidpoint(trip2, intersection) * curr2.RemMillis;
+        double p1 = FindMidpoint(trip1, first.CollisionBox,  intersection) * curr1.RemMillis;
+        double p2 = FindMidpoint(trip2, second.CollisionBox, intersection) * curr2.RemMillis;
 
         first.Position = GetNextPos(first, p1);
         second.Position = GetNextPos(second, p2);
