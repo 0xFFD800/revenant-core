@@ -250,9 +250,9 @@ public class Scene_Test
         ]);
     }
 
-    [TestCase(0.2F, 10, 20, 0, 0, 0, 0, 10, 18, 0, -2, TestName = "Gravity (current velocity at 0)")]
-    [TestCase(0.1F, 10, 1, 5, 10, 0, 0, 60, 100.5F, 5, 9, TestName = "Gravity (current velocity at 1)")]
-    [TestCase(0.1F, 10, 10, 0, 0, 1, 1, 60, 50.5F, 10, 9, TestName = "Gravity (nonzero acceleration)")]
+    [TestCase(0.2F, 10, 20, 0, 0, 0, 0, 10, 10, 0, -2, TestName = "Gravity (current velocity at 0)")]
+    [TestCase(0.1F, 10, 1, 5, 10, 0, 0, 60, 96, 5, 9, TestName = "Gravity (current velocity at 1)")]
+    [TestCase(0.1F, 10, 10, 0, 0, 1, 1, 60, 55, 10, 9, TestName = "Gravity (nonzero acceleration)")]
     [TestCase(0.0F, 10, 1, 1, 0, 0, 0, 20, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
     public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float currAccX, float currAccY, float expPosX, float expPosY, float expVelX, float expVelY)
     {
@@ -267,7 +267,7 @@ public class Scene_Test
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
     [TestCase(1, 0, 1, 1, 0, 0, TestName = "Friction (full friction floor)")]
     [TestCase(0, 1, 1, 1, 60, 11, TestName = "Friction (full friction collideable)", Description = "A collideable's own friction should not impact its acceleration")]
-    [TestCase(0.5F, 0.5F, 1, 1, 17.5F, 5.5F, TestName = "Friction (friction affects acceleration)")]
+    [TestCase(0.5F, 0.5F, 1, 1, 30, 5.5F, TestName = "Friction (friction affects acceleration)")]
     [TestCase(0.5F, 0.5F, 1, 0, 5, 0.5F, TestName = "Friction (friction decelerates)")]
     [TestCase(0.5F, 0.5F, 0, 0, 0, 0, TestName = "Friction (unmoving object)")]
     public void Tick_Floor_Friction(float floorFriction, float collideableFriction, float currVel, float currAcc, float expPos, float expVel)
@@ -315,7 +315,7 @@ public class Scene_Test
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
             // The object which is descending
-            new(new(0.5F, 15, 9.5F), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0.5F, 8.223767F, 9.5F), new(0, -1.3121998F, 0)),
+            new(new(0.5F, 15, 9.5F), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0.5F, 5.1585016F, 9.5F), new(0, -1.3121998F, 0)),
             // The object on the near side of the descending object
             new(new(0.5F, 0, 8.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(0.5F, 0, 8.5F), Vector3.Zero),
             // The object to the right of the descending object
@@ -325,7 +325,7 @@ public class Scene_Test
 
     [TestCase(null, 1F, 5, 5, -1, 0, 0, 5, 0, 0, TestName = "Collide with Wall (direct; all absorbed by wall)")]
     [TestCase(1F, null, 5, 5, -1, 0, 0, 5, 0, 0, TestName = "Collide with Wall (direct; all absorbed by collideable)")]
-    [TestCase(1F, 1F, 5, 5, -1, 0, 5, 5, 1, 0, TestName = "Collide with Wall (direct; all reflected)")]
+    [TestCase(1F, 1F, 5.5F, 5, -1, 0, 5.5F, 5, 1, 0, TestName = "Collide with Wall (direct; all reflected)")]
     [TestCase(null, 1F, 5, 0, -1, 1, 0, 10, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by wall)", Description = "Collision should only absorb velocity parallel to the wall")]
     [TestCase(1F, null, 5, 0, -1, 1, 0, 10, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by collideable)", Description = "Collision should only absorb velocity parallel to the wall")]
     [TestCase(1F, 1F, 5, 0, -1, 1, 5, 10, 1, 1, TestName = "Collide with Wall (indirect; all reflected)")]

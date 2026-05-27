@@ -98,7 +98,7 @@ public class SceneSpec
     /// The gravitational acceleration in this scene, in px/ms^2.
     /// Since there are 32 pixels per meter, the default value is equal to 9.8 m/s^2 (gravitational acceleration on Earth).
     /// </summary>
-    public float Gravity { get; set; } = 0.3136F;
+    public float Gravity { get; set; } = 0.0003136F;
 
     /// <summary>
     /// The options with which this spec should be serialized and deserialized.

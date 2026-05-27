@@ -22,11 +22,8 @@ public static class NumericsExtension
 
         public BoundingBox Add(Vector3 vec) => new(box.Min + vec, box.Max + vec);
 
-        public bool FindIntersection(BoundingBox b2, out BoundingBox? intersection)
-        {
-            intersection = !box.Intersects(b2) ? null : new(VectorMath.Max(box.Min, b2.Min), VectorMath.Min(box.Max, b2.Max));
-            return intersection.HasValue;
-        }
+        public BoundingBox? FindIntersection(BoundingBox b2) =>
+            !box.Intersects(b2) ? null : new(VectorMath.Max(box.Min, b2.Min), VectorMath.Min(box.Max, b2.Max));
 
         public static BoundingBox operator +(BoundingBox b, Vector3 vec) => Add(b, vec);
 

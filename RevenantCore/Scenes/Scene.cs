@@ -44,8 +44,8 @@ public class Scene(SceneSpec spec) : Scythe
     private static Vector3 GetNextPos(ICollideable c, double millis)
     {
         Vector3 totalVel = c.Velocity * (float)millis;
-        Vector3 totalAcc = c.Acceleration * (float)millis;
-        return c.Position + totalVel + (0.5F * totalAcc * totalAcc.Abs());
+        Vector3 totalAcc = c.Acceleration * (float)(millis * millis);
+        return c.Position + totalVel + (0.5F * totalAcc);
     }
 
     private record struct Collision(double RemMillis, Vector3 Friction);
@@ -150,22 +150,21 @@ public class Scene(SceneSpec spec) : Scythe
     {
         Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
         Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
-        if ((first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2, out BoundingBox? intersection))
+        BoundingBox? futureInt = (first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2);
+        BoundingBox? currInt = first.CollisionBox.FindIntersection(second.CollisionBox);
+        if (futureInt.HasValue || currInt.HasValue)
         {
-            Trace.Assert(intersection.HasValue);
             UpdateFriction(first, second.Material.Friction, ref curr1);
             UpdateFriction(second, first.Material.Friction, ref curr2);
-            if (intersection.Value.IsEmpty)
-                return;
-            if (first.CollisionBox.FindIntersection(second.CollisionBox, out BoundingBox? currIntersection))
-                HandleSlide(currIntersection, first, second);
-            else
-                HandleCollide(intersection.Value, first, second, np1, np2, ref curr1, ref curr2);
+            if (currInt.HasValue)
+                HandleSlide(currInt.Value, first, second);
+            else if (futureInt.HasValue && !futureInt.Value.IsEmpty)
+                HandleCollide(futureInt.Value, first, second, np1, np2, ref curr1, ref curr2);
         }
     }
 
     private static Vector3 ApplyFrictionTo(Vector3 v, Collision cl) =>
-        v.Sign() * (v.Abs() - (v.Abs() * (Vector3.One - cl.Friction)).Abs().Clamp(Vector3.Zero, v.Abs()));
+        v.Sign() * (v.Abs() - (v.Abs() * (Vector3.One - cl.Friction.Abs())).Clamp(Vector3.Zero, v.Abs()));
 
     private static void ApplyFriction(ICollideable c, Collision cl)
     {
@@ -174,10 +173,7 @@ public class Scene(SceneSpec spec) : Scythe
 
         // If this object's velocity after this tick will be less than its static friction, set its velocity and acceleration to zero now as it should not be moved
         if ((c.Velocity + c.Acceleration * (float)cl.RemMillis).Length() <= c.Material.StaticFriction)
-        {
-            c.Velocity = Vector3.Zero;
-            c.Acceleration = Vector3.Zero;
-        }
+            c.Velocity = c.Acceleration = Vector3.Zero;
     }
 
     private static void MoveObject(ICollideable c, double millis)
