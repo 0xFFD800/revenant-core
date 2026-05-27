@@ -354,7 +354,7 @@ public class Scene_Test
     [TestCase(1F, 1F, 14, 36, 1, -1, 16, 34, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
     [TestCase(1F, 2F, 14, 36, 1, -1, 18, 32, -0.5F, 0.5F, TestName = "Collide Straight (Absorption)")]
     [TestCase(0.5F, 1F, 40, 76, 3, -3, 29.5F, 127, -1.5F, 6, TestName = "Collide Straight (Different Masses)")]
-    [TestCase(1F, 1F, 40, 76, 4, -2, 24.5F, 107, -2, 4, TestName = "Collide Straight (Different Speeds)")]
+    [TestCase(1F, 1F, 40, 76, 4, -2, 24.5F, 116, -2, 4, TestName = "Collide Straight (Different Speeds)")]
     public void Tick_Collideable_CollideStraight(float? mass2, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
     {
         FakeScene scene = new(new());

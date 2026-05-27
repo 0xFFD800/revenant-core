@@ -50,12 +50,12 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, Vector3 Friction);
 
-    private static float FindMidpoint(Vector3 trip, BoundingBox box, BoundingBox intersection)
+    private static float FindMidpoint(Vector3 trip, BoundingBox box, BoundingBox futureOther, BoundingBox intersection)
     {
         Vector3 ic = intersection.Center;
         Ray rc = new(ic - trip, trip);
         Ray rb = new(ic, -trip);
-        float mc = intersection.Intersects(rc) ?? 0;
+        float mc = futureOther.Intersects(rc) ?? 0;
         float mb = box.Intersects(rb) ?? 0;
         return Math.Min(mc, mb);
     }
@@ -69,13 +69,24 @@ public class Scene(SceneSpec spec) : Scythe
             cl.Friction *= normal * (1 - friction);
         }
     }
-
-    private static void HandleSlide(BoundingBox? intersection, ICollideable first, ICollideable second)
+    
+    private static void HandleReflection(ICollideable c, Vector3 v, Vector3 a, float? massRatio, float absorption)
     {
-        Trace.Assert(intersection.HasValue);
+        if (massRatio.HasValue)
+        {
+            c.Velocity = v * massRatio.Value / absorption;
+            c.Acceleration = a * massRatio.Value / absorption;
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+    }
 
+    private static void HandleSlide(BoundingBox intersection, ICollideable first, ICollideable second)
+    {
         // Determine the direction of the occlusion
-        Vector3 b = intersection.Value.Max - intersection.Value.Min;
+        Vector3 b = intersection.Max - intersection.Min;
         float shift;
         Vector3 dir;
         if (b.X <= b.Y && b.X <= b.Z)
@@ -120,27 +131,25 @@ public class Scene(SceneSpec spec) : Scythe
 
     private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, Vector3 trip1, Vector3 trip2, ref Collision curr1, ref Collision curr2)
     {
-        double p1 = FindMidpoint(trip1, first.CollisionBox,  intersection) * curr1.RemMillis;
-        double p2 = FindMidpoint(trip2, second.CollisionBox, intersection) * curr2.RemMillis;
+        double p1 = FindMidpoint(trip1, first.CollisionBox, second.CollisionBox + trip2, intersection) * curr1.RemMillis;
+        double p2 = FindMidpoint(trip2, second.CollisionBox, first.CollisionBox + trip1, intersection) * curr2.RemMillis;
 
         first.Position = GetNextPos(first, p1);
         second.Position = GetNextPos(second, p2);
 
         float? m1 = first.Material.Mass;
         float? m2 = second.Material.Mass;
-        float massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : 0;
-        float massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : 0;
+        float? massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : null;
+        float? massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : null;
         float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
         if (!absorption.HasValue)
             first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
         else
         {
             Vector3 v1 = first.Velocity;
-            first.Velocity = second.Velocity * massRatio1 / absorption.Value;
-            second.Velocity = v1 * massRatio2 / absorption.Value;
             Vector3 a1 = first.Acceleration;
-            first.Acceleration = second.Acceleration * massRatio1 / absorption.Value;
-            second.Acceleration = a1 * massRatio2 / absorption.Value;
+            HandleReflection(first, second.Velocity, second.Acceleration, massRatio1, absorption.Value);
+            HandleReflection(second, v1, a1, massRatio2, absorption.Value);
         }
         curr1.RemMillis -= p1;
         curr2.RemMillis -= p2;
