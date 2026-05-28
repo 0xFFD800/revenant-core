@@ -70,17 +70,28 @@ public class Scene(SceneSpec spec) : Scythe
         }
     }
     
-    private static void HandleReflection(ICollideable c, Vector3 v, Vector3 a, float? massRatio, float absorption)
+    private static void HandleReflection(ICollideable c, Vector3 v, Vector3 a, float? massRatio, float absorption, BoundingBox intersection)
     {
         if (massRatio.HasValue)
         {
-            c.Velocity = v * massRatio.Value / absorption;
-            c.Acceleration = a * massRatio.Value / absorption;
+            c.Velocity = v * massRatio.Value;
+            c.Acceleration = a * massRatio.Value;
         }
         else
         {
-            throw new NotImplementedException();
+            Vector3 b = intersection.Max - intersection.Min;
+            Vector3 normal;
+            if (b.X <= b.Y && b.X <= b.Z)
+                normal = new(-1, 1, 1);
+            else if (b.Y <= b.X && b.Y <= b.Z)
+                normal = new(1, -1, 1);
+            else
+                normal = new(1, 1, -1);
+            c.Velocity *= normal;
+            c.Acceleration *= normal;
         }
+        c.Velocity /= absorption;
+        c.Acceleration /= absorption;
     }
 
     private static void HandleSlide(BoundingBox intersection, ICollideable first, ICollideable second)
@@ -139,8 +150,8 @@ public class Scene(SceneSpec spec) : Scythe
 
         float? m1 = first.Material.Mass;
         float? m2 = second.Material.Mass;
-        float? massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? 1 : null;
-        float? massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? 1 : null;
+        float? massRatio1 = m1.HasValue && m2.HasValue ? m2.Value / m1.Value : m1.HasValue ? null : 0;
+        float? massRatio2 = m1.HasValue && m2.HasValue ? m1.Value / m2.Value : m2.HasValue ? null : 0;
         float? absorption = first.Material.MaterialAbsorption * second.Material.MaterialAbsorption;
         if (!absorption.HasValue)
             first.Velocity = second.Velocity = first.Acceleration = second.Acceleration = Vector3.Zero;
@@ -148,8 +159,8 @@ public class Scene(SceneSpec spec) : Scythe
         {
             Vector3 v1 = first.Velocity;
             Vector3 a1 = first.Acceleration;
-            HandleReflection(first, second.Velocity, second.Acceleration, massRatio1, absorption.Value);
-            HandleReflection(second, v1, a1, massRatio2, absorption.Value);
+            HandleReflection(first, second.Velocity, second.Acceleration, massRatio1, absorption.Value, intersection);
+            HandleReflection(second, v1, a1, massRatio2, absorption.Value, intersection);
         }
         curr1.RemMillis -= p1;
         curr2.RemMillis -= p2;
