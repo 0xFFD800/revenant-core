@@ -48,26 +48,18 @@ public class Scene(SceneSpec spec) : Scythe
         return c.Position + totalVel + (0.5F * totalAcc);
     }
 
-    private record struct Collision(double RemMillis, Vector3 Friction);
+    private record struct Collision(double RemMillis, float Friction);
 
     private static float FindMidpoint(Vector3 trip, BoundingBox box, BoundingBox futureOther, BoundingBox intersection)
     {
+        // This algorithm works in the case of a moving object colliding with an unmoving one, but that's it.
+        // It needs to account for moving objects having a separate midpoint... grrrrr...
         Vector3 ic = intersection.Center;
         Ray rc = new(ic - trip, trip);
         Ray rb = new(ic, -trip);
         float mc = futureOther.Intersects(rc) ?? 0;
         float mb = box.Intersects(rb) ?? 0;
-        return Math.Min(mc, mb);
-    }
-
-    private static void UpdateFriction(ICollideable c, float friction, ref Collision cl)
-    {
-        Vector3 normal = c.Velocity;
-        if (normal != Vector3.Zero)
-        {
-            normal.Normalize();
-            cl.Friction *= normal * (1 - friction);
-        }
+        return mc - (1 - mb);
     }
     
     private static void HandleReflection(ICollideable c, Vector3 v, Vector3 a, float? massRatio, float absorption, BoundingBox intersection)
@@ -174,8 +166,8 @@ public class Scene(SceneSpec spec) : Scythe
         BoundingBox? currInt = first.CollisionBox.FindIntersection(second.CollisionBox);
         if (futureInt.HasValue || currInt.HasValue)
         {
-            UpdateFriction(first, second.Material.Friction, ref curr1);
-            UpdateFriction(second, first.Material.Friction, ref curr2);
+            curr1.Friction *= 1 - second.Material.Friction;
+            curr2.Friction *= 1 - first.Material.Friction;
             if (currInt.HasValue)
                 HandleSlide(currInt.Value, first, second);
             else if (futureInt.HasValue && !futureInt.Value.IsEmpty)
@@ -184,7 +176,7 @@ public class Scene(SceneSpec spec) : Scythe
     }
 
     private static Vector3 ApplyFrictionTo(Vector3 v, Collision cl) =>
-        v.Sign() * (v.Abs() - (v.Abs() * (Vector3.One - cl.Friction.Abs())).Clamp(Vector3.Zero, v.Abs()));
+        v.Sign() * (v.Abs() - (v.Abs() * (1 - cl.Friction)).Clamp(Vector3.Zero, v.Abs()));
 
     private static void ApplyFriction(ICollideable c, Collision cl)
     {
@@ -205,7 +197,7 @@ public class Scene(SceneSpec spec) : Scythe
 
     private void DoPhysics(double millis)
     {
-        Collision[] collisions = [.. collideables.Select(c => new Collision(millis, Vector3.One))];
+        Collision[] collisions = [.. collideables.Select(c => new Collision(millis, 1))];
         // Only collideables with a defined mass should be affected by gravity.
         foreach (ICollideable c in collideables)
             if (c.Material.Mass.HasValue)
@@ -304,7 +296,7 @@ public class Wall(WallSide side, SceneSpec scene) : ICollideable
 
     public Vector3 Acceleration { get => Vector3.Zero; set { } }
     public Vector3 Velocity { get => Vector3.Zero; set { } }
-    public Vector3 Position { get => origin + (bounds / 2); set { } }
+    public Vector3 Position { get => origin + new Vector3(bounds.X / 2, 0, bounds.Z / 2); set { } }
 
     public bool IsDead => false;
 
