@@ -326,11 +326,11 @@ public class Scene_Test
     [TestCase(null, 1F, 5.5F, 6, -1, 0, 0.5F, 6, 0, 0, TestName = "Collide with Wall (direct; all absorbed by wall)")]
     [TestCase(1F, null, 5.5F, 6, -1, 0, 0.5F, 6, 0, 0, TestName = "Collide with Wall (direct; all absorbed by collideable)")]
     [TestCase(1F, 1F, 5.5F, 6, -1, 0, 5.5F, 6, 1, 0, TestName = "Collide with Wall (direct; all reflected)")]
-    [TestCase(null, 1F, 5.5F, 1, -1, 1, 0.5F, 6, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by wall)", Description = "Collision should only absorb velocity parallel to the wall")]
-    [TestCase(1F, null, 5.5F, 1, -1, 1, 0.5F, 6, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by collideable)", Description = "Collision should only absorb velocity parallel to the wall")]
+    [TestCase(null, 1F, 5.5F, 1, -1, 1, 0.5F, 11, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by wall)", Description = "Collision should only absorb velocity parallel to the wall")]
+    [TestCase(1F, null, 5.5F, 1, -1, 1, 0.5F, 11, 0, 1, TestName = "Collide with Wall (indirect; all absorbed by collideable)", Description = "Collision should only absorb velocity parallel to the wall")]
     [TestCase(1F, 1F, 5.5F, 1, -1, 1, 5.5F, 11, 1, 1, TestName = "Collide with Wall (indirect; all reflected)")]
     [TestCase(2F, 2F, 5.5F, 6, -1, 0, 1.75F, 6, 0.25F, 0, TestName = "Collide with Wall (direct; some absorbed)")]
-    [TestCase(2F, 2F, 5.5F, 1, -1, 1, 1.25F, 11, 0.25F, 1, TestName = "Collide with Wall (indirect; some absorbed)", Description = "Collision should only absorb velocity parallel to the wall")]
+    [TestCase(2F, 2F, 5.5F, 1, -1, 1, 1.75F, 11, 0.25F, 1, TestName = "Collide with Wall (indirect; some absorbed)", Description = "Collision should only absorb velocity parallel to the wall")]
     public void Tick_Collideable_Wall(float? wallAbsorption, float? collideableAbsorption, float currPosX, float currPosZ, float currVelX, float currVelZ, float expPosX, float expPosZ, float expVelX, float expVelZ)
     {
         SceneSpec spec = new()
