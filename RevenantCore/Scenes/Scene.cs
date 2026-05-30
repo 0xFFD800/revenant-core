@@ -50,18 +50,6 @@ public class Scene(SceneSpec spec) : Scythe
 
     private record struct Collision(double RemMillis, float Friction);
 
-    private static float FindMidpoint(Vector3 trip, BoundingBox box, BoundingBox futureOther, BoundingBox intersection)
-    {
-        // This algorithm works in the case of a moving object colliding with an unmoving one, but that's it.
-        // It needs to account for moving objects having a separate midpoint... grrrrr...
-        Vector3 ic = intersection.Center;
-        Ray rc = new(ic - trip, trip);
-        Ray rb = new(ic, -trip);
-        float mc = futureOther.Intersects(rc) ?? 0;
-        float mb = box.Intersects(rb) ?? 0;
-        return mc - (1 - mb);
-    }
-    
     private static void HandleReflection(ICollideable c, Vector3 v, Vector3 a, float? massRatio, float? absorption, BoundingBox intersection)
     {
         Vector3 b = intersection.Max - intersection.Min;
@@ -145,13 +133,10 @@ public class Scene(SceneSpec spec) : Scythe
         second.Acceleration *= dir;
     }
 
-    private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, Vector3 trip1, Vector3 trip2, ref Collision curr1, ref Collision curr2)
-    {
-        double p1 = FindMidpoint(trip1, first.CollisionBox, second.CollisionBox + trip2, intersection) * curr1.RemMillis;
-        double p2 = FindMidpoint(trip2, second.CollisionBox, first.CollisionBox + trip1, intersection) * curr2.RemMillis;
-
-        first.Position = GetNextPos(first, p1);
-        second.Position = GetNextPos(second, p2);
+    private static void HandleCollide(BoundingBox intersection, ICollideable first, ICollideable second, double millis1, double millis2)
+    {   
+        first.Position = GetNextPos(first, millis1);
+        second.Position = GetNextPos(second, millis2);
 
         float? m1 = first.Material.Mass;
         float? m2 = second.Material.Mass;
@@ -162,24 +147,38 @@ public class Scene(SceneSpec spec) : Scythe
         Vector3 a1 = first.Acceleration;
         HandleReflection(first, second.Velocity, second.Acceleration, massRatio1, absorption, intersection);
         HandleReflection(second, v1, a1, massRatio2, absorption, intersection);
-        curr1.RemMillis -= p1;
-        curr2.RemMillis -= p2;
     }
 
     private static void ApplyCollisions(ICollideable first, ICollideable second, ref Collision curr1, ref Collision curr2)
     {
-        Vector3 np1 = GetNextPos(first, curr1.RemMillis) - first.Position;
-        Vector3 np2 = GetNextPos(second, curr2.RemMillis) - second.Position;
-        BoundingBox? futureInt = (first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2);
         BoundingBox? currInt = first.CollisionBox.FindIntersection(second.CollisionBox);
+        BoundingBox? futureInt = null;
+        if (currInt.HasValue)
+            HandleSlide(currInt.Value, first, second);
+
+        const int steps = 10;
+
+        if (!currInt.HasValue)
+            for (int i = 1; i < steps + 1; i++)
+            {
+                double millis1 = i * (curr1.RemMillis / steps);
+                double millis2 = i * (curr2.RemMillis / steps);
+                Vector3 np1 = GetNextPos(first, millis1) - first.Position;
+                Vector3 np2 = GetNextPos(second, millis2) - second.Position;
+                futureInt = (first.CollisionBox + np1).FindIntersection(second.CollisionBox + np2);
+                if (futureInt.HasValue)
+                {
+                    HandleCollide(futureInt.Value, first, second, millis1, millis2);
+                    curr1.RemMillis -= millis1;
+                    curr2.RemMillis -= millis2;
+                    break;
+                }
+            }
+        
         if (futureInt.HasValue || currInt.HasValue)
         {
             curr1.Friction *= 1 - second.Material.Friction;
             curr2.Friction *= 1 - first.Material.Friction;
-            if (currInt.HasValue)
-                HandleSlide(currInt.Value, first, second);
-            else if (futureInt.HasValue && !futureInt.Value.IsEmpty)
-                HandleCollide(futureInt.Value, first, second, np1, np2, ref curr1, ref curr2);
         }
     }
 
