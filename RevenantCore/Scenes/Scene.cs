@@ -114,7 +114,7 @@ public class Scene(SceneSpec spec) : Scythe
         float? m2 = second.Material.Mass;
         Vector3 sign = -(dir * (second.Position - first.Position)).Sign();
         if (sign == Vector3.Zero)
-            sign = Vector3.One * dir;
+            sign = Vector3.One;
         if (m1.HasValue && !m2.HasValue)
             first.Position += shift * dir * -sign;
         else if (m2.HasValue && !m1.HasValue)
@@ -225,6 +225,23 @@ public class Scene(SceneSpec spec) : Scythe
         }
     }
 
+    /// <summary>
+    /// Gets the current value of the specified wall's Suspended flag.
+    /// </summary>
+    /// <param name="side">The wall side to get the flag for.</param>
+    /// <returns>Whether this wall is suspended or not (i.e., whether or not it currently accepts collisions).</returns>
+    public bool IsSuspended(WallSide side) => walls[side].Suspended;
+
+    /// <summary>
+    /// Sets the Suspended flag of the wall on the specified side.
+    /// </summary>
+    /// <param name="side">The side of the wall to set the suspended flag on.</param>
+    /// <param name="suspended">The value to set the wall's suspended flag to.</param>
+    public void SetSuspended(WallSide side, bool suspended)
+    {
+        walls[side].Suspended = suspended;
+    }
+
     public override void Create(Scene scene, FrameTime time)
     {
         Trace.Assert(scene == this);
@@ -280,14 +297,14 @@ public class Wall(WallSide side, SceneSpec scene) : ICollideable
 {
     private readonly Vector3 origin = side switch
     {
-        WallSide.Floor => Vector3.UnitY * -scene.Bounds.Y,
+        WallSide.Floor => new(-scene.Bounds.X, -scene.Bounds.Y * 3, -scene.Bounds.Z),
         WallSide.Near => Vector3.UnitZ * -scene.Bounds.Z,
         WallSide.Far => Vector3.UnitZ * scene.Bounds.Z,
         WallSide.Left => Vector3.UnitX * -scene.Bounds.X,
         WallSide.Right => Vector3.UnitX * scene.Bounds.X,
         _ => throw new ArgumentOutOfRangeException("Unsupported side " + Enum.GetName(side))
     };
-    private readonly Vector3 bounds = scene.Bounds.Data;
+    private readonly Vector3 bounds = side == WallSide.Floor ? scene.Bounds.Data * 3 : scene.Bounds.Data;
     private readonly MaterialSpec material = scene.Walls[side];
 
     /// <summary>

@@ -103,12 +103,12 @@ public class SceneSpec
     /// <summary>
     /// The options with which this spec should be serialized and deserialized.
     /// </summary>
-    public static JsonSerializerOptions SerializerOptions => new()
+    public static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
         Converters =
         {
-            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+            new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)
         }
     };
 }

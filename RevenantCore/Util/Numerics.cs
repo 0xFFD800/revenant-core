@@ -16,18 +16,12 @@ public static class NumericsExtension
 
     extension(BoundingBox box)
     {
-        public Vector3 Center { get => box.Min + (box.Max - box.Min) / 2; }
-
-        public bool IsEmpty => box.Max.X <= box.Min.X || box.Max.Y <= box.Min.Y || box.Max.Z <= box.Min.Z;
-
         public BoundingBox Add(Vector3 vec) => new(box.Min + vec, box.Max + vec);
 
         public BoundingBox? FindIntersection(BoundingBox b2) =>
             !box.Intersects(b2) ? null : new(VectorMath.Max(box.Min, b2.Min), VectorMath.Min(box.Max, b2.Max));
 
         public static BoundingBox operator +(BoundingBox b, Vector3 vec) => Add(b, vec);
-
-        public static BoundingBox operator -(BoundingBox b, Vector3 vec) => Add(b, -vec);
     }
 }
 

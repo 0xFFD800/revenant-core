@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
@@ -264,6 +265,25 @@ public class Scene_Test
         RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new() { Mass = 1 }, false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
     }
 
+    [Test]
+    public void Tick_Gravity_Bounce()
+    {
+        SceneSpec spec = new()
+        {
+            Gravity = 0.1F
+        };
+        spec.Walls[WallSide.Floor].MaterialAbsorption = 1;
+        FakeScene scene = new(spec);
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [new(new(40, 1, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40, 1, 40), new(0, 0.5F, 0))]);
+    }
+
+    [Test]
+    public void Tick_Overlapping_Separate()
+    {
+
+    }
+
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
     [TestCase(1, 0, 1, 1, 0, 0, TestName = "Friction (full friction floor)")]
     [TestCase(0, 1, 1, 1, 60, 11, TestName = "Friction (full friction collideable)", Description = "A collideable's own friction should not impact its acceleration")]
@@ -351,6 +371,21 @@ public class Scene_Test
         RunCollisionsLoop(scene, [new(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
     }
 
+    [Test]
+    public void Tick_SuspendedWall_TravelThrough()
+    {
+        SceneSpec spec = new()
+        {
+            Gravity = 0.1F
+        };
+        FakeScene scene = new(spec);
+        scene.Create(scene, new(new()));
+        Assert.AreEqual(false, scene.IsSuspended(WallSide.Floor));
+        scene.SetSuspended(WallSide.Floor, true);
+        Assert.AreEqual(true, scene.IsSuspended(WallSide.Floor));
+        RunCollisionsLoop(scene, [new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1 }, false, false, new(40, -5, 40), new(0, -1, 0))]);
+    }
+
     [TestCase(1F, 1F, 14, 36, 1, -1, 16, 34, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
     [TestCase(1F, 2F, 14, 36, 1, -1, 18, 32, -0.5F, 0.5F, TestName = "Collide Straight (Absorption)")]
     [TestCase(0.5F, 1F, 40, 76, 3, -3, 29.5F, 127, -1.5F, 6, TestName = "Collide Straight (Different Masses)")]
@@ -404,6 +439,17 @@ public class Vector3Spec_Test
             Z = z
         };
         Assert.AreEqual(new Vector3(x, y, z), spec.Data);
+    }
+}
+
+[TestFixture]
+public class SceneSpec_Test
+{
+    [Test]
+    public void SerializerMatches()
+    {
+        Assert.AreEqual(true, SceneSpec.SerializerOptions.WriteIndented);
+        Assert.AreEqual(true, SceneSpec.SerializerOptions.Converters.Count == 1);
     }
 }
 
