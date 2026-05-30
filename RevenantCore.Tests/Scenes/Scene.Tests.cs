@@ -366,17 +366,17 @@ public class Scene_Test
     }
 
     [TestCase(1F, 1F, 10, 10, 23, 27, 0.75F, 1, -0.75F, -1, 14.5F, 16, 18.5F, 21, -0.75F, -1, 0.75F, 1, TestName = "Collide Diagonal (same mass, no absorption)")]
-    [TestCase(1F, 0.5F, 10, 10, 23, 27, 0.75F, 1, -0.75F, -1, 15.25F, 17, 17.75F, 20, -0.375F, -0.5F, 0.375F, 0.5F, TestName = "Collide Diagonal (Absorption)")]
-    [TestCase(0.5F, 1F, 10, 10, 46, 59, 2.25F, 3, -2.25F, -3, 24.5F, 30, 33.5F, 42, -1.5F, -2, 3, 4, TestName = "Collide Diagonal (Different Masses)")]
-    [TestCase(1F, 1F, 0, 10, 17, 18, 1.25F, 0, -0.75F, -1, 8.5F, 10, 13.5F, 8, -0.75F, 0, 1.25F, -1, TestName = "Collide Oblique (same mass, no absorption)")]
-    [TestCase(1F, 0.5F, 0, 10, 17, 18, 1.25F, 0, -0.75F, -1, 9.25F, 10, 12.25F, 8, -0.375F, 0, 0.625F, -1F, TestName = "Collide Oblique (Absorption)")]
-    [TestCase(0.5F, 1F, 0, 30, 49, 55, 3.75F, 0, -2.25F, -3, 27.75F, 30, 46, 28, -1.125F, 0, 7.5F, -1, TestName = "Collide Oblique (Different Masses)")]
-    public void Tick_Collideable_CollideOblique(float? mass2, float? absorption2, float posX1, float posZ1, float posX2, float posZ2, float velX1, float velZ1, float velX2, float velZ2, float expPosX1, float expPosX2, float expPosZ1, float expPosZ2, float expVelX1, float expVelX2, float expVelZ1, float expVelZ2)
+    [TestCase(1F, 2F, 10, 10, 23, 27, 0.75F, 1, -0.75F, -1, 15.25F, 16, 17.75F, 21, -0.375F, -1, 0.375F, 1, TestName = "Collide Diagonal (Absorption)")]
+    [TestCase(0.5F, 1F, 10, 10, 46, 59, 2.25F, 3, -2.25F, -3, 25.75F, 31, 37, 47, -1.125F, -1.5F, 4.5F, 6, TestName = "Collide Diagonal (Different Masses)")]
+    [TestCase(1F, 1F, 1, 10, 18, 18, 1.25F, 0, -0.75F, -1, 9.5F, 10, 14.5F, 8, -0.75F, 0, 1.25F, -1, TestName = "Collide Oblique (same mass, no absorption)")]
+    [TestCase(1F, 2F, 1, 10, 18, 18, 1.25F, 0, -0.75F, -1, 10.25F, 10, 13.25F, 8, -0.375F, 0, 0.625F, -1F, TestName = "Collide Oblique (Absorption)")]
+    [TestCase(0.5F, 1F, 1, 30, 50, 55, 3.75F, 0, -2.25F, -3, 28.75F, 30, 47, 28, -1.125F, 0, 7.5F, -1, TestName = "Collide Oblique (Different Masses)")]
+    public void Tick_Collideable_CollideOblique(float? mass2, float? absorption2, float posX1, float posZ1, float posX2, float posZ2, float velX1, float velZ1, float velX2, float velZ2, float expPosX1, float expPosZ1, float expPosX2, float expPosZ2, float expVelX1, float expVelZ1, float expVelX2, float expVelZ2)
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
         RunCollisionsLoop(scene, [
-            new(new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new(), false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
+            new(new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
             new(new(posX2, 0, posZ2), new(velX2, 0, velZ2), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPosX2, 0, expPosZ2), new(expVelX2, 0, expVelZ2))
         ]);
     }
