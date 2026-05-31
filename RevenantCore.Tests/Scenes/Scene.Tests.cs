@@ -281,7 +281,12 @@ public class Scene_Test
     [Test]
     public void Tick_Overlapping_Separate()
     {
-
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        RunCollisionsLoop(scene, [
+            new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(39.5F, 0, 40), new(0, 0, 0)),
+            new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40.5F, 0, 40), new(0, 0, 0))
+        ]);
     }
 
     [TestCase(0, 0, 1, 0, 10, 1, TestName = "Friction (frictionless scene)")]
