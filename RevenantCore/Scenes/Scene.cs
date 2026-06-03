@@ -34,6 +34,9 @@ public class Scene(SceneSpec spec) : Scythe
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
         .ToImmutableDictionary();
 
+    // TODO: Initial camera dictionary population
+    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = [];
+
     public override bool IsDead => false;
 
     private void DoPhysics(double millis)
@@ -76,11 +79,10 @@ public class Scene(SceneSpec spec) : Scythe
 
     public void Draw(View view)
     {
-        // TODO: apply matrix to the SpriteBatch depending on the DrawLayer
-        // view.Screen.Push(transform);
+        view.Screen.Push(cameras[view.Layer].Transform);
         foreach (IVisible visible in visibles.Get(view.Layer))
             visible.Draw(view);
-        // view.Screen.Pop();
+        view.Screen.Pop();
     }
 
     public override void Tick(Scene scene, FrameTime time)

@@ -92,4 +92,9 @@ public class Camera(Vector2 size)
 
         return pos2;
     }
+
+    /// <summary>
+    /// The matrix transformation for the current camera state.
+    /// </summary>
+    public Matrix Transform => throw new NotImplementedException();
 }
