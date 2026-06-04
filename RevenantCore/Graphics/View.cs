@@ -55,6 +55,7 @@ public class Camera(Vector2 size)
     
     public void SetPos(Vector2 pos)
     {
+        // TODO: constraints on position
         bounds.X = pos.X;
         bounds.Y = pos.Y;
     }
@@ -96,5 +97,6 @@ public class Camera(Vector2 size)
     /// <summary>
     /// The matrix transformation for the current camera state.
     /// </summary>
-    public Matrix Transform => throw new NotImplementedException();
+    // TODO: unit tests
+    public Matrix Transform => Matrix.CreateTranslation(new(bounds.X, bounds.Y, 0));
 }

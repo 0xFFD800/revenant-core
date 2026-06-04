@@ -34,8 +34,10 @@ public class Scene(SceneSpec spec) : Scythe
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
         .ToImmutableDictionary();
 
+    // TODO: unit tests
     private static Vector2 GetViewportSize(SceneSpec spec, float factor) => 
         VectorMath.Max(new Vector2(spec.Bounds.X, spec.Bounds.Y) * factor, spec.ViewportSize.Data);
+    // TODO: unit tests
     private readonly ImmutableDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
         .Select(l => new KeyValuePair<DrawLayer, Camera>(l, l switch
         {
