@@ -34,8 +34,18 @@ public class Scene(SceneSpec spec) : Scythe
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
         .ToImmutableDictionary();
 
-    // TODO: Initial camera dictionary population
-    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = [];
+    private static Vector2 GetViewportSize(SceneSpec spec, float factor) => 
+        VectorMath.Max(new Vector2(spec.Bounds.X, spec.Bounds.Y) * factor, spec.ViewportSize.Data);
+    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
+        .Select(l => new KeyValuePair<DrawLayer, Camera>(l, l switch
+        {
+            DrawLayer.Base => new Camera(spec.ViewportSize.Data),
+            DrawLayer.Background => new Camera(GetViewportSize(spec, 0.5F)),
+            DrawLayer.Scene => new Camera(GetViewportSize(spec, 1)),
+            DrawLayer.Foreground => new Camera(GetViewportSize(spec, 1)),
+            DrawLayer.UI => new Camera(spec.ViewportSize.Data),
+            _ => throw new ArgumentException("Unsupported draw layer")
+        })).ToImmutableDictionary();
 
     public override bool IsDead => false;
 

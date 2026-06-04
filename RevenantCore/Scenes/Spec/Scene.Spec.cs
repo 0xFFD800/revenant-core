@@ -63,6 +63,27 @@ public class Vector3Spec
 }
 
 /// <summary>
+/// A JSON serializeable representation of a Vector3. 
+/// </summary>
+public class Vector2Spec
+{
+    /// <summary>
+    /// The X-component of the vector.
+    /// </summary>
+    public float X { get; set; } = 0;
+
+    /// <summary>
+    /// The Y-component of the vector.
+    /// </summary>
+    public float Y { get; set; } = 0;
+
+    /// <summary>
+    /// The vector represented by this data object.
+    /// </summary>
+    public Vector2 Data => new(X, Y);
+}
+
+/// <summary>
 /// An enum representing the sides on which walls border the scene.
 /// </summary>
 public enum WallSide { Floor, Near, Far, Left, Right }
@@ -80,6 +101,15 @@ public class SceneSpec
         X = 320,
         Y = 160,
         Z = 80
+    };
+
+    /// <summary>
+    /// The size of the viewport into the scene, measured in pixels.
+    /// </summary>
+    public Vector2Spec ViewportSize { get; set; } = new()
+    {
+        X = 320,
+        Y = 160
     };
 
     /// <summary>
