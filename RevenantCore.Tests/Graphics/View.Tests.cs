@@ -9,8 +9,8 @@ public class Camera_Test
 {
     private static void Project(Vector3 pos3, Vector2 expPos2, Vector2 pos, Vector2 size)
     {
-        Camera camera = new(size);
-        camera.SetPos(pos);
+        Camera camera = new(size, size * 10);
+        camera.MoveTo(pos);
         Vector2 pos2 = camera.Project(pos3);
         Assert.AreEqual(expPos2, pos2);
     }

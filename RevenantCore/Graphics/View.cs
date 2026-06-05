@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.Xna.Framework;
+using RevenantCore.Util;
 
 namespace RevenantCore.Graphics;
 
@@ -49,15 +53,21 @@ public record View(IScreen Screen, double Millis, DrawLayer Layer);
 /// Represents a camera viewing a scene, including size and position information.
 /// </summary>
 /// <param name="size">The size of the camera viewport, in pixels.</param>
-public class Camera(Vector2 size)
+/// <param name="totalSize">The size of the total area over which the camera may range, in pixels.</param>
+public class Camera(Vector2 size, Vector2 totalSize)
 {
     private Vector4 bounds = new(0, 0, size.X, size.Y);
-    
-    public void SetPos(Vector2 pos)
+
+    /// <summary>
+    /// Moves the camera to the specified position, adjusting as necessary to stay in bounds.
+    /// </summary>
+    /// <param name="pos">The position to attempt to move the camera to.</param>
+    public void MoveTo(Vector2 pos)
     {
-        // TODO: constraints on position
-        bounds.X = pos.X;
-        bounds.Y = pos.Y;
+        Vector2 newPos = VectorMath.Min(pos, totalSize - size);
+        newPos = VectorMath.Max(newPos, Vector2.Zero);
+        bounds.X = newPos.X;
+        bounds.Y = newPos.Y;
     }
 
     /// <summary>
@@ -99,4 +109,47 @@ public class Camera(Vector2 size)
     /// </summary>
     // TODO: unit tests
     public Matrix Transform => Matrix.CreateTranslation(new(bounds.X, bounds.Y, 0));
+}
+
+/// <summary>
+/// A collection of cameras created for each DrawLayer for a size of viewport and size of level.
+/// </summary>
+/// <param name="viewportSize">The size of area which should be visible at any given point in time, in pixels.</param>
+/// <param name="totalSize">The size of the entire viewable area, in pixels.</param>
+// TODO: unit test
+public class CameraCollection(Vector2 viewportSize, Vector2 totalSize)
+{
+    private static float GetFactor(DrawLayer layer) => layer switch
+    {
+        DrawLayer.Base => 0,
+        DrawLayer.Background => 0.5F,
+        DrawLayer.Scene => 1,
+        DrawLayer.Foreground => 2,
+        DrawLayer.UI => 0,
+        _ => throw new ArgumentException("Unsupported draw layer")
+    };
+
+    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
+        .Select(l => new KeyValuePair<DrawLayer, Camera>(l, new(viewportSize, VectorMath.Max(totalSize * GetFactor(l), viewportSize))))
+        .ToImmutableDictionary();
+
+    /// <summary>
+    /// Gets the camera for a particular DrawLayer
+    /// </summary>
+    /// <param name="layer">The layer to get the camera for.</param>
+    /// <returns>The camera for a particular layer.</returns>
+    public Camera Get(DrawLayer layer) => cameras[layer];
+
+    /// <summary>
+    /// Moves all cameras in the scene to be centered on the specified position 
+    /// in the scene's 3-space in tandem, adjusting for the viewport bounds as necessary.
+    /// </summary>
+    /// <param name="pos">The scene position all cameras should be moved to.</param>
+    public void MoveAllTo(Vector3 scenePos)
+    {
+        Vector2 center = Get(DrawLayer.Scene).Project(scenePos);
+        Vector2 topLeft = center - viewportSize / 2;
+        foreach(KeyValuePair<DrawLayer, Camera> p in cameras)
+            p.Value.MoveTo(topLeft * GetFactor(p.Key));
+    }
 }

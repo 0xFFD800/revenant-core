@@ -34,20 +34,10 @@ public class Scene(SceneSpec spec) : Scythe
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
         .ToImmutableDictionary();
 
-    // TODO: unit tests
-    private static Vector2 GetViewportSize(SceneSpec spec, float factor) => 
-        VectorMath.Max(new Vector2(spec.Bounds.X, spec.Bounds.Y) * factor, spec.ViewportSize.Data);
-    // TODO: unit tests
-    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
-        .Select(l => new KeyValuePair<DrawLayer, Camera>(l, l switch
-        {
-            DrawLayer.Base => new Camera(spec.ViewportSize.Data),
-            DrawLayer.Background => new Camera(GetViewportSize(spec, 0.5F)),
-            DrawLayer.Scene => new Camera(GetViewportSize(spec, 1)),
-            DrawLayer.Foreground => new Camera(GetViewportSize(spec, 1)),
-            DrawLayer.UI => new Camera(spec.ViewportSize.Data),
-            _ => throw new ArgumentException("Unsupported draw layer")
-        })).ToImmutableDictionary();
+    /// <summary>
+    /// A collection of cameras for all draw layers of this scene.
+    /// </summary>
+    private readonly CameraCollection cameras = new(spec.ViewportSize.Data, new(spec.Bounds.X, spec.Bounds.Y));
 
     public override bool IsDead => false;
 
@@ -91,7 +81,7 @@ public class Scene(SceneSpec spec) : Scythe
 
     public void Draw(View view)
     {
-        view.Screen.Push(cameras[view.Layer].Transform);
+        view.Screen.Push(cameras.Get(view.Layer).Transform);
         foreach (IVisible visible in visibles.Get(view.Layer))
             visible.Draw(view);
         view.Screen.Pop();

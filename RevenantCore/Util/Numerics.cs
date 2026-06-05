@@ -30,4 +30,5 @@ public static class VectorMath
     public static Vector3 Max(Vector3 v1, Vector3 v2) => new(Math.Max(v1.X, v2.X), Math.Max(v1.Y, v2.Y), Math.Max(v1.Z, v2.Z));
     public static Vector2 Max(Vector2 v1, Vector2 v2) => new(Math.Max(v1.X, v2.X), Math.Max(v1.Y, v2.Y));
     public static Vector3 Min(Vector3 v1, Vector3 v2) => new(Math.Min(v1.X, v2.X), Math.Min(v1.Y, v2.Y), Math.Min(v1.Z, v2.Z));
+    public static Vector2 Min(Vector2 v1, Vector2 v2) => new(Math.Min(v1.X, v2.X), Math.Min(v1.Y, v2.Y));
 }
