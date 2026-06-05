@@ -79,7 +79,7 @@ public class Camera(Vector2 size, Vector2 totalSize)
     {
         const float ratioYZ = 0.5F;
 
-        Vector2 pos2 = Vector2.Zero;
+        Vector2 pos2 = new(0, totalSize.Y);
 
         // impact of vector.Z on pos2.Y
         float impactZY = vector.Z * ratioYZ;
@@ -88,7 +88,10 @@ public class Camera(Vector2 size, Vector2 totalSize)
         float ratioYY = 1 - (vector.Z / (bounds.W * 2));
         float impactYY = vector.Y * ratioYY;
 
-        pos2.Y = impactZY + impactYY;
+        // Since the Y coordinate in 3-space counts up as towards the top of the screen
+        // and the Y coordinate in 2-space counts up as towards the bottom, we need to 
+        // reverse the direction when creating a projection.
+        pos2.Y -= impactZY + impactYY;
 
         // impact of vector.Z on pos2.X
         float impactZX = 1 - (vector.Z / (bounds.Z * 2));
@@ -107,7 +110,6 @@ public class Camera(Vector2 size, Vector2 totalSize)
     /// <summary>
     /// The matrix transformation for the current camera state.
     /// </summary>
-    // TODO: unit tests
     public Matrix Transform => Matrix.CreateTranslation(new(bounds.X, bounds.Y, 0));
 }
 
@@ -116,7 +118,6 @@ public class Camera(Vector2 size, Vector2 totalSize)
 /// </summary>
 /// <param name="viewportSize">The size of area which should be visible at any given point in time, in pixels.</param>
 /// <param name="totalSize">The size of the entire viewable area, in pixels.</param>
-// TODO: unit test
 public class CameraCollection(Vector2 viewportSize, Vector2 totalSize)
 {
     private static float GetFactor(DrawLayer layer) => layer switch
