@@ -50,4 +50,23 @@ public class Camera_Test
     {
         Project(new(320, 0, 80), new(320, 40), new(160, 40), new(320, 80));
     }
+
+    [Test(Description = "The position of the camera should not drop below 0, 0")]
+    public void MoveTo_Negative_Zero()
+    {
+        Camera camera = new(new(10), new(100));
+        camera.MoveTo(new(5));
+        Assert.AreEqual(new Vector3(5, 5, 0), camera.Transform.Translation);
+        camera.MoveTo(new(-5));
+        Assert.AreEqual(Vector3.Zero, camera.Transform.Translation);
+    }
+
+    [Test(Description = "The bounds of the camera should not be able to go beyond the total size")]
+    public void MoveTo_TotalSize_TotalMinusBounds()
+    {
+        Camera camera = new(new(10), new(100));
+        Assert.AreEqual(Vector3.Zero, camera.Transform.Translation);
+        camera.MoveTo(new(100));
+        Assert.AreEqual(new Vector3(90, 90, 0), camera.Transform.Translation);
+    }
 }
