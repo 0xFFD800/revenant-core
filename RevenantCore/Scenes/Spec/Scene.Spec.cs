@@ -1,12 +1,10 @@
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 
 namespace RevenantCore.Scenes.Spec;
 
 /// <summary>
-/// Defines the physical parameters of the material an object is made out of.
+/// A YAML-serializable object which defines the physical parameters of the material an object is made out of.
 /// </summary>
 public class MaterialSpec
 {
@@ -37,7 +35,7 @@ public class MaterialSpec
 }
 
 /// <summary>
-/// A JSON serializeable representation of a Vector3. 
+/// A YAML-serializeable representation of a Vector3. 
 /// </summary>
 public class Vector3Spec
 {
@@ -63,7 +61,7 @@ public class Vector3Spec
 }
 
 /// <summary>
-/// A JSON serializeable representation of a Vector3. 
+/// A YAML-serializeable representation of a Vector3. 
 /// </summary>
 public class Vector2Spec
 {
@@ -89,7 +87,7 @@ public class Vector2Spec
 public enum WallSide { Floor, Near, Far, Left, Right }
 
 /// <summary>
-/// Defines base data about a scene.
+/// A YAML-serializable object which defines base data about a scene.
 /// </summary>
 public class SceneSpec
 {
@@ -129,16 +127,4 @@ public class SceneSpec
     /// Since there are 32 pixels per meter, the default value is equal to 9.8 m/s^2 (gravitational acceleration on Earth).
     /// </summary>
     public float Gravity { get; set; } = 0.0003136F;
-
-    /// <summary>
-    /// The options with which this spec should be serialized and deserialized.
-    /// </summary>
-    public static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        WriteIndented = true,
-        Converters =
-        {
-            new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)
-        }
-    };
 }

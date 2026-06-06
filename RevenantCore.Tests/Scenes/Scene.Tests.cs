@@ -446,16 +446,3 @@ public class Vector3Spec_Test
         Assert.AreEqual(new Vector3(x, y, z), spec.Data);
     }
 }
-
-[TestFixture]
-public class SceneSpec_Test
-{
-    [Test]
-    public void SerializerMatches()
-    {
-        Assert.AreEqual(true, SceneSpec.SerializerOptions.WriteIndented);
-        Assert.AreEqual(true, SceneSpec.SerializerOptions.Converters.Count == 1);
-    }
-}
-
-// Need to test suspended wall collisions...
