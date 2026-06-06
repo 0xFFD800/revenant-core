@@ -148,9 +148,10 @@ public class CameraCollection(Vector2 viewportSize, Vector2 totalSize)
     /// <param name="pos">The scene position all cameras should be moved to.</param>
     public void MoveAllTo(Vector3 scenePos)
     {
-        Vector2 center = Get(DrawLayer.Scene).Project(scenePos);
-        Vector2 topLeft = center - viewportSize / 2;
+        // We don't actually want to project the X coordinate, since that would be relative
+        // to the camera position before the move.
+        Vector2 center = new(scenePos.X, Get(DrawLayer.Scene).Project(scenePos).Y);
         foreach(KeyValuePair<DrawLayer, Camera> p in cameras)
-            p.Value.MoveTo(topLeft * GetFactor(p.Key));
+            p.Value.MoveTo(center * GetFactor(p.Key) - viewportSize / 2);
     }
 }
