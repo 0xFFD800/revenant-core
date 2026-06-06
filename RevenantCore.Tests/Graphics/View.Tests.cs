@@ -74,9 +74,10 @@ public class Camera_Test
 [TestFixture]
 public class CameraCollection_Test
 {
-    [TestCase(0, 0, 0, 0, 180, TestName = "MoveAllTo_SameSize_SnDoesntMove (Near Bottom Left)")]
-    [TestCase(160, 90, 0, 160, 90, TestName = "MoveAllTo_SameSize_SnDoesntMove (Near Center)")]
-    [TestCase(320, 180, 0, 320, 0, TestName = "MoveAllTo_SameSize_SnDoesntMove (Near Upper Right)")]
+    [TestCase(0, 0, 0, 0, 180, TestName = "MoveAllTo_SameSize (Near Bottom Left)")]
+    [TestCase(160, 90, 0, 160, 90, TestName = "MoveAllTo_SameSize (Near Center)")]
+    [TestCase(320, 180, 0, 320, 0, TestName = "MoveAllTo_SameSize (Near Upper Right)")]
+    [TestCase(160, 0, 180, 160, 90, TestName = "MoveAllTo_SameSize (Far Bottom Center)")]
     public void MoveAllTo_SameSize_SnDoesntMove(float scenePosX, float scenePosY, float scenePosZ, float expFgX, float expFgY)
     {
         CameraCollection collection = new(new(320, 180), new(320, 180));
@@ -84,6 +85,21 @@ public class CameraCollection_Test
         Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Base).Transform.Translation);
         Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Background).Transform.Translation);
         Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Scene).Transform.Translation);
+        Assert.AreEqual(new Vector3(expFgX, expFgY, 0), collection.Get(DrawLayer.Foreground).Transform.Translation);
+        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.UI).Transform.Translation);
+    }
+
+    [TestCase(0, 0, 0, 0, 180, 0, 540, TestName = "MoveAllTo_DoubleSize (Near Bottom Left)")]
+    [TestCase(320, 180, 0, 160, 90, 480, 270, TestName = "MoveAllTo_DoubleSize (Near Center)")]
+    [TestCase(640, 360, 0, 320, 0, 960, 0, TestName = "MoveAllTo_DoubleSize (Near Upper Right)")]
+    [TestCase(320, 0, 360, 160, 90, 480, 270, TestName = "MoveAllTo_DoubleSize (Far Bottom Center))")]
+    public void MoveAllTo_DoubleSize_BgDoesntMove(float scenePosX, float scenePosY, float scenePosZ, float expSnX, float expSnY, float expFgX, float expFgY)
+    {
+        CameraCollection collection = new(new(320, 180), new(640, 360));
+        collection.MoveAllTo(new(scenePosX, scenePosY, scenePosZ));
+        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Base).Transform.Translation);
+        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Background).Transform.Translation);
+        Assert.AreEqual(new Vector3(expSnX, expSnY, 0), collection.Get(DrawLayer.Scene).Transform.Translation);
         Assert.AreEqual(new Vector3(expFgX, expFgY, 0), collection.Get(DrawLayer.Foreground).Transform.Translation);
         Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.UI).Transform.Translation);
     }
