@@ -74,6 +74,15 @@ public class Camera_Test
 [TestFixture]
 public class CameraCollection_Test
 {
+    private static void Validate(CameraCollection collection, Vector3 expBg, Vector3 expSn, Vector3 expFg)
+    {
+        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Base).Transform.Translation);
+        Assert.AreEqual(expBg, collection.Get(DrawLayer.Background).Transform.Translation);
+        Assert.AreEqual(expSn, collection.Get(DrawLayer.Scene).Transform.Translation);
+        Assert.AreEqual(expFg, collection.Get(DrawLayer.Foreground).Transform.Translation);
+        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.UI).Transform.Translation);
+    }
+
     [TestCase(0, 0, 0, 0, 180, TestName = "MoveAllTo_SameSize (Near Bottom Left)")]
     [TestCase(160, 90, 0, 160, 90, TestName = "MoveAllTo_SameSize (Near Center)")]
     [TestCase(320, 180, 0, 320, 0, TestName = "MoveAllTo_SameSize (Near Upper Right)")]
@@ -82,11 +91,7 @@ public class CameraCollection_Test
     {
         CameraCollection collection = new(new(320, 180), new(320, 180));
         collection.MoveAllTo(new(scenePosX, scenePosY, scenePosZ));
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Base).Transform.Translation);
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Background).Transform.Translation);
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Scene).Transform.Translation);
-        Assert.AreEqual(new Vector3(expFgX, expFgY, 0), collection.Get(DrawLayer.Foreground).Transform.Translation);
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.UI).Transform.Translation);
+        Validate(collection, Vector3.Zero, Vector3.Zero, new(expFgX, expFgY, 0));
     }
 
     [TestCase(0, 0, 0, 0, 180, 0, 540, TestName = "MoveAllTo_DoubleSize (Near Bottom Left)")]
@@ -97,10 +102,17 @@ public class CameraCollection_Test
     {
         CameraCollection collection = new(new(320, 180), new(640, 360));
         collection.MoveAllTo(new(scenePosX, scenePosY, scenePosZ));
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Base).Transform.Translation);
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.Background).Transform.Translation);
-        Assert.AreEqual(new Vector3(expSnX, expSnY, 0), collection.Get(DrawLayer.Scene).Transform.Translation);
-        Assert.AreEqual(new Vector3(expFgX, expFgY, 0), collection.Get(DrawLayer.Foreground).Transform.Translation);
-        Assert.AreEqual(Vector3.Zero, collection.Get(DrawLayer.UI).Transform.Translation);
+        Validate(collection, Vector3.Zero, new(expSnX, expSnY, 0), new(expFgX, expFgY, 0));
+    }
+
+    [TestCase(0, 0, 0, 0, 180, 0, 540, 0, 1260, TestName = "MoveAllTo_QuadrupleSize (Near Bottom Left)")]
+    [TestCase(640, 360, 0, 160, 90, 480, 270, 1120, 630, TestName = "MoveAllTo_QuadrupleSize (Near Center)")]
+    [TestCase(1280, 720, 0, 320, 0, 960, 0, 2240, 0, TestName = "MoveAllTo_QuadrupleSize (Near Upper Right)")]
+    [TestCase(640, 0, 720, 160, 90, 480, 270, 1120, 630, TestName = "MoveAllTo_QuadrupleSize (Far Bottom Center))")]
+    public void MoveAllTo_QuadrupleSize_AllMove(float scenePosX, float scenePosY, float scenePosZ, float expBgX, float expBgY, float expSnX, float expSnY, float expFgX, float expFgY)
+    {
+        CameraCollection collection = new(new(320, 180), new(1280, 720));
+        collection.MoveAllTo(new(scenePosX, scenePosY, scenePosZ));
+        Validate(collection, new(expBgX, expBgY, 0), new(expSnX, expSnY, 0), new(expFgX, expFgY, 0));
     }
 }
