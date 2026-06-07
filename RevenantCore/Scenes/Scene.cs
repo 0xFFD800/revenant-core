@@ -22,6 +22,12 @@ public class Scene(SceneSpec spec) : Scythe
     private readonly OrderedDict<DrawLayer, IVisible> visibles = new();
 
     /// <summary>
+    /// All tickable objects in this scene.
+    /// All items in this list will be updated each tick.
+    /// </summary>
+    private readonly List<ITickable> tickables = [];
+
+    /// <summary>
     /// All objects in this view with collision boxes.
     /// </summary>
     private readonly List<ICollideable> collideables = [];
@@ -92,6 +98,8 @@ public class Scene(SceneSpec spec) : Scythe
         base.Tick(scene, time);
         Trace.Assert(scene == this);
         visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
+        foreach (ITickable tickable in tickables)
+            tickable.Tick(scene, time);
         DoPhysics(time.MillisElapsed);
     }
 
@@ -101,6 +109,8 @@ public class Scene(SceneSpec spec) : Scythe
         base.Add(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Add(visible.Layer, visible);
+        if (mortal is ITickable tickable)
+            tickables.Add(tickable);
         if (mortal is ICollideable collideable)
             collideables.Add(collideable);
     }
@@ -111,6 +121,8 @@ public class Scene(SceneSpec spec) : Scythe
         base.Reap(mortal, scene, time);
         if (mortal is IVisible visible)
             visibles.Remove(visible.Layer, visible);
+        if (mortal is ITickable tickable)
+            tickables.Remove(tickable);
         if (mortal is ICollideable collideable)
             collideables.Remove(collideable);
     }

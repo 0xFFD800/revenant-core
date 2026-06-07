@@ -65,6 +65,34 @@ public class Scene_Test
         }
     }
 
+    private class MockTickable(bool isDead, bool expTick, bool expGlean) : IMockMortal, ITickable
+    {
+        private bool created, ticked, gleaned = false;
+        public bool IsDead => isDead;
+
+        public void Create(Scene scene, FrameTime time)
+        {
+            created = true;
+        }
+
+        public void Glean(Scene scene, FrameTime time)
+        {
+            gleaned = true;
+        }
+
+        public void Tick(Scene scene, FrameTime time)
+        {
+            ticked = true;
+        }
+
+        public void Validate()
+        {
+            Assert.IsTrue(created, "Tickable object was never created!");
+            Assert.AreEqual(expGlean, gleaned, "Tickable object was not in the correct gleaning state!");
+            Assert.AreEqual(expTick, ticked, "Tickable object was not in the correct ticking state!");
+        }
+    }
+
     private class MockScreen : IScreen
     {
         private int matrices = 0;
@@ -212,7 +240,9 @@ public class Scene_Test
             new MockVisible(scene, DrawLayer.Scene, 0, false, null, true),     // Live visible
             new MockVisible(scene, DrawLayer.Background, 0, true, null, true), // Dead visible
             new MockCollideable(false, true),                                  // Live collideable
-            new MockCollideable(false, true)                                   // Dead collideable
+            new MockCollideable(true, true),                                   // Dead collideable
+            new MockTickable(false, false, true),                              // Live tickable
+            new MockTickable(false, false, true)                               // Dead tickable
         ];
         foreach (IMockMortal mortal in mortals)
             scene.Add(mortal, scene, new(new()));
@@ -221,13 +251,13 @@ public class Scene_Test
             mortal.Validate();
     }
 
-    private static void RunCollisionsLoop(Scene scene, MockCollideable[] collideables)
+    private static void RunTickLoop(Scene scene, IMockMortal[] mortals)
     {
-        foreach (MockCollideable collideable in collideables)
-            scene.Add(collideable, scene, new(new()));
+        foreach (IMockMortal mortal in mortals)
+            scene.Add(mortal, scene, new(new()));
         scene.Tick(scene, new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10))));
-        foreach (MockCollideable collideable in collideables)
-            collideable.Validate();
+        foreach (IMockMortal mortal in mortals)
+            mortal.Validate();
 
         Assert.False(scene.IsDead, "Scenes currently should never die");
     }
@@ -245,9 +275,9 @@ public class Scene_Test
             }
         });
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
-            new(new(1, 0, 1),   Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(11, 0, 1),   Vector3.UnitX),
-            new(new(1, 0, 101), Vector3.UnitZ, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(1,  0, 111), Vector3.UnitZ)
+        RunTickLoop(scene, [
+            new MockCollideable(new(1, 0, 1),   Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(11, 0, 1),   Vector3.UnitX),
+            new MockCollideable(new(1, 0, 101), Vector3.UnitZ, Vector3.Zero, Vector3.One, new() { Mass = 1 }, false, false, new(1,  0, 111), Vector3.UnitZ)
         ]);
     }
 
@@ -262,7 +292,7 @@ public class Scene_Test
             Gravity = gravity
         });
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new() { Mass = 1 }, false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
+        RunTickLoop(scene, [new MockCollideable(new(currPosX, currPosY, 10), new(currVelX, currVelY, 0), new(currAccX, currAccY, 0), Vector3.One, new() { Mass = 1 }, false, false, new(expPosX, expPosY, 10), new(expVelX, expVelY, 0))]);
     }
 
     [Test]
@@ -275,7 +305,7 @@ public class Scene_Test
         spec.Walls[WallSide.Floor].MaterialAbsorption = 1;
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(40, 1, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40, 1, 40), new(0, 0.5F, 0))]);
+        RunTickLoop(scene, [new MockCollideable(new(40, 1, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40, 1, 40), new(0, 0.5F, 0))]);
     }
 
     [Test]
@@ -283,9 +313,9 @@ public class Scene_Test
     {
         FakeScene scene = new();
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
-            new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(39.5F, 0, 40), new(0, 0, 0)),
-            new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40.5F, 0, 40), new(0, 0, 0))
+        RunTickLoop(scene, [
+            new MockCollideable(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(39.5F, 0, 40), new(0, 0, 0)),
+            new MockCollideable(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1, MaterialAbsorption = 1 }, false, false, new(40.5F, 0, 40), new(0, 0, 0))
         ]);
     }
 
@@ -304,7 +334,7 @@ public class Scene_Test
         };
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(1, 0, 1), Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction, Mass = 1 }, false, false, new Vector3(expPos + 1, 0, 1), Vector3.UnitX * expVel)]);
+        RunTickLoop(scene, [new MockCollideable(new(1, 0, 1), Vector3.UnitX * currVel, Vector3.UnitX * currAcc, Vector3.One, new() { Friction = collideableFriction, Mass = 1 }, false, false, new Vector3(expPos + 1, 0, 1), Vector3.UnitX * expVel)]);
     }
 
     [Test(Description = "An object should not move if its velocity does not exceed its static friction")]
@@ -312,7 +342,7 @@ public class Scene_Test
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(1, 0, 1), Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, new(1, 0, 1), Vector3.Zero)]);
+        RunTickLoop(scene, [new MockCollideable(new(1, 0, 1), Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, new(1, 0, 1), Vector3.Zero)]);
     }
 
     [Test(Description = "An object falling with walls on two sides and other collideables on two sides should input friction from all of them.")]
@@ -338,13 +368,13 @@ public class Scene_Test
 
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
+        RunTickLoop(scene, [
             // The object which is descending
-            new(new(0.5F, 19, 9.5F), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0.5F, 9.1585016F, 9.5F), new(0, -1.3121998F, 0)),
+            new MockCollideable(new(0.5F, 19, 9.5F), new(0, -1, 0), Vector3.Zero, Vector3.One,   material, false, false, new(0.5F, 9.1585016F, 9.5F), new(0, -1.3121998F, 0)),
             // The object on the near side of the descending object
-            new(new(0.5F, 0, 8.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(0.5F, 0, 8.5F), Vector3.Zero),
+            new MockCollideable(new(0.5F, 0, 8.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(0.5F, 0, 8.5F), Vector3.Zero),
             // The object to the right of the descending object
-            new(new(1.5F, 0, 9.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(1.5F, 0, 9.5F), Vector3.Zero)
+            new MockCollideable(new(1.5F, 0, 9.5F), Vector3.Zero,  Vector3.Zero, new(1, 20, 1), material, false, false, new(1.5F, 0, 9.5F), Vector3.Zero)
         ]);
     }
 
@@ -373,7 +403,7 @@ public class Scene_Test
         };
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
+        RunTickLoop(scene, [new MockCollideable(new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
     }
 
     [Test]
@@ -388,7 +418,7 @@ public class Scene_Test
         Assert.AreEqual(false, scene.IsSuspended(WallSide.Floor));
         scene.SetSuspended(WallSide.Floor, true);
         Assert.AreEqual(true, scene.IsSuspended(WallSide.Floor));
-        RunCollisionsLoop(scene, [new(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1 }, false, false, new(40, -5, 40), new(0, -1, 0))]);
+        RunTickLoop(scene, [new MockCollideable(new(40, 0, 40), new(), new(), Vector3.One, new() { Mass = 1 }, false, false, new(40, -5, 40), new(0, -1, 0))]);
     }
 
     [TestCase(1F, 1F, 14, 36, 1, -1, 16, 34, -1, 1, TestName = "Collide Straight (same mass and speed, no absorption)")]
@@ -399,9 +429,9 @@ public class Scene_Test
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
-            new(new(pos1, 0, 40), new(vel1, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel1), new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPos1, 0, 40), new(expVel1, 0, 0)),
-            new(new(pos2, 0, 40), new(vel2, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel2), new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, 40), new(expVel2, 0, 0))
+        RunTickLoop(scene, [
+            new MockCollideable(new(pos1, 0, 40), new(vel1, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel1), new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPos1, 0, 40), new(expVel1, 0, 0)),
+            new MockCollideable(new(pos2, 0, 40), new(vel2, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel2), new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPos2, 0, 40), new(expVel2, 0, 0))
         ]);
     }
 
@@ -415,9 +445,9 @@ public class Scene_Test
     {
         FakeScene scene = new(new());
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [
-            new(new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
-            new(new(posX2, 0, posZ2), new(velX2, 0, velZ2), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPosX2, 0, expPosZ2), new(expVelX2, 0, expVelZ2))
+        RunTickLoop(scene, [
+            new MockCollideable(new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),
+            new MockCollideable(new(posX2, 0, posZ2), new(velX2, 0, velZ2), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = absorption2, Mass = mass2 }, false, false, new(expPosX2, 0, expPosZ2), new(expVelX2, 0, expVelZ2))
         ]);
     }
 
@@ -426,7 +456,18 @@ public class Scene_Test
     {
         FakeScene scene = new();
         scene.Create(scene, new(new()));
-        RunCollisionsLoop(scene, [new(Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, true, true, Vector3.Zero, Vector3.UnitX)]);
+        RunTickLoop(scene, [
+            new MockCollideable(Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, true, true, Vector3.Zero, Vector3.UnitX),
+            new MockTickable(true, false, true)
+        ]);
+    }
+
+    [Test(Description = "Living objects should be ticked and not gleaned")]
+    public void Tick_Living_Tick()
+    {
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        RunTickLoop(scene, [new MockTickable(false, true, false)]);
     }
 }
 
