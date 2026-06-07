@@ -38,24 +38,25 @@ public abstract class Cutscene : IVisible, ITickable
 /// <param name="children">The list of children to trigger in order.</param>
 public class SequentialBlock(Cutscene[] children) : Cutscene
 {
+    /// <summary>
+    /// The index of the currently active child.
+    /// </summary>
     private int index = 0;
+
+    /// <summary>
+    /// The currently active child, or null if all the children have been consumed.
+    /// </summary>
     private Cutscene? ActiveChild => index < children.Length ? children[index] : null;
 
     public override float Z => ActiveChild?.Z ?? 0;
 
-    public override void Create(Scene scene, FrameTime time)
-    {
-        index = 0;
-        ActiveChild?.Create(scene, time);
-        complete = ActiveChild != null;
-    }
-
-    public override void Draw(View view)
-    {
-        ActiveChild?.Draw(view);
-    }
-
-    public override void Tick(Scene scene, FrameTime time)
+    /// <summary>
+    /// Consumes children until an active one is found or the entire list has been consumed, then
+    /// sets the <see cref="complete"/> flag accordingly.
+    /// </summary>
+    /// <param name="scene">The context scene of the calling code.</param>
+    /// <param name="time">The time of the frame in which this method is being called.</param>
+    private void Advance(Scene scene, FrameTime time)
     {
         while (ActiveChild?.IsDead ?? false)
         {
@@ -65,8 +66,24 @@ public class SequentialBlock(Cutscene[] children) : Cutscene
                 ActiveChild.Create(scene, time);
         }
 
-        ActiveChild?.Tick(scene, time);
         complete = ActiveChild != null;
+    }
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        index = 0;
+        Advance(scene, time);
+    }
+
+    public override void Draw(View view)
+    {
+        ActiveChild?.Draw(view);
+    }
+
+    public override void Tick(Scene scene, FrameTime time)
+    {
+        Advance(scene, time);
+        ActiveChild?.Tick(scene, time);
     }
     
     public override void Glean(Scene scene, FrameTime time)
