@@ -82,7 +82,7 @@ public class Scene_Test
 
         public void Draw(Drawable sprite)
         {
-            throw new NotImplementedException();
+            // do nothing
         }
 
         /// <summary>
