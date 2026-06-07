@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Graphics;
@@ -278,5 +279,53 @@ public class ConcurrentBlock_Test
         block.Glean(new(new()), new(new()));
         foreach (MockCutscene child in children)
             child.Validate();
+    }
+}
+
+file class MockInstantCutscene(bool expTrip) : InstantCutscene
+{
+    private bool tripped = false;
+
+    protected override void Trip(Scene scene, FrameTime time)
+    {
+        tripped = true;
+    }
+
+    internal void Validate()
+    {
+        Assert.AreEqual(0, Z);
+        Assert.AreEqual(expTrip, tripped, "tripped did not match expectation");
+    }
+}
+
+[TestFixture]
+public class InstantCutscene_Test
+{
+    [Test]
+    public void Initial_NoTrip()
+    {
+        new MockInstantCutscene(false).Validate();
+    }
+
+    [Test]
+    public void Create_Trip()
+    {
+        MockInstantCutscene cutscene = new(true);
+        cutscene.Create(new(new()), new(new()));
+        cutscene.Validate();
+    }
+
+    [Test]
+    public void Draw_Throw()
+    {
+        Assert.Throws<UnreachableException>(() =>
+            new MockInstantCutscene(false).Draw(new(new FakeScreen(), 0, DrawLayer.UI)));
+    }
+
+    [Test]
+    public void Tick_Throw()
+    {
+        Assert.Throws<UnreachableException>(() =>
+            new MockInstantCutscene(false).Tick(new(new()), new(new())));
     }
 }

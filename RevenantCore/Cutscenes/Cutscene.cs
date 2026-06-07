@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
@@ -154,19 +155,19 @@ public abstract class InstantCutscene : Cutscene
 
     public override void Create(Scene scene, FrameTime time)
     {
-        if (!IsDead)
-            Trip(scene, time);
+        Trace.Assert(!IsDead, "Dead cutscenes should never be created!");
+        Trip(scene, time);
         complete = true;
     }
 
     public override void Draw(View view)
     {
-        // nothing to do
+        throw new UnreachableException("Draw should never be called on an instant cutscene!");
     }
 
     public override void Tick(Scene scene, FrameTime time)
     {
-        // nothing to do
+        throw new UnreachableException("Tick should never be called on an instant cutscene!");
     }
 
     /// <summary>
