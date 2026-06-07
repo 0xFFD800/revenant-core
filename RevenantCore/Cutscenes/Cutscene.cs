@@ -66,7 +66,7 @@ public class SequentialBlock(Cutscene[] children) : Cutscene
                 ActiveChild.Create(scene, time);
         }
 
-        complete = ActiveChild != null;
+        complete = ActiveChild == null;
     }
 
     public override void Create(Scene scene, FrameTime time)
@@ -100,15 +100,21 @@ public class SequentialBlock(Cutscene[] children) : Cutscene
 /// <param name="children">The list of children to be triggered concurrently as part of this cutscene.</param>
 public class ConcurrentBlock(Cutscene[] children) : Cutscene
 {
-    private List<Cutscene> activeChildren = [];
+    private readonly List<Cutscene> activeChildren = [];
     public override float Z => activeChildren.Count == 0 ? 0 : activeChildren.Max(c => c.Z);
 
     public override void Create(Scene scene, FrameTime time)
     {
-        activeChildren = [..children.Where(c => !c.IsDead)];
-        complete = activeChildren.Count > 0;
-        foreach (Cutscene child in activeChildren)
-            child.Create(scene, time);
+        foreach (Cutscene child in children)
+            if (child.IsDead)
+                child.Glean(scene, time);
+            else
+            {
+                child.Create(scene, time);
+                activeChildren.Add(child);
+            }
+
+        complete = activeChildren.Count == 0;
     }
 
     public override void Draw(View view)
@@ -119,7 +125,7 @@ public class ConcurrentBlock(Cutscene[] children) : Cutscene
 
     public override void Tick(Scene scene, FrameTime time)
     {
-        foreach (Cutscene child in activeChildren.Where(c => c.IsDead))
+        foreach (Cutscene child in activeChildren.Where(c => c.IsDead).ToArray())
         {
             activeChildren.Remove(child);
             child.Glean(scene, time);
