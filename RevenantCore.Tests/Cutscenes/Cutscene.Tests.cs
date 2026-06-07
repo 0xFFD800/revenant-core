@@ -7,21 +7,43 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Cutscenes;
 
+file class FakeScreen : IScreen
+{
+    internal int drawOrder = 0;
+
+    public void Draw(Drawable drawable)
+    {
+        // do nothing
+    }
+
+    public void Pop()
+    {
+        // do nothing
+    }
+
+    public void Push(Matrix transform)
+    {
+        // do nothing
+    }
+}
+
 file class MockCutscene() : Cutscene
 {
-    private readonly float z;
-    private readonly bool expDead, expCreate, expDraw, expTick, expGlean = false;
-    private bool created, drawn, ticked, gleaned = false;
+    private readonly float z = 0;
+    private readonly bool expDead, expCreate, expTick, expGlean = false;
+    private readonly int? expDrawOrder = null;
+    private bool created, ticked, gleaned = false;
+    private int? drawOrder = null;
 
     public override float Z => z;
 
-    internal MockCutscene(bool complete, float z, bool expDead, bool expCreate, bool expDraw, bool expTick, bool expGlean) : this()
+    internal MockCutscene(bool complete, float z, bool expDead, bool expCreate, int? expDrawOrder, bool expTick, bool expGlean) : this()
     {
         SetComplete(complete);
         this.z = z;
         this.expDead = expDead;
         this.expCreate = expCreate;
-        this.expDraw = expDraw;
+        this.expDrawOrder = expDrawOrder;
         this.expTick = expTick;
         this.expGlean = expGlean;
     }
@@ -39,7 +61,10 @@ file class MockCutscene() : Cutscene
 
     public override void Draw(View view)
     {
-        drawn = true;
+        if (view.Screen is FakeScreen screen)
+            drawOrder = screen.drawOrder++;
+        else
+            throw new ArgumentException("MockCutscene must be drawn by a FakeScreen");
     }
 
     public override void Glean(Scene scene, FrameTime time)
@@ -54,11 +79,11 @@ file class MockCutscene() : Cutscene
         ticked = true;
     }
 
-    public void Validate()
+    internal void Validate()
     {
         Assert.AreEqual(expDead, IsDead, "IsDead did not match expectation");
         Assert.AreEqual(expCreate, created, "created did not match expectation");
-        Assert.AreEqual(expDraw, drawn, "drawn did not match expectation");
+        Assert.AreEqual(expDrawOrder, drawOrder, "drawOrder did not match expectation");
         Assert.AreEqual(expTick, ticked, "ticked did not match expectation");
         Assert.AreEqual(expGlean, gleaned, "gleaned did not match expectation");
     }
@@ -77,25 +102,7 @@ public class Cutscene_Test
     [TestCase(false, false, TestName = "IsDead (Incomplete; no filter)", Description = "An incomplete cutscene with no filter should not be dead.")]
     public void IsDead(bool complete, bool expDead)
     {
-        new MockCutscene(complete, 0, expDead, false, false, false, false).Validate();
-    }
-}
-
-file class FakeScreen : IScreen
-{
-    public void Draw(Drawable drawable)
-    {
-        // do nothing
-    }
-
-    public void Pop()
-    {
-        // do nothing
-    }
-
-    public void Push(Matrix transform)
-    {
-        // do nothing
+        new MockCutscene(complete, 0, expDead, false, null, false, false).Validate();
     }
 }
 
@@ -122,7 +129,7 @@ public class SequentialBlock_Test
     [Test]
     public void Z_ObtainFromFirst()
     {
-        SequentialBlock block = new([new MockCutscene(false, 1, false, false, false, false, false)]);
+        SequentialBlock block = new([new MockCutscene(false, 1, false, false, null, false, false)]);
         Assert.AreEqual(1, block.Z);
     }
 
@@ -130,11 +137,11 @@ public class SequentialBlock_Test
     public void Create_AdvanceUntilActive()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(true, 0, false, false, false, false, true), // Ditto.
-            new(false, 0, false, true, false, false, false), // Active; should be created
-            new(false, 0, false, false, false, false, false), // Active; should not be created yet
-            new(true, 0, true, false, false, false, false) // Inactive; should not be gleaned yet
+            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(true, 0, false, false, null, false, true), // Ditto.
+            new(false, 0, false, true, null, false, false), // Active; should be created
+            new(false, 0, false, false, null, false, false), // Active; should not be created yet
+            new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
         ];
         new SequentialBlock(children).Create(new(new()), new(new()));
         foreach (MockCutscene child in children)
@@ -145,8 +152,8 @@ public class SequentialBlock_Test
     public void Draw_DrawFirst()
     {
         MockCutscene[] children = [
-            new(false, 0, false, false, true, false, false),
-            new(false, 0, false, false, false, false, false)
+            new(false, 0, false, false, 0, false, false),
+            new(false, 0, false, false, null, false, false)
         ];
         new SequentialBlock(children).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutscene child in children)
@@ -157,11 +164,11 @@ public class SequentialBlock_Test
     public void Tick_AdvanceThenTick()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(true, 0, false, false, false, false, true), // Ditto.
-            new(false, 0, false, true, false, true, false), // Active; should be created and ticked.
-            new(false, 0, false, false, false, false, false), // Active; should not be created yet.
-            new(true, 0, true, false, false, false, false) // Inactive; should not be gleaned yet.
+            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(true, 0, false, false, null, false, true), // Ditto.
+            new(false, 0, false, true, null, true, false), // Active; should be created and ticked.
+            new(false, 0, false, false, null, false, false), // Active; should not be created yet.
+            new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
         ];
         new SequentialBlock(children).Tick(new(new()), new(new()));
         foreach (MockCutscene child in children)
@@ -172,10 +179,10 @@ public class SequentialBlock_Test
     public void Glean_GleanRemaining()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Should be gleaned by Create.
-            new(false, 0, false, true, false, false, true), // Active; should be created, then gleaned by Glean.
-            new(false, 0, false, false, false, false, true), // Active; should not be created, but should be gleaned.
-            new(true, 0, false, false, false, false, true) // Inactive; should be gleaned.
+            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
+            new(false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
+            new(false, 0, false, false, null, false, true), // Active; should not be created, but should be gleaned.
+            new(true, 0, false, false, null, false, true) // Inactive; should be gleaned.
         ];
         SequentialBlock block = new(children);
         block.Create(new(new()), new(new()));
@@ -209,10 +216,10 @@ public class ConcurrentBlock_Test
     public void Z_UseMaxActive()
     {
         ConcurrentBlock block = new([
-            new MockCutscene(false, -1, false, true, false, false, false),
-            new MockCutscene(false, 2, false, true, false, false, false),
-            new MockCutscene(true, 3, false, false, false, false, true),
-            new MockCutscene(false, 1, false, true, false, false, false)
+            new MockCutscene(false, -1, false, true, null, false, false),
+            new MockCutscene(false, 2, false, true, null, false, false),
+            new MockCutscene(true, 3, false, false, null, false, true),
+            new MockCutscene(false, 1, false, true, null, false, false)
         ]);
         block.Create(new(new()), new(new()));
         Assert.AreEqual(2, block.Z);
@@ -222,10 +229,10 @@ public class ConcurrentBlock_Test
     public void Create_CreateAllActive()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Should be gleaned.
-            new(false, 0, false, true, false, false, false), // Active; should be created.
-            new(false, 0, false, true, false, false, false), // Ditto.
-            new(true, 0, false, false, false, false, true) // Same as first element.
+            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned.
+            new(false, 0, false, true, null, false, false), // Active; should be created.
+            new(false, 0, false, true, null, false, false), // Ditto.
+            new(true, 0, false, false, null, false, true) // Same as first element.
         ];
         new ConcurrentBlock(children).Create(new(new()), new(new()));
         foreach (MockCutscene child in children)
@@ -236,8 +243,8 @@ public class ConcurrentBlock_Test
     public void Draw_DrawAll()
     {
         MockCutscene[] children = [
-            new(false, 0, false, true, true, false, false),
-            new(false, 0, false, true, true, false, false)
+            new(false, 1, false, true, 1, false, false),
+            new(false, 0, false, true, 0, false, false)
         ];
         ConcurrentBlock block = new(children);
         block.Create(new(new()), new(new()));
@@ -250,11 +257,11 @@ public class ConcurrentBlock_Test
     public void Tick_TickActiveGleanInactive()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(false, 0, false, true, false, false, true), // Active, but will be set to inactive between Create and Tick. Should be created, but gleaned after Tick.
-            new(false, 0, false, true, false, true, false), // Active; should be created and ticked.
-            new(false, 0, false, true, false, true, false), // Ditto.
-            new(true, 0, false, false, false, false, true) // Same as first element.
+            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(false, 0, false, true, null, false, true), // Active, but will be set to inactive between Create and Tick. Should be created, but gleaned after Tick.
+            new(false, 0, false, true, null, true, false), // Active; should be created and ticked.
+            new(false, 0, false, true, null, true, false), // Ditto.
+            new(true, 0, false, false, null, false, true) // Same as first element.
         ];
         ConcurrentBlock block = new(children);
         block.Create(new(new()), new(new()));
@@ -268,10 +275,10 @@ public class ConcurrentBlock_Test
     public void Glean_GleanRemaining()
     {
         MockCutscene[] children = [
-            new(true, 0, false, false, false, false, true), // Inactive. Should be gleaned by Create.
-            new(false, 0, false, true, false, false, true), // Active; should be created, then gleaned by Glean.
-            new(false, 0, false, true, false, false, true), // Ditto.
-            new(false, 0, false, true, false, false, true) // Will be set to inactive after Create. Should be gleaned.
+            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
+            new(false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
+            new(false, 0, false, true, null, false, true), // Ditto.
+            new(false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
         ];
         ConcurrentBlock block = new(children);
         block.Create(new(new()), new(new()));

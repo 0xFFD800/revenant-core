@@ -104,6 +104,12 @@ public class ConcurrentBlock(Cutscene[] children) : Cutscene
     private readonly List<Cutscene> activeChildren = [];
     public override float Z => activeChildren.Count == 0 ? 0 : activeChildren.Max(c => c.Z);
 
+    private void UpdateState()
+    {
+        activeChildren.Sort((c1, c2) => c1.Z.CompareTo(c2.Z));
+        complete = activeChildren.Count == 0;
+    }
+
     public override void Create(Scene scene, FrameTime time)
     {
         foreach (Cutscene child in children)
@@ -115,7 +121,7 @@ public class ConcurrentBlock(Cutscene[] children) : Cutscene
                 activeChildren.Add(child);
             }
 
-        complete = activeChildren.Count == 0;
+        UpdateState();
     }
 
     public override void Draw(View view)
@@ -135,7 +141,7 @@ public class ConcurrentBlock(Cutscene[] children) : Cutscene
         foreach (Cutscene child in activeChildren)
             child.Tick(scene, time);
 
-        complete = activeChildren.Count == 0;
+        UpdateState();
     }
 
     public override void Glean(Scene scene, FrameTime time)
