@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace RevenantCore.Cutscenes.Spec;
 
 /// <summary>
@@ -26,6 +24,11 @@ public class EventSpec
     /// The conditions which must be fulfilled for this event to be completed.
     /// </summary>
     public EventFilterSpec? Preconditions { get; set; }
+
+    /// <summary>
+    /// How this event should behave if its precondition fails
+    /// </summary>
+    public PreconditionType PreconditionType { get; set; } = PreconditionType.Error;
 }
 
 /// <summary>
@@ -67,15 +70,15 @@ public class EventFilterSpec
     /// A list of event IDs, at least one of which must be completed for the filter to pass.
     /// If this set is empty, all values will pass the condition.
     /// </summary>
-    public HashSet<string> HasAny { get; set; } = [];
+    public string[] HasAny { get; set; } = [];
 
     /// <summary>
     /// A list of event IDs, all of which must be completed for the filter to pass.
     /// </summary>
-    public HashSet<string> HasAll { get; set; } = [];
+    public string[] HasAll { get; set; } = [];
 
     /// <summary>
     /// A list of event IDs, none of which must be completed for the filter to pass.
     /// </summary>
-    public HashSet<string> HasNone { get; set; } = [];
+    public string[] HasNone { get; set; } = [];
 }
