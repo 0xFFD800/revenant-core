@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -41,17 +42,50 @@ public class EventCollection(EventSpec[] allEvents)
 
     private class Event(EventSpec spec)
     {
-        private readonly IPrecondition preconditionType = spec.PreconditionType switch
+        private readonly Precondition precondition = spec.PreconditionType switch
         {
+            PreconditionType.Error => new ErrorPrecondition(spec),
+            PreconditionType.Ignore => new IgnorePrecondition(spec),
+            PreconditionType.Force => new ForcePrecondition(spec),
+            _ => throw new ArgumentException(string.Format("Unrecognized precondition type {0}", Enum.GetName(spec.PreconditionType)))
         };
 
-        private readonly EventFilter? preconditions = new(spec.Preconditions);
-
-        public bool CanComplete(EventCollection events) => preconditions?.Evaluate(events) ?? true || preconditionType.TryBypass(events);
+        public bool CanComplete(EventCollection events) => precondition.Evaluate(events);
     }
 }
 
-public interface IPrecondition
+public abstract class Precondition(EventSpec spec)
 {
-    bool TryBypass(EventCollection events);
+    protected readonly EventSpec spec = spec;
+    private readonly EventFilter? filter = spec.Preconditions != null ? new(spec.Preconditions) : null;
+
+    public bool Evaluate(EventCollection events) => filter?.Evaluate(events) ?? true || Bypass(events);
+
+    protected abstract bool Bypass(EventCollection events);
+}
+
+public class ErrorPrecondition(EventSpec spec) : Precondition(spec)
+{
+    protected override bool Bypass(EventCollection events) =>
+        throw new InvalidOperationException(string.Format("Cannot complete \"{0}\" as preconditions have not been met.", spec.Name));
+}
+
+public class IgnorePrecondition(EventSpec spec) : Precondition(spec)
+{
+    protected override bool Bypass(EventCollection events) => false;
+}
+
+public class ForcePrecondition(EventSpec spec) : Precondition(spec)
+{
+    protected override bool Bypass(EventCollection events)
+    {
+        foreach (string evt in spec.Preconditions?.HasNone ?? [])
+            events.Undo(evt);
+        foreach (string evt in spec.Preconditions?.HasAll ?? [])
+            events.Complete(evt);
+        if (!(spec.Preconditions?.HasAny?.Any(events.IsComplete) ?? true))
+            events.Complete(spec.Preconditions.HasAny.First());
+
+        return true;
+    }
 }
