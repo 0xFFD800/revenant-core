@@ -18,7 +18,7 @@ public class EventFilter(EventFilterSpec spec)
     /// <param name="events">The event collection to evaluate this filter in the context of.</param>
     /// <returns>Whether or not this filter's criteria are fulfilled.</returns>
     public bool Evaluate(EventCollection events) => !spec.HasNone.Any(events.IsComplete)
-        && spec.HasAny.Any(events.IsComplete)
+        && (spec.HasAny.Length == 0 || spec.HasAny.Any(events.IsComplete))
         && spec.HasAll.All(events.IsComplete);
 }
 
