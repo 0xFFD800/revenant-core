@@ -108,7 +108,13 @@ public abstract class Precondition(EventSpec spec)
     /// </summary>
     /// <param name="events">The event context in which to evaluate the precondition.</param>
     /// <returns>Whether the precondition evaluated successfully.</returns>
-    public bool Evaluate(EventCollection events) => filter?.Evaluate(events) ?? true || Bypass(events);
+    public bool Evaluate(EventCollection events)
+    {
+        if (filter?.Evaluate(events) ?? true)
+            return true;
+        else
+            return Bypass(events);
+    } 
 
     /// <summary>
     /// Evaluates whether or not the event can still be completed if the filter does not pass.
