@@ -3,28 +3,56 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace RevenantCore.Util;
 
-/// <summary>
-/// Defines standard serialization options to be used for all YAML (de)serialization tasks.
-/// </summary>
-public class Spec
+// TODO: Documentation, more unit tests
+public interface ISpec
 {
     /// <summary>
-    /// Populates standard options onto either a serializer or deserializer builder.
+    /// Populates serialization options onto either a serializer or deserializer builder.
     /// </summary>
     /// <typeparam name="T">Either SerializerBuilder or DeserializerBuilder; the type of the builder having its options populated.</typeparam>
     /// <param name="builder">The builder on which to populate standard options onto.</param>
     /// <returns><paramref name="builder"/>, with the standard serialization options populated onto it.</returns>
-    private static T PopulateOptions<T>(T builder) where T : BuilderSkeleton<T> => builder
+    public T PopulateOptions<T>(T builder) where T : BuilderSkeleton<T>;
+}
+
+/// <summary>
+/// Defines standard serialization options to be used for all YAML (de)serialization tasks.
+/// </summary>
+public class StandardSpec : ISpec
+{
+    private StandardSpec()
+    {
+
+    }
+
+    public T PopulateOptions<T>(T builder) where T : BuilderSkeleton<T> => builder
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
         .WithEnumNamingConvention(CamelCaseNamingConvention.Instance);
 
+    public static readonly StandardSpec Instance = new();
+}
+
+public static class Serializers
+{
     /// <summary>
-    /// The standard YAML serialization object.
+    /// Creates a new YAML serialization object given the spec sheet.
     /// </summary>
-    public static readonly ISerializer Serializer = PopulateOptions(new SerializerBuilder()).Build();
+    public static ISerializer CreateSerializer(ISpec[] specs)
+    {
+        SerializerBuilder b = new();
+        foreach (ISpec spec in specs)
+            spec.PopulateOptions(b);
+        return b.Build();
+    }
 
     /// <summary>
-    /// The standard YAML deserialization object.
+    /// Creates a new YAML deserialization object given the spec sheet.
     /// </summary>
-    public static readonly IDeserializer Deserializer = PopulateOptions(new DeserializerBuilder()).Build();
+    public static IDeserializer CreateDeserializer(ISpec[] specs)
+    {
+        DeserializerBuilder b = new();
+        foreach (ISpec spec in specs)
+            spec.PopulateOptions(b);
+        return b.Build();
+    }
 }
