@@ -27,7 +27,7 @@ file class FakeScreen : IScreen
     }
 }
 
-file class MockCutscene() : Cutscene
+file class MockCutscene() : Cutscene(new(new([])))
 {
     private readonly float z = 0;
     private readonly bool expDead, expCreate, expTick, expGlean = false;
@@ -98,11 +98,19 @@ public class Cutscene_Test
         Assert.AreEqual(DrawLayer.UI, new MockCutscene().Layer);
     }
 
-    [TestCase(true, true, TestName = "IsDead (Complete)", Description = "A completed cutscene should always have IsDead set to true.")]
-    [TestCase(false, false, TestName = "IsDead (Incomplete; no filter)", Description = "An incomplete cutscene with no filter should not be dead.")]
-    public void IsDead(bool complete, bool expDead)
+    [TestCase(false, true, true, TestName = "IsDead (Complete; no filter)", Description = "A completed cutscene should always have IsDead set to true.")]
+    [TestCase(true, true, true, TestName = "IsDead (Complete; filter)", Description = "A completed and filtered cutscene should always have IsDead set to true.")]
+    [TestCase(true, false, true, TestName = "IsDead (Incomplete; filter)", Description = "An incomplete but filtered cutscene should always have IsDead set to true.")]
+    [TestCase(false, false, false, TestName = "IsDead (Incomplete; no filter)", Description = "An incomplete cutscene with no filter should not be dead.")]
+    public void IsDead(bool failedFilter, bool complete, bool expDead)
     {
-        new MockCutscene(complete, 0, expDead, false, null, false, false).Validate();
+        MockCutscene c = new(complete, 0, expDead, false, null, false, false);
+        if (failedFilter)
+            c.Filter = new(new()
+            {
+                HasAll = ["INCOMPLETE"]
+            });
+        c.Validate();
     }
 }
 
@@ -114,7 +122,7 @@ public class SequentialBlock_Test
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        SequentialBlock block = new([]);
+        SequentialBlock block = new(new(new([])), []);
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -129,7 +137,7 @@ public class SequentialBlock_Test
     [Test]
     public void Z_ObtainFromFirst()
     {
-        SequentialBlock block = new([new MockCutscene(false, 1, false, false, null, false, false)]);
+        SequentialBlock block = new(new(new([])), [new MockCutscene(false, 1, false, false, null, false, false)]);
         Assert.AreEqual(1, block.Z);
     }
 
@@ -143,7 +151,7 @@ public class SequentialBlock_Test
             new(false, 0, false, false, null, false, false), // Active; should not be created yet
             new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
         ];
-        new SequentialBlock(children).Create(new(new()), new(new()));
+        new SequentialBlock(new(new([])), children).Create(new(new()), new(new()));
         foreach (MockCutscene child in children)
             child.Validate();
     }
@@ -155,7 +163,7 @@ public class SequentialBlock_Test
             new(false, 0, false, false, 0, false, false),
             new(false, 0, false, false, null, false, false)
         ];
-        new SequentialBlock(children).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
+        new SequentialBlock(new(new([])), children).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutscene child in children)
             child.Validate();
     }
@@ -170,7 +178,7 @@ public class SequentialBlock_Test
             new(false, 0, false, false, null, false, false), // Active; should not be created yet.
             new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
         ];
-        new SequentialBlock(children).Tick(new(new()), new(new()));
+        new SequentialBlock(new(new([])), children).Tick(new(new()), new(new()));
         foreach (MockCutscene child in children)
             child.Validate();
     }
@@ -184,7 +192,7 @@ public class SequentialBlock_Test
             new(false, 0, false, false, null, false, true), // Active; should not be created, but should be gleaned.
             new(true, 0, false, false, null, false, true) // Inactive; should be gleaned.
         ];
-        SequentialBlock block = new(children);
+        SequentialBlock block = new(new(new([])), children);
         block.Create(new(new()), new(new()));
         block.Glean(new(new()), new(new()));
         foreach (MockCutscene child in children)
@@ -200,7 +208,7 @@ public class ConcurrentBlock_Test
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        ConcurrentBlock block = new([]);
+        ConcurrentBlock block = new(new(new([])), []);
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -215,7 +223,7 @@ public class ConcurrentBlock_Test
     [Test]
     public void Z_UseMaxActive()
     {
-        ConcurrentBlock block = new([
+        ConcurrentBlock block = new(new(new([])), [
             new MockCutscene(false, -1, false, true, null, false, false),
             new MockCutscene(false, 2, false, true, null, false, false),
             new MockCutscene(true, 3, false, false, null, false, true),
@@ -234,7 +242,7 @@ public class ConcurrentBlock_Test
             new(false, 0, false, true, null, false, false), // Ditto.
             new(true, 0, false, false, null, false, true) // Same as first element.
         ];
-        new ConcurrentBlock(children).Create(new(new()), new(new()));
+        new ConcurrentBlock(new(new([])), children).Create(new(new()), new(new()));
         foreach (MockCutscene child in children)
             child.Validate();
     }
@@ -246,7 +254,7 @@ public class ConcurrentBlock_Test
             new(false, 1, false, true, 1, false, false),
             new(false, 0, false, true, 0, false, false)
         ];
-        ConcurrentBlock block = new(children);
+        ConcurrentBlock block = new(new(new([])), children);
         block.Create(new(new()), new(new()));
         block.Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutscene child in children)
@@ -263,7 +271,7 @@ public class ConcurrentBlock_Test
             new(false, 0, false, true, null, true, false), // Ditto.
             new(true, 0, false, false, null, false, true) // Same as first element.
         ];
-        ConcurrentBlock block = new(children);
+        ConcurrentBlock block = new(new(new([])), children);
         block.Create(new(new()), new(new()));
         children[1].SetComplete(true);
         block.Tick(new(new()), new(new()));
@@ -280,7 +288,7 @@ public class ConcurrentBlock_Test
             new(false, 0, false, true, null, false, true), // Ditto.
             new(false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
         ];
-        ConcurrentBlock block = new(children);
+        ConcurrentBlock block = new(new(new([])), children);
         block.Create(new(new()), new(new()));
         children[3].SetComplete(true);
         block.Glean(new(new()), new(new()));
@@ -289,7 +297,7 @@ public class ConcurrentBlock_Test
     }
 }
 
-file class MockInstantCutscene(bool expTrip) : InstantCutscene
+file class MockInstantCutscene(bool expTrip) : InstantCutscene(new(new([])))
 {
     private bool tripped = false;
 
