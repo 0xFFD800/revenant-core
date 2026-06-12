@@ -11,8 +11,14 @@ namespace RevenantCore.Cutscenes;
 /// Represents a Cutscene, a sequence of repeatable instructions loaded from spec
 /// which map to automated changes in the game world.
 /// </summary>
-public abstract class Cutscene : IVisible, ITickable
-{    
+/// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
+public abstract class Cutscene(Universe universe) : IVisible, ITickable
+{   
+    /// <summary>
+    /// The filter which determines whether this cutscene will be triggered or not.
+    /// </summary>
+    public EventFilter? Filter { private get; set; } 
+
     public DrawLayer Layer => DrawLayer.UI;
     public abstract float Z { get; }
     
@@ -20,8 +26,7 @@ public abstract class Cutscene : IVisible, ITickable
     /// Whether this cutscene has completed all its cutscene logic.
     /// </summary>
     protected bool complete = false;
-    // TODO: this will also need to take into account its filter status (i.e., IsDead => !filter.Evaluate() || complete).
-    public bool IsDead => complete;
+    public bool IsDead => !Filter?.Evaluate(universe.Events) ?? false || complete;
 
     public abstract void Create(Scene scene, FrameTime time);
     public abstract void Draw(View view);
@@ -36,8 +41,9 @@ public abstract class Cutscene : IVisible, ITickable
 /// <summary>
 /// A block cutscene which triggers its children one after another, in order.
 /// </summary>
+/// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
 /// <param name="children">The list of children to trigger in order.</param>
-public class SequentialBlock(Cutscene[] children) : Cutscene
+public class SequentialBlock(Universe universe, Cutscene[] children) : Cutscene(universe)
 {
     /// <summary>
     /// The index of the currently active child.
@@ -98,8 +104,9 @@ public class SequentialBlock(Cutscene[] children) : Cutscene
 /// <summary>
 /// A block cutscene which triggers all its children concurrently.
 /// </summary>
+/// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
 /// <param name="children">The list of children to be triggered concurrently as part of this cutscene.</param>
-public class ConcurrentBlock(Cutscene[] children) : Cutscene
+public class ConcurrentBlock(Universe universe, Cutscene[] children) : Cutscene(universe)
 {
     private readonly List<Cutscene> activeChildren = [];
     public override float Z => activeChildren.Count == 0 ? 0 : activeChildren.Max(c => c.Z);
@@ -155,7 +162,8 @@ public class ConcurrentBlock(Cutscene[] children) : Cutscene
 /// <summary>
 /// A base cutscene class which instantaneously triggers, then moves on to the next cutscene.
 /// </summary>
-public abstract class InstantCutscene : Cutscene
+/// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
+public abstract class InstantCutscene(Universe universe) : Cutscene(universe)
 {
     public override float Z => 0;
 
