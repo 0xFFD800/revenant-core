@@ -3,8 +3,6 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace RevenantCore.Util;
 
-// TODO: more unit tests
-
 /// <summary>
 /// Specifies additional options to be used on a serializer or deserializer builder. 
 /// </summary>

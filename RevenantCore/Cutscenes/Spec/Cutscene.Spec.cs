@@ -7,8 +7,6 @@ using YamlDotNet.Serialization;
 
 namespace RevenantCore.Cutscenes.Spec;
 
-// TODO: more unit tests
-
 /// <summary>
 /// The base dataspec for cutscenes. All other cutscene specs should inherit from this one.
 /// </summary>
