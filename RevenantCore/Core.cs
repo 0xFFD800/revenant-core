@@ -24,7 +24,7 @@ public interface IImpl
 /// <summary>
 /// The core implementation object, which registers the core behavior.
 /// </summary>
-public class CoreImpl : IImpl
+internal class CoreImpl : IImpl
 {
     public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry
         .Register("sequentialBlock", typeof(SequentialBlockSpec))

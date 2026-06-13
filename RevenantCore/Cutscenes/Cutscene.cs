@@ -18,7 +18,7 @@ public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible,
     /// <summary>
     /// The filter which determines whether this cutscene will be triggered or not.
     /// </summary>
-    public EventFilter filter = new(spec.Filter);
+    private readonly EventFilter filter = new(spec.Filter);
 
     public DrawLayer Layer => DrawLayer.UI;
     public abstract float Z { get; }

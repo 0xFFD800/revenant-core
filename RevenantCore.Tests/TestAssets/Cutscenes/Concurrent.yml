@@ -1,0 +1,7 @@
+- !concurrentBlock
+  children:
+    - !fake {}
+    - !fake
+      z: 2
+- !concurrentBlock
+  children: []
