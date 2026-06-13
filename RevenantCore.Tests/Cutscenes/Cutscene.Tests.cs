@@ -1,11 +1,11 @@
 using System.Diagnostics;
-using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
+using YamlDotNet.Serialization;
 
 namespace RevenantCore.Tests.Cutscenes;
 
@@ -32,7 +32,7 @@ file class FakeScreen : IScreen
 file class MockCutsceneSpec : CutsceneSpec
 {
     private MockCutscene? cutscene;
-    public MockCutscene Cutscene
+    internal MockCutscene Cutscene
     {
         get
         {
@@ -42,10 +42,14 @@ file class MockCutsceneSpec : CutsceneSpec
         }
     }
 
-    public readonly float z = 0;
-    public readonly bool expDead, expCreate, expTick, expGlean = false;
-    public readonly int? expDrawOrder = null;
-    public bool complete, created, ticked, gleaned = false;
+    public float Z { get; set; } = 0;
+    public bool ExpDead { get; set; } = false;
+    public bool ExpCreate { get; set; } = false;
+    public bool ExpTick { get; set; } = false;
+    public bool ExpGlean { get; set; } = false;
+    public int? ExpDrawOrder { get; set; } = null;
+    public bool Complete { get; set; } = false;
+    public bool created, ticked, gleaned = false;
     public int? drawOrder = null;
 
     internal MockCutsceneSpec(EventFilterSpec filter)
@@ -55,16 +59,16 @@ file class MockCutsceneSpec : CutsceneSpec
 
     internal MockCutsceneSpec(EventFilterSpec filter, bool complete, float z, bool expDead, bool expCreate, int? expDrawOrder, bool expTick, bool expGlean) : this(filter)
     {
-        this.complete = complete;
-        this.z = z;
-        this.expDead = expDead;
-        this.expCreate = expCreate;
-        this.expDrawOrder = expDrawOrder;
-        this.expTick = expTick;
-        this.expGlean = expGlean;
+        Complete = complete;
+        Z = z;
+        ExpDead = expDead;
+        ExpCreate = expCreate;
+        ExpDrawOrder = expDrawOrder;
+        ExpTick = expTick;
+        ExpGlean = expGlean;
     }
 
-    internal MockCutsceneSpec() : this(new())
+    public MockCutsceneSpec() : this(new())
     {
 
     }
@@ -80,19 +84,19 @@ file class MockCutsceneSpec : CutsceneSpec
 file class MockCutscene : Cutscene
 {
     private readonly MockCutsceneSpec spec;
-    public override float Z => spec.z;
+    public override float Z => spec.Z;
 
     internal MockCutscene(MockCutsceneSpec spec) : base(new(new([])), spec)
     {
         this.spec = spec;
-        SetComplete(spec.complete);
+        SetComplete(spec.Complete);
     }
 
     internal MockCutscene() : this(new()) { }
 
     public void SetComplete(bool complete)
     {
-        spec.complete = complete;
+        spec.Complete = complete;
         base.complete = complete;
     }
 
@@ -124,11 +128,11 @@ file class MockCutscene : Cutscene
 
     internal void Validate()
     {
-        Assert.AreEqual(spec.expDead, IsDead, "IsDead did not match expectation");
-        Assert.AreEqual(spec.expCreate, spec.created, "created did not match expectation");
-        Assert.AreEqual(spec.expDrawOrder, spec.drawOrder, "drawOrder did not match expectation");
-        Assert.AreEqual(spec.expTick, spec.ticked, "ticked did not match expectation");
-        Assert.AreEqual(spec.expGlean, spec.gleaned, "gleaned did not match expectation");
+        Assert.AreEqual(spec.ExpDead, IsDead, "IsDead did not match expectation");
+        Assert.AreEqual(spec.ExpCreate, spec.created, "created did not match expectation");
+        Assert.AreEqual(spec.ExpDrawOrder, spec.drawOrder, "drawOrder did not match expectation");
+        Assert.AreEqual(spec.ExpTick, spec.ticked, "ticked did not match expectation");
+        Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
 
@@ -382,5 +386,82 @@ public class InstantCutscene_Test
     {
         Assert.Throws<UnreachableException>(() =>
             new MockInstantCutscene(false).Tick(new(new()), new(new())));
+    }
+}
+
+[TestFixture]
+public class CutsceneRegistry_Test
+{
+    private const string liveYaml = """
+    !mock
+    created: false
+    ticked: false
+    gleaned: false
+    drawOrder: 
+    z: 0
+    expDead: false
+    expCreate: false
+    expTick: false
+    expGlean: false
+    expDrawOrder: 
+    complete: false
+    filter:
+      hasAny: &o0 []
+      hasAll: *o0
+      hasNone: *o0
+    
+    """;
+
+    private const string deadYaml = """
+    !mock
+    created: false
+    ticked: false
+    gleaned: false
+    drawOrder: 
+    z: 0
+    expDead: true
+    expCreate: false
+    expTick: false
+    expGlean: false
+    expDrawOrder: 
+    complete: true
+    filter:
+      hasAny: &o0 []
+      hasAll: *o0
+      hasNone: *o0
+    
+    """;
+
+    [TestCase(false, TestName = "PopulateOptions and Serialize (not dead)")]
+    [TestCase(true, TestName = "PopulateOptions and Serialize (dead)")]
+    public void PopulateOptions_Serialize_CreateTags(bool isDead)
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("mock", typeof(MockCutsceneSpec));
+        ISerializer serializer = Serializers.CreateSerializer([builder.Build()]);
+        string yaml = serializer.Serialize(new MockCutsceneSpec() { Complete = isDead, ExpDead = isDead });
+        Assert.AreEqual(isDead ? deadYaml : liveYaml, yaml, "Generated YAML did not match expectation");
+    }
+
+    [TestCase(false, TestName = "PopulateOptions and Deserialize (not dead)")]
+    [TestCase(true, TestName = "PopulateOptions and Deserialize (dead)")]
+    public void PopulateOptions_Deserialize_MapTags(bool isDead)
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("mock", typeof(MockCutsceneSpec));
+        IDeserializer deserializer = Serializers.CreateDeserializer([builder.Build()]);
+        CutsceneSpec cutscene = deserializer.Deserialize<CutsceneSpec>(isDead ? deadYaml : liveYaml);
+        if (cutscene is MockCutsceneSpec mock)
+            ((MockCutscene)mock.Create(new(new([])))).Validate();
+        else
+            Assert.Fail("Expected mapping to make a new MockCutscene");
+    }
+
+    [Test]
+    public void DuplicateTagName_Error()
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("foo", typeof(MockCutsceneSpec));
+        Assert.Throws<ArgumentException>(() => builder.Register("foo", typeof(MockCutsceneSpec)));
     }
 }

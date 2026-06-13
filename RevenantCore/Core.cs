@@ -37,7 +37,7 @@ public class CoreImpl : IImpl
 public class Core
 {
     private readonly CoreImpl coreImpl = new();
-    private readonly CutsceneRegistry cutscenes;
+    private readonly ISpec cutsceneRegistry;
 
     public Core(IImpl[] impls)
     {
@@ -46,7 +46,7 @@ public class Core
         CutsceneRegistryBuilder cutsceneBuilder = new();
         foreach (IImpl impl in allImpls)
             impl.RegisterCutscenes(cutsceneBuilder);
-        cutscenes = cutsceneBuilder.Build();
+        cutsceneRegistry = cutsceneBuilder.Build();
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public class Core
     public Cutscene[] LoadCutscenes(Universe universe, string filePath)
     {
         string yaml = File.ReadAllText(filePath);
-        IDeserializer deserializer = Serializers.CreateDeserializer([cutscenes]);
+        IDeserializer deserializer = Serializers.CreateDeserializer([cutsceneRegistry]);
         CutsceneSpec[] specs = deserializer.Deserialize<CutsceneSpec[]>(yaml);
         return [..specs.Select(s => s.Create(universe))];
     }

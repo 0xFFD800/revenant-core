@@ -56,7 +56,7 @@ public class ConcurrentBlockSpec : BlockSpec
 /// A finalized cutscene spec registry. Contains all type mappings populated during the registry phase.
 /// </summary>
 /// <param name="registry">The finalized tag to type map.</param>
-public class CutsceneRegistry(FrozenDictionary<string, Type> registry) : ISpec
+internal class CutsceneRegistry(FrozenDictionary<string, Type> registry) : ISpec
 {
     public T PopulateOptions<T>(T builder) where T : BuilderSkeleton<T>
     {
@@ -91,5 +91,5 @@ public class CutsceneRegistryBuilder
     /// Builds and finalizes the cutscene registry.
     /// </summary>
     /// <returns>The finalized cutscene registry.</returns>
-    public CutsceneRegistry Build() => new(registry.ToFrozenDictionary());
+    public ISpec Build() => new CutsceneRegistry(registry.ToFrozenDictionary());
 }
