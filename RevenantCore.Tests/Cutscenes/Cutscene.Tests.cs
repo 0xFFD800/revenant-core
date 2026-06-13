@@ -159,7 +159,7 @@ public class SequentialBlock_Test
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        SequentialBlock block = new(new(new([])), new());
+        Cutscene block = new SequentialBlockSpec().Create(new(new([])));
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -174,7 +174,7 @@ public class SequentialBlock_Test
     [Test]
     public void Z_ObtainFromFirst()
     {
-        SequentialBlock block = new(new(new([])), new() { Children = [new MockCutsceneSpec(new(), false, 1, false, false, null, false, false)] });
+        Cutscene block = new SequentialBlockSpec() { Children = [new MockCutsceneSpec(new(), false, 1, false, false, null, false, false)] }.Create(new(new([])));
         Assert.AreEqual(1, block.Z);
     }
 
@@ -188,7 +188,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet
             new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
         ];
-        new SequentialBlock(new(new([])), new() { Children = children }).Create(new(new()), new(new()));
+        new SequentialBlockSpec() { Children = children }.Create(new(new([]))).Create(new(new()), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -200,7 +200,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, 0, false, false),
             new(new(), false, 0, false, false, null, false, false)
         ];
-        new SequentialBlock(new(new([])), new() { Children = children }).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
+        new SequentialBlockSpec() { Children = children }.Create(new(new([]))).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -215,7 +215,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet.
             new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
         ];
-        new SequentialBlock(new(new([])), new() { Children = children }).Tick(new(new()), new(new()));
+        new SequentialBlockSpec() { Children = children }.Create(new(new([]))).Tick(new(new()), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -229,7 +229,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, null, false, true), // Active; should not be created, but should be gleaned.
             new(new(), true, 0, false, false, null, false, true) // Inactive; should be gleaned.
         ];
-        SequentialBlock block = new(new(new([])), new() { Children = children });
+        Cutscene block = new SequentialBlockSpec() { Children = children }.Create(new(new([])));
         block.Create(new(new()), new(new()));
         block.Glean(new(new()), new(new()));
         foreach (MockCutsceneSpec child in children)
@@ -245,7 +245,7 @@ public class ConcurrentBlock_Test
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        ConcurrentBlock block = new(new(new([])), new());
+        Cutscene block = new ConcurrentBlockSpec().Create(new(new([])));
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -260,15 +260,15 @@ public class ConcurrentBlock_Test
     [Test]
     public void Z_UseMaxActive()
     {
-        ConcurrentBlock block = new(new(new([])), new()
+        Cutscene block = new ConcurrentBlockSpec()
         {
             Children = [
-            new MockCutsceneSpec(new(), false, -1, false, true, null, false, false),
-            new MockCutsceneSpec(new(), false, 2, false, true, null, false, false),
-            new MockCutsceneSpec(new(), true, 3, false, false, null, false, true),
-            new MockCutsceneSpec(new(), false, 1, false, true, null, false, false)
-        ]
-        });
+                new MockCutsceneSpec(new(), false, -1, false, true, null, false, false),
+                new MockCutsceneSpec(new(), false, 2, false, true, null, false, false),
+                new MockCutsceneSpec(new(), true, 3, false, false, null, false, true),
+                new MockCutsceneSpec(new(), false, 1, false, true, null, false, false)
+            ]
+        }.Create(new(new([])));
         block.Create(new(new()), new(new()));
         Assert.AreEqual(2, block.Z);
     }
@@ -282,7 +282,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, null, false, false), // Ditto.
             new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
-        new ConcurrentBlock(new(new([])), new() { Children = children }).Create(new(new()), new(new()));
+        new ConcurrentBlockSpec() { Children = children }.Create(new(new([]))).Create(new(new()), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -294,7 +294,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 1, false, true, 1, false, false),
             new(new(), false, 0, false, true, 0, false, false)
         ];
-        ConcurrentBlock block = new(new(new([])), new() { Children = children });
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(new(new([])));
         block.Create(new(new()), new(new()));
         block.Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutsceneSpec child in children)
@@ -311,7 +311,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, null, true, false), // Ditto.
             new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
-        ConcurrentBlock block = new(new(new([])), new() { Children = children });
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(new(new([])));
         block.Create(new(new()), new(new()));
         children[1].Cutscene.SetComplete(true);
         block.Tick(new(new()), new(new()));
@@ -328,7 +328,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, null, false, true), // Ditto.
             new(new(), false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
         ];
-        ConcurrentBlock block = new(new(new([])), new() { Children = children });
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(new(new([])));
         block.Create(new(new()), new(new()));
         children[3].Cutscene.SetComplete(true);
         block.Glean(new(new()), new(new()));

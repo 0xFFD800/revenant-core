@@ -44,7 +44,7 @@ public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible,
 /// </summary>
 /// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
 /// <param name="children">The list of children to trigger in order.</param>
-public class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cutscene(universe, spec)
+internal class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cutscene(universe, spec)
 {
     private readonly Cutscene[] children = [..spec.Children.Select(c => c.Create(universe))];
 
@@ -109,7 +109,7 @@ public class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cuts
 /// </summary>
 /// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
 /// <param name="children">The list of children to be triggered concurrently as part of this cutscene.</param>
-public class ConcurrentBlock(Universe universe, ConcurrentBlockSpec spec) : Cutscene(universe, spec)
+internal class ConcurrentBlock(Universe universe, ConcurrentBlockSpec spec) : Cutscene(universe, spec)
 {
     private readonly Cutscene[] children = [..spec.Children.Select(c => c.Create(universe))];
     private readonly List<Cutscene> activeChildren = [];
