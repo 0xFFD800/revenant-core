@@ -28,7 +28,8 @@ internal class CoreImpl : IImpl
 {
     public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry
         .Register("sequentialBlock", typeof(SequentialBlockSpec))
-        .Register("concurrentBlock", typeof(ConcurrentBlockSpec));
+        .Register("concurrentBlock", typeof(ConcurrentBlockSpec))
+        .Register("load", typeof(LoadCutsceneSpec));
 }
 
 /// <summary>
@@ -56,11 +57,9 @@ public class Core
     /// <param name="universe">The universe in which to create the new cutscenes.</param>
     /// <param name="filePath">The path to the file containing the cutscene data.</param>
     /// <returns>The cutscenes created for the provided universe and cutscene data file.</returns>
-    public Cutscene[] LoadCutscenes(Universe universe, string filePath)
+    public Cutscene LoadCutscene(Universe universe, string yaml)
     {
-        string yaml = File.ReadAllText(filePath);
         IDeserializer deserializer = Serializers.CreateDeserializer([cutsceneRegistry]);
-        CutsceneSpec[] specs = deserializer.Deserialize<CutsceneSpec[]>(yaml);
-        return [..specs.Select(s => s.Create(universe))];
+        return deserializer.Deserialize<CutsceneSpec>(yaml).Create(universe);
     }
 }
