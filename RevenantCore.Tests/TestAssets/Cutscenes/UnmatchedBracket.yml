@@ -1,0 +1,4 @@
+cutscene: |
+  !fake
+  foo: ${unmatched
+  z: -1

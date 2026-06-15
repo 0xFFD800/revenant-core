@@ -114,6 +114,37 @@ public class Core_Test
     }
 
     [Test]
+    public void LoadCutscene_NonReferencingParameter_LiteralStr()
+    {
+        Core core = new([new FakeImpl()]);
+        Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
+        !load
+        fileName: ../../../TestAssets/Cutscenes/NonReferencingParameter.yml
+        """));
+        Assert.IsFalse(c.IsDead, "The cutscene should not be complete and therefore not be dead.");
+        if (c is FakeCutscene fake)
+            Assert.AreEqual("${nonReference}", fake.Foo, "The cutscene did not match the expected value of Foo.");
+        else
+            Assert.Fail("Expected created cutscene to be a fake cutscene");
+    }
+
+    [Test]
+    public void LoadCutscene_UnmatchedBracket_CompleteParse()
+    {
+        Core core = new([new FakeImpl()]);
+        Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
+        !load
+        fileName: ../../../TestAssets/Cutscenes/UnmatchedBracket.yml
+        """));
+        Assert.IsFalse(c.IsDead, "The cutscene should not be complete and therefore not be dead.");
+        Assert.AreEqual(-1, c.Z, "The cutscene did not match the expected Z value.");
+        if (c is FakeCutscene fake)
+            Assert.AreEqual("${unmatched", fake.Foo, "The cutscene did not match the expected value of Foo.");
+        else
+            Assert.Fail("Expected created cutscene to be a fake cutscene");
+    }
+
+    [Test]
     public void LoadCutscene_Fake_CreateFake()
     {
         Core core = new([new FakeImpl()]);
