@@ -3,7 +3,9 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace RevenantCore.Util;
 
-// TODO: Documentation, more unit tests
+/// <summary>
+/// Specifies additional options to be used on a serializer or deserializer builder. 
+/// </summary>
 public interface ISpec
 {
     /// <summary>
@@ -18,7 +20,7 @@ public interface ISpec
 /// <summary>
 /// Defines standard serialization options to be used for all YAML (de)serialization tasks.
 /// </summary>
-public class StandardSpec : ISpec
+internal class StandardSpec : ISpec
 {
     private StandardSpec()
     {
@@ -29,9 +31,13 @@ public class StandardSpec : ISpec
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
         .WithEnumNamingConvention(CamelCaseNamingConvention.Instance);
 
-    public static readonly StandardSpec Instance = new();
+    internal static readonly StandardSpec Instance = new();
 }
 
+/// <summary>
+/// A static class with methods to create serializers given spec sheets.
+/// Serializers will always include the standard spec.
+/// </summary>
 public static class Serializers
 {
     /// <summary>
@@ -40,6 +46,7 @@ public static class Serializers
     public static ISerializer CreateSerializer(ISpec[] specs)
     {
         SerializerBuilder b = new();
+        StandardSpec.Instance.PopulateOptions(b);
         foreach (ISpec spec in specs)
             spec.PopulateOptions(b);
         return b.Build();
@@ -51,6 +58,7 @@ public static class Serializers
     public static IDeserializer CreateDeserializer(ISpec[] specs)
     {
         DeserializerBuilder b = new();
+        StandardSpec.Instance.PopulateOptions(b);
         foreach (ISpec spec in specs)
             spec.PopulateOptions(b);
         return b.Build();

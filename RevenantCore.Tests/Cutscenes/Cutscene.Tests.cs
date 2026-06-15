@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
+using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
+using YamlDotNet.Serialization;
 
 namespace RevenantCore.Tests.Cutscenes;
 
@@ -27,75 +29,122 @@ file class FakeScreen : IScreen
     }
 }
 
-file class MockCutscene() : Cutscene(new(new([])))
+file class MockCutsceneSpec : CutsceneSpec
 {
-    private readonly float z = 0;
-    private readonly bool expDead, expCreate, expTick, expGlean = false;
-    private readonly int? expDrawOrder = null;
-    private bool created, ticked, gleaned = false;
-    private int? drawOrder = null;
-
-    public override float Z => z;
-
-    internal MockCutscene(bool complete, float z, bool expDead, bool expCreate, int? expDrawOrder, bool expTick, bool expGlean) : this()
+    private MockCutscene? cutscene;
+    internal MockCutscene Cutscene
     {
-        SetComplete(complete);
-        this.z = z;
-        this.expDead = expDead;
-        this.expCreate = expCreate;
-        this.expDrawOrder = expDrawOrder;
-        this.expTick = expTick;
-        this.expGlean = expGlean;
+        get
+        {
+            if (cutscene == null)
+                throw new NullReferenceException("Expected cutscene to be non-null, but it was not");
+            return cutscene;
+        }
     }
+
+    public float Z { get; set; } = 0;
+    public bool ExpDead { get; set; } = false;
+    public bool ExpCreate { get; set; } = false;
+    public bool ExpTick { get; set; } = false;
+    public bool ExpGlean { get; set; } = false;
+    public int? ExpDrawOrder { get; set; } = null;
+    public bool Complete { get; set; } = false;
+    public bool created, ticked, gleaned = false;
+    public int? drawOrder = null;
+
+    internal MockCutsceneSpec(EventFilterSpec filter)
+    {
+        Filter = filter;
+    }
+
+    internal MockCutsceneSpec(EventFilterSpec filter, bool complete, float z, bool expDead, bool expCreate, int? expDrawOrder, bool expTick, bool expGlean) : this(filter)
+    {
+        Complete = complete;
+        Z = z;
+        ExpDead = expDead;
+        ExpCreate = expCreate;
+        ExpDrawOrder = expDrawOrder;
+        ExpTick = expTick;
+        ExpGlean = expGlean;
+    }
+
+    public MockCutsceneSpec() : this(new())
+    {
+
+    }
+
+    public override Cutscene Create(Universe universe)
+    {
+        cutscene = new(universe, this);
+
+        return cutscene;
+    }
+}
+
+file class MockCutscene : Cutscene
+{
+    private readonly MockCutsceneSpec spec;
+    public override float Z => spec.Z;
+
+    internal MockCutscene(Universe universe, MockCutsceneSpec spec) : base(universe, spec)
+    {
+        this.spec = spec;
+        SetComplete(spec.Complete);
+    }
+
+    internal MockCutscene(Universe universe) : this(universe, new()) { }
 
     public void SetComplete(bool complete)
     {
+        spec.Complete = complete;
         base.complete = complete;
     }
 
     public override void Create(Scene scene, FrameTime time)
     {
-        Assert.IsFalse(created, "Cutscene was created twice!");
-        created = true;
+        Assert.IsFalse(spec.created, "Cutscene was created twice!");
+        spec.created = true;
     }
 
     public override void Draw(View view)
     {
         if (view.Screen is FakeScreen screen)
-            drawOrder = screen.drawOrder++;
+            spec.drawOrder = screen.drawOrder++;
         else
             throw new ArgumentException("MockCutscene must be drawn by a FakeScreen");
     }
 
     public override void Glean(Scene scene, FrameTime time)
     {
-        Assert.IsFalse(gleaned, "Cutscene was gleaned twice!");
+        Assert.IsFalse(spec.gleaned, "Cutscene was gleaned twice!");
         base.Glean(scene, time);
-        gleaned = true;
+        spec.gleaned = true;
     }
 
     public override void Tick(Scene scene, FrameTime time)
     {
-        ticked = true;
+        spec.ticked = true;
     }
 
     internal void Validate()
     {
-        Assert.AreEqual(expDead, IsDead, "IsDead did not match expectation");
-        Assert.AreEqual(expCreate, created, "created did not match expectation");
-        Assert.AreEqual(expDrawOrder, drawOrder, "drawOrder did not match expectation");
-        Assert.AreEqual(expTick, ticked, "ticked did not match expectation");
-        Assert.AreEqual(expGlean, gleaned, "gleaned did not match expectation");
+        Assert.AreEqual(spec.ExpDead, IsDead, "IsDead did not match expectation");
+        Assert.AreEqual(spec.ExpCreate, spec.created, "created did not match expectation");
+        Assert.AreEqual(spec.ExpDrawOrder, spec.drawOrder, "drawOrder did not match expectation");
+        Assert.AreEqual(spec.ExpTick, spec.ticked, "ticked did not match expectation");
+        Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
 
 [TestFixture]
 public class Cutscene_Test
 {
+    private static Universe Universe => new(new([]), new([]));
+
     [Test]
     public void Layer_UI()
     {
-        Assert.AreEqual(DrawLayer.UI, new MockCutscene().Layer);
+        Assert.AreEqual(DrawLayer.UI, new MockCutscene(Universe).Layer);
     }
 
     [TestCase(false, true, true, TestName = "IsDead (Complete; no filter)", Description = "A completed cutscene should always have IsDead set to true.")]
@@ -104,25 +153,21 @@ public class Cutscene_Test
     [TestCase(false, false, false, TestName = "IsDead (Incomplete; no filter)", Description = "An incomplete cutscene with no filter should not be dead.")]
     public void IsDead(bool failedFilter, bool complete, bool expDead)
     {
-        MockCutscene c = new(complete, 0, expDead, false, null, false, false);
-        if (failedFilter)
-            c.Filter = new(new()
-            {
-                HasAll = ["INCOMPLETE"]
-            });
-        c.Validate();
+        new MockCutscene(Universe, new(failedFilter ? new() { HasAll = ["INCOMPLETE"] } : new(), complete, 0, expDead, false, null, false, false)).Validate();
     }
 }
 
 [TestFixture]
 public class SequentialBlock_Test
 {
+    private static Universe Universe => new(new([]), new([]));
+
     [Test]
     public void Act_NoChildren_NoError()
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        SequentialBlock block = new(new(new([])), []);
+        Cutscene block = new SequentialBlockSpec().Create(Universe);
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -137,78 +182,80 @@ public class SequentialBlock_Test
     [Test]
     public void Z_ObtainFromFirst()
     {
-        SequentialBlock block = new(new(new([])), [new MockCutscene(false, 1, false, false, null, false, false)]);
+        Cutscene block = new SequentialBlockSpec() { Children = [new MockCutsceneSpec(new(), false, 1, false, false, null, false, false)] }.Create(Universe);
         Assert.AreEqual(1, block.Z);
     }
 
     [Test]
     public void Create_AdvanceUntilActive()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(true, 0, false, false, null, false, true), // Ditto.
-            new(false, 0, false, true, null, false, false), // Active; should be created
-            new(false, 0, false, false, null, false, false), // Active; should not be created yet
-            new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(new(), true, 0, false, false, null, false, true), // Ditto.
+            new(new(), false, 0, false, true, null, false, false), // Active; should be created
+            new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet
+            new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
         ];
-        new SequentialBlock(new(new([])), children).Create(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Create(new(new()), new(new()));
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Draw_DrawFirst()
     {
-        MockCutscene[] children = [
-            new(false, 0, false, false, 0, false, false),
-            new(false, 0, false, false, null, false, false)
+        MockCutsceneSpec[] children = [
+            new(new(), false, 0, false, false, 0, false, false),
+            new(new(), false, 0, false, false, null, false, false)
         ];
-        new SequentialBlock(new(new([])), children).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Draw(new(new FakeScreen(), 0, DrawLayer.UI));
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Tick_AdvanceThenTick()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(true, 0, false, false, null, false, true), // Ditto.
-            new(false, 0, false, true, null, true, false), // Active; should be created and ticked.
-            new(false, 0, false, false, null, false, false), // Active; should not be created yet.
-            new(true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(new(), true, 0, false, false, null, false, true), // Ditto.
+            new(new(), false, 0, false, true, null, true, false), // Active; should be created and ticked.
+            new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet.
+            new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
         ];
-        new SequentialBlock(new(new([])), children).Tick(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Tick(new(new()), new(new()));
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Glean_GleanRemaining()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
-            new(false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
-            new(false, 0, false, false, null, false, true), // Active; should not be created, but should be gleaned.
-            new(true, 0, false, false, null, false, true) // Inactive; should be gleaned.
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
+            new(new(), false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
+            new(new(), false, 0, false, false, null, false, true), // Active; should not be created, but should be gleaned.
+            new(new(), true, 0, false, false, null, false, true) // Inactive; should be gleaned.
         ];
-        SequentialBlock block = new(new(new([])), children);
+        Cutscene block = new SequentialBlockSpec() { Children = children }.Create(Universe);
         block.Create(new(new()), new(new()));
         block.Glean(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 }
 
 [TestFixture]
 public class ConcurrentBlock_Test
 {
+    private static Universe Universe => new(new([]), new([]));
+
     [Test]
     public void Act_NoChildren_NoError()
     {
         Scene scene = new(new());
         FrameTime time = new(new());
-        ConcurrentBlock block = new(new(new([])), []);
+        Cutscene block = new ConcurrentBlockSpec().Create(Universe);
         Assert.AreEqual(0, block.Z);
         Assert.DoesNotThrow(() => block.Create(scene, time));
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
@@ -223,12 +270,15 @@ public class ConcurrentBlock_Test
     [Test]
     public void Z_UseMaxActive()
     {
-        ConcurrentBlock block = new(new(new([])), [
-            new MockCutscene(false, -1, false, true, null, false, false),
-            new MockCutscene(false, 2, false, true, null, false, false),
-            new MockCutscene(true, 3, false, false, null, false, true),
-            new MockCutscene(false, 1, false, true, null, false, false)
-        ]);
+        Cutscene block = new ConcurrentBlockSpec()
+        {
+            Children = [
+                new MockCutsceneSpec(new(), false, -1, false, true, null, false, false),
+                new MockCutsceneSpec(new(), false, 2, false, true, null, false, false),
+                new MockCutsceneSpec(new(), true, 3, false, false, null, false, true),
+                new MockCutsceneSpec(new(), false, 1, false, true, null, false, false)
+            ]
+        }.Create(Universe);
         block.Create(new(new()), new(new()));
         Assert.AreEqual(2, block.Z);
     }
@@ -236,68 +286,68 @@ public class ConcurrentBlock_Test
     [Test]
     public void Create_CreateAllActive()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned.
-            new(false, 0, false, true, null, false, false), // Active; should be created.
-            new(false, 0, false, true, null, false, false), // Ditto.
-            new(true, 0, false, false, null, false, true) // Same as first element.
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Should be gleaned.
+            new(new(), false, 0, false, true, null, false, false), // Active; should be created.
+            new(new(), false, 0, false, true, null, false, false), // Ditto.
+            new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
-        new ConcurrentBlock(new(new([])), children).Create(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        new ConcurrentBlockSpec() { Children = children }.Create(Universe).Create(new(new()), new(new()));
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Draw_DrawAll()
     {
-        MockCutscene[] children = [
-            new(false, 1, false, true, 1, false, false),
-            new(false, 0, false, true, 0, false, false)
+        MockCutsceneSpec[] children = [
+            new(new(), false, 1, false, true, 1, false, false),
+            new(new(), false, 0, false, true, 0, false, false)
         ];
-        ConcurrentBlock block = new(new(new([])), children);
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
         block.Create(new(new()), new(new()));
         block.Draw(new(new FakeScreen(), 0, DrawLayer.UI));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Tick_TickActiveGleanInactive()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
-            new(false, 0, false, true, null, false, true), // Active, but will be set to inactive between Create and Tick. Should be created, but gleaned after Tick.
-            new(false, 0, false, true, null, true, false), // Active; should be created and ticked.
-            new(false, 0, false, true, null, true, false), // Ditto.
-            new(true, 0, false, false, null, false, true) // Same as first element.
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Will not be dead, because should have complete reset after being gleaned.
+            new(new(), false, 0, false, true, null, false, true), // Active, but will be set to inactive between Create and Tick. Should be created, but gleaned after Tick.
+            new(new(), false, 0, false, true, null, true, false), // Active; should be created and ticked.
+            new(new(), false, 0, false, true, null, true, false), // Ditto.
+            new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
-        ConcurrentBlock block = new(new(new([])), children);
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
         block.Create(new(new()), new(new()));
-        children[1].SetComplete(true);
+        children[1].Cutscene.SetComplete(true);
         block.Tick(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 
     [Test]
     public void Glean_GleanRemaining()
     {
-        MockCutscene[] children = [
-            new(true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
-            new(false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
-            new(false, 0, false, true, null, false, true), // Ditto.
-            new(false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
+        MockCutsceneSpec[] children = [
+            new(new(), true, 0, false, false, null, false, true), // Inactive. Should be gleaned by Create.
+            new(new(), false, 0, false, true, null, false, true), // Active; should be created, then gleaned by Glean.
+            new(new(), false, 0, false, true, null, false, true), // Ditto.
+            new(new(), false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
         ];
-        ConcurrentBlock block = new(new(new([])), children);
+        Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
         block.Create(new(new()), new(new()));
-        children[3].SetComplete(true);
+        children[3].Cutscene.SetComplete(true);
         block.Glean(new(new()), new(new()));
-        foreach (MockCutscene child in children)
-            child.Validate();
+        foreach (MockCutsceneSpec child in children)
+            child.Cutscene.Validate();
     }
 }
 
-file class MockInstantCutscene(bool expTrip) : InstantCutscene(new(new([])))
+file class MockInstantCutscene(Universe universe, bool expTrip) : InstantCutscene(universe, new MockCutsceneSpec())
 {
     private bool tripped = false;
 
@@ -316,16 +366,18 @@ file class MockInstantCutscene(bool expTrip) : InstantCutscene(new(new([])))
 [TestFixture]
 public class InstantCutscene_Test
 {
+    private static Universe Universe => new(new([]), new([]));
+
     [Test]
     public void Initial_NoTrip()
     {
-        new MockInstantCutscene(false).Validate();
+        new MockInstantCutscene(Universe, false).Validate();
     }
 
     [Test]
     public void Create_Trip()
     {
-        MockInstantCutscene cutscene = new(true);
+        MockInstantCutscene cutscene = new(Universe, true);
         cutscene.Create(new(new()), new(new()));
         cutscene.Validate();
     }
@@ -334,13 +386,90 @@ public class InstantCutscene_Test
     public void Draw_Throw()
     {
         Assert.Throws<UnreachableException>(() =>
-            new MockInstantCutscene(false).Draw(new(new FakeScreen(), 0, DrawLayer.UI)));
+            new MockInstantCutscene(Universe, false).Draw(new(new FakeScreen(), 0, DrawLayer.UI)));
     }
 
     [Test]
     public void Tick_Throw()
     {
         Assert.Throws<UnreachableException>(() =>
-            new MockInstantCutscene(false).Tick(new(new()), new(new())));
+            new MockInstantCutscene(Universe, false).Tick(new(new()), new(new())));
+    }
+}
+
+[TestFixture]
+public class CutsceneRegistry_Test
+{
+    private const string liveYaml = """
+    !mock
+    created: false
+    ticked: false
+    gleaned: false
+    drawOrder: 
+    z: 0
+    expDead: false
+    expCreate: false
+    expTick: false
+    expGlean: false
+    expDrawOrder: 
+    complete: false
+    filter:
+      hasAny: &o0 []
+      hasAll: *o0
+      hasNone: *o0
+    
+    """;
+
+    private const string deadYaml = """
+    !mock
+    created: false
+    ticked: false
+    gleaned: false
+    drawOrder: 
+    z: 0
+    expDead: true
+    expCreate: false
+    expTick: false
+    expGlean: false
+    expDrawOrder: 
+    complete: true
+    filter:
+      hasAny: &o0 []
+      hasAll: *o0
+      hasNone: *o0
+    
+    """;
+
+    [TestCase(false, TestName = "PopulateOptions and Serialize (not dead)")]
+    [TestCase(true, TestName = "PopulateOptions and Serialize (dead)")]
+    public void PopulateOptions_Serialize_CreateTags(bool isDead)
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("mock", typeof(MockCutsceneSpec));
+        ISerializer serializer = Serializers.CreateSerializer([builder.Build()]);
+        string yaml = serializer.Serialize(new MockCutsceneSpec() { Complete = isDead, ExpDead = isDead });
+        Assert.AreEqual(isDead ? deadYaml : liveYaml, yaml, "Generated YAML did not match expectation");
+    }
+
+    [TestCase(false, TestName = "PopulateOptions and Deserialize (not dead)")]
+    [TestCase(true, TestName = "PopulateOptions and Deserialize (dead)")]
+    public void PopulateOptions_Deserialize_MapTags(bool isDead)
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("mock", typeof(MockCutsceneSpec));
+        IDeserializer deserializer = Serializers.CreateDeserializer([builder.Build()]);
+        CutsceneSpec cutscene = deserializer.Deserialize<CutsceneSpec>(isDead ? deadYaml : liveYaml);
+        if (cutscene is MockCutsceneSpec mock)
+            ((MockCutscene)mock.Create(new(new([]), new([])))).Validate();
+        else
+            Assert.Fail("Expected mapping to make a new MockCutscene");
+    }
+
+    [Test]
+    public void DuplicateTagName_Error()
+    {
+        CutsceneRegistryBuilder builder = new();
+        builder.Register("foo", typeof(MockCutsceneSpec));
+        Assert.Throws<ArgumentException>(() => builder.Register("foo", typeof(MockCutsceneSpec)));
     }
 }

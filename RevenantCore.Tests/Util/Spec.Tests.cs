@@ -41,13 +41,13 @@ public class Spec_Test
     [Test]
     public void SerializerMatches()
     {
-        Assert.AreEqual(YamlDocumentTest, Serializers.CreateSerializer([StandardSpec.Instance]).Serialize(InMemoryTest));
+        Assert.AreEqual(YamlDocumentTest, Serializers.CreateSerializer([]).Serialize(InMemoryTest));
     }
 
     [Test]
     public void DeserializerMatches()
     {
-        Dictionary<TestEnum, TestObject> deserialized = Serializers.CreateDeserializer([StandardSpec.Instance]).Deserialize<Dictionary<TestEnum, TestObject>>(YamlDocumentTest);
+        Dictionary<TestEnum, TestObject> deserialized = Serializers.CreateDeserializer([]).Deserialize<Dictionary<TestEnum, TestObject>>(YamlDocumentTest);
         foreach (TestEnum test in Enum.GetValues<TestEnum>())
         {
             Assert.AreEqual(InMemoryTest[test].Bool, deserialized[test].Bool,
