@@ -51,10 +51,9 @@ public class Core
     }
 
     /// <summary>
-    /// Loads a list of cutscenes from a dataspec.
-    /// This is likely a temporary method... in the future there won't just be files of cutscenes.
+    /// Loads a cutscene from a dataspec.
     /// </summary>
-    /// <param name="universe">The universe in which to create the new cutscenes.</param>
+    /// <param name="universe">The universe in which to create the new cutscene.</param>
     /// <param name="filePath">The path to the file containing the cutscene data.</param>
     /// <returns>The cutscenes created for the provided universe and cutscene data file.</returns>
     public Cutscene LoadCutscene(Universe universe, string yaml)
