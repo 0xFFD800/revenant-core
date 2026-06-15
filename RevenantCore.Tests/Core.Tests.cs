@@ -44,39 +44,44 @@ public class Core_Test
     public void LoadCutscenes_Sequential_CreateSequential()
     {
         Core core = new([new FakeImpl()]);
-        Cutscene[] c = core.LoadCutscenes(new(new([])), "../../../TestAssets/Cutscenes/Sequential.yml");
-        foreach (Cutscene cutscene in c)
-            cutscene.Create(new(new()), new(new()));
-        Assert.AreEqual(2, c.Length, "Expected 2 sequential cutscenes");
-        Assert.IsFalse(c[0].IsDead, "The first cutscene in the file should have active children and therefore not be dead.");
-        Assert.AreEqual(1, c[0].Z, "The first cutscene in the file should match its first child with a Z of 1.");
-        Assert.IsTrue(c[1].IsDead, "The second cutscene in the file should not have active children and therefore be dead.");
-        Assert.AreEqual(0, c[1].Z, "The second cutscene in the file should have no children, so its Z should default to 0.");
+        Cutscene c = core.LoadCutscene(new(core, new([])), """
+        !sequentialBlock
+        children:
+          - !fake
+            z: 1
+          - !fake {}
+        """);
+        c.Create(new(new()), new(new()));
+        Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
+        Assert.AreEqual(1, c.Z, "The cutscene should match its first child with a Z of 1.");
     }
 
     [Test]
     public void LoadCutscenes_Concurrent_CreateConcurrent()
     {
         Core core = new([new FakeImpl()]);
-        Cutscene[] c = core.LoadCutscenes(new(new([])), "../../../TestAssets/Cutscenes/Concurrent.yml");
-        foreach (Cutscene cutscene in c)
-            cutscene.Create(new(new()), new(new()));
-        Assert.AreEqual(2, c.Length, "Expected 2 concurrent cutscenes");
-        Assert.IsFalse(c[0].IsDead, "The first cutscene in the file should have active children and therefore not be dead.");
-        Assert.AreEqual(2, c[0].Z, "The first cutscene in the file should match its childrens' maximum Z of 2.");
-        Assert.IsTrue(c[1].IsDead, "The second cutscene in the file should not have active children and therefore be dead.");
-        Assert.AreEqual(0, c[1].Z, "The second cutscene in the file should have no children, so its Z should default to 0.");
+        Cutscene c = core.LoadCutscene(new(core, new([])), """
+        !concurrentBlock
+        children:
+          - !fake {}
+          - !fake
+            z: 2
+        """);
+        c.Create(new(new()), new(new()));
+        Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
+        Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
 
     [Test]
     public void LoadCutscenes_Fake_CreateFake()
     {
         Core core = new([new FakeImpl()]);
-        Cutscene[] c = core.LoadCutscenes(new(new([])), "../../../TestAssets/Cutscenes/Fake.yml");
-        foreach (Cutscene cutscene in c)
-            cutscene.Create(new(new()), new(new()));
-        Assert.AreEqual(2, c.Length, "Expected 2 fake cutscenes");
-        Assert.AreEqual(1, c[0].Z, "The first cutscene in the file should have a Z of 1.");
-        Assert.AreEqual(0, c[1].Z, "The second cutscene in the file should have a Z of 0.");
+        Cutscene c = core.LoadCutscene(new(core, new([])), """
+        !fake
+        z: 1
+        """);
+        c.Create(new(new()), new(new()));
+        Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
+        Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
     }
 }

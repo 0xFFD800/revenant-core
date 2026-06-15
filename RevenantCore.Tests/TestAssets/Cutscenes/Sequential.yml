@@ -1,7 +1,0 @@
-- !sequentialBlock
-  children:
-    - !fake
-      z: 1
-    - !fake {}
-- !sequentialBlock
-  children: []

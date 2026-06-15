@@ -1,4 +1,4 @@
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
@@ -59,6 +59,7 @@ public class Core
     /// <returns>The cutscenes created for the provided universe and cutscene data file.</returns>
     public Cutscene LoadCutscene(Universe universe, string yaml)
     {
+        Trace.Assert(universe.Core == this);
         IDeserializer deserializer = Serializers.CreateDeserializer([cutsceneRegistry]);
         return deserializer.Deserialize<CutsceneSpec>(yaml).Create(universe);
     }
