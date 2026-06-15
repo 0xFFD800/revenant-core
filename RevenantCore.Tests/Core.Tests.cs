@@ -9,6 +9,7 @@ namespace RevenantCore.Tests;
 file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(universe, spec)
 {
     public override float Z => spec.Z;
+    public string Foo => spec.Foo;
 
     public override void Create(Scene scene, FrameTime time)
     {
@@ -29,6 +30,7 @@ file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(uni
 public class FakeCutsceneSpec : CutsceneSpec
 {
     public float Z { get; set; } = 0;
+    public string Foo { get; set; } = "";
 
     public override Cutscene Create(Universe universe) => new FakeCutscene(universe, this);
 }
@@ -41,7 +43,7 @@ file class FakeImpl : IImpl
 public class Core_Test
 {
     [Test]
-    public void LoadCutscenes_Sequential_CreateSequential()
+    public void LoadCutscene_Sequential_CreateSequential()
     {
         Core core = new([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
@@ -57,7 +59,7 @@ public class Core_Test
     }
 
     [Test]
-    public void LoadCutscenes_Concurrent_CreateConcurrent()
+    public void LoadCutscene_Concurrent_CreateConcurrent()
     {
         Core core = new([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
@@ -72,8 +74,47 @@ public class Core_Test
         Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
 
+    [TestCase("Concurrent.yml", false, 2, TestName = "Load !load Cutscene (concurrent, provide values)")]
+    [TestCase("Concurrent.yml", true, 1, TestName = "Load !load Cutscene (concurrent, use defaults)")]
+    [TestCase("Sequential.yml", false, -1, TestName = "Load !load Cutscene (sequential, provide values)")]
+    [TestCase("Sequential.yml", true, 0, TestName = "Load !load Cutscene (sequential, use defaults)")]
+    public void LoadCutscene_Load_CreateFromParameters(string fileName, bool useDefaults, float expZ)
+    {
+        Core core = new([new FakeImpl()]);
+        Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
+        !load
+        fileName: ../../../TestAssets/Cutscenes/{0}
+        parameters: {1}
+        """, fileName, useDefaults ? "{}" : """
+
+          num: '-1'
+          str: fake
+          obj: '!concurrentBlock { children: [ !fake { z: 2 } ] }'
+        """));
+        c.Create(new(new()), new(new()));
+        Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
+        Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
+    }
+
+    [TestCase(false, -1, TestName = "Load !load Cutscene (fake, provide values)")]
+    [TestCase(true, 1, TestName = "Load !load Cutscene (fake, use defaults)")]
+    public void LoadCutscene_LoadFake_CreateFromParameters(bool useDefaults, float expZ)
+    {
+        Core core = new([new FakeImpl()]);
+        Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
+        !load
+        fileName: ../../../TestAssets/Cutscenes/Fake.yml
+        parameters: {0}
+        """, useDefaults ? "{}" : """
+
+          z: '-1'
+        """));
+        Assert.IsFalse(c.IsDead, "The cutscene should not be complete and therefore not be dead.");
+        Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
+    }
+
     [Test]
-    public void LoadCutscenes_Fake_CreateFake()
+    public void LoadCutscene_Fake_CreateFake()
     {
         Core core = new([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """

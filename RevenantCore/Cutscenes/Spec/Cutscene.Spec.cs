@@ -111,7 +111,7 @@ public class LoadCutsceneSpec : CutsceneSpec
     {
         string cutsceneYaml = cutscene;
         int scan = 0;
-        while ((scan = cutsceneYaml.IndexOf("${", scan)) >= 0)
+        while (scan < cutsceneYaml.Length && (scan = cutsceneYaml.IndexOf("${", scan)) >= 0)
         {
             int keyStart = scan + 2;
             int end = cutsceneYaml.IndexOf('}', keyStart);
@@ -126,7 +126,7 @@ public class LoadCutsceneSpec : CutsceneSpec
                 scan = end + 1;
                 continue;
             }
-            cutsceneYaml = cutsceneYaml.Remove(keyStart, key.Length + 3);
+            cutsceneYaml = cutsceneYaml.Remove(scan, key.Length + 3);
             cutsceneYaml = cutsceneYaml.Insert(scan, value);
             scan += value.Length + 1;
         }

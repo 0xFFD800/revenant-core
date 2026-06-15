@@ -1,0 +1,15 @@
+parameters:
+  - name: num
+    default: '0'
+  - name: str
+    default: fake
+  - name: obj
+    default: '!fake { z: 0 }'
+cutscene: |
+  !concurrentBlock
+  children:
+    - !fake
+      z: ${num}
+    - ${obj}
+    - !${str}
+      z: 1
