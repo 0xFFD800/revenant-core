@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using RevenantCore.Cutscenes.Spec;
 
 namespace RevenantCore.Scenes.Spec;
 
@@ -121,6 +122,11 @@ public class SceneSpec
         { WallSide.Left, new() },
         { WallSide.Right, new() }
     };
+
+    /// <summary>
+    /// The cutscenes which can be triggered on entering this scene.
+    /// </summary>
+    public Dictionary<string, CutsceneSpec> Triggers { get; set; } = [];
 
     /// <summary>
     /// The gravitational acceleration in this scene, in px/ms^2.
