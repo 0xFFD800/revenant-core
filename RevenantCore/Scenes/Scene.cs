@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -36,9 +36,9 @@ public class Scene(SceneSpec spec) : Scythe
     /// A dictionary of the walls of this scene.
     /// The walls should also be added to <see cref="collideables"/>, as well as the scene's mortal tracker.
     /// </summary>
-    private readonly ImmutableDictionary<WallSide, Wall> walls = Enum.GetValues<WallSide>()
+    private readonly FrozenDictionary<WallSide, Wall> walls = Enum.GetValues<WallSide>()
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
-        .ToImmutableDictionary();
+        .ToFrozenDictionary();
 
     /// <summary>
     /// A collection of cameras for all draw layers of this scene.

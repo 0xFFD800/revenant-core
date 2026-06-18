@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.Frozen;
 using System.Linq;
 using RevenantCore.Cutscenes.Spec;
 
@@ -31,9 +31,9 @@ public class EventCollection(EventSpec[] allEvents)
     /// <summary>
     /// All events in this gameplay universe, mapped by ID.
     /// </summary>
-    private readonly ImmutableDictionary<string, Event> events = allEvents
+    private readonly FrozenDictionary<string, Event> events = allEvents
         .Select(e => new KeyValuePair<string, Event>(e.ID, new(e)))
-        .ToImmutableDictionary();
+        .ToFrozenDictionary();
 
     /// <summary>
     /// A set of all completed event IDs.

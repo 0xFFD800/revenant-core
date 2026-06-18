@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.Frozen;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Util;
@@ -130,9 +130,9 @@ public class CameraCollection(Vector2 viewportSize, Vector2 totalSize)
         _ => throw new ArgumentException("Unsupported draw layer")
     };
 
-    private readonly ImmutableDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
+    private readonly FrozenDictionary<DrawLayer, Camera> cameras = Enum.GetValues<DrawLayer>()
         .Select(l => new KeyValuePair<DrawLayer, Camera>(l, new(viewportSize, VectorMath.Max(totalSize * GetFactor(l), viewportSize))))
-        .ToImmutableDictionary();
+        .ToFrozenDictionary();
 
     /// <summary>
     /// Gets the camera for a particular DrawLayer
