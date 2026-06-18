@@ -7,13 +7,14 @@ using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
+using RevenantCore.Cutscenes.Spec;
 
 namespace RevenantCore.Scenes;
 
 /// <summary>
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
-public class Scene(SceneSpec spec) : Scythe
+public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -83,6 +84,8 @@ public class Scene(SceneSpec spec) : Scythe
         Trace.Assert(scene == this);
         foreach (Wall wall in walls.Values)
             Add(wall, scene, time);
+        if (spec.Triggers.TryGetValue(trigger, out CutsceneSpec? intro))
+            Add(intro.Create(universe), scene, time);
     }
 
     public void Draw(View view)

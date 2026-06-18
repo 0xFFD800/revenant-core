@@ -6,6 +6,8 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Scenes;
 
+file class FakeScene() : Scene(new(new([]), new([])), new(), "default");
+
 file class FakeMoveable(Vector3[] positions) : IMoveable
 {
     private int index = 0;
@@ -32,7 +34,7 @@ public class MoveableTracker_Test
     {
         FakeMoveable m = new([new(), new()]);
         MoveableTracker t = new(m, 1, 1, 1, 1);
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         t.Create(s, f);
         Assert.IsFalse(t.IsDead);
@@ -45,7 +47,7 @@ public class MoveableTracker_Test
     {
         FakeMoveable m = new([new(), new()]);
         MoveableTracker t = new(m, 1, 1, 1, 1);
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         m.Create(s, f);
         t.Create(s, f);
@@ -59,7 +61,7 @@ public class MoveableTracker_Test
         FakeMoveable m = new([Vector3.Zero, Vector3.UnitX, Vector3.UnitZ]);
         MoveableTracker t = new(m, 1, 1, 1, 1);
         Assert.AreEqual(Vector3.Zero, t.CurrValue, "Sanity Check");
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         t.Create(s, f);
         t.Tick(s, f);
@@ -72,7 +74,7 @@ public class MoveableTracker_Test
         FakeMoveable m = new([Vector3.Zero, Vector3.UnitX, Vector3.UnitZ]);
         MoveableTracker t = new(m, 2, 1, 1, 1);
         Assert.AreEqual(Vector3.Zero, t.CurrValue, "Sanity Check");
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         t.Create(s, f);
         t.Tick(s, new(new(new(0, 0, 0, 0, 2), new())));
@@ -93,7 +95,7 @@ public class MoveableTracker_Test
         FakeMoveable m = new([Vector3.Zero, stepVec, queueEmpty ? stepVec : Vector3.UnitZ]);
         MoveableTracker t = new(m, 0, 1, speed, smoothing);
         Assert.AreEqual(Vector3.Zero, t.CurrValue, "Sanity Check");
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         t.Create(s, f);
         t.Tick(s, new(new(new(0, 0, 0, 0, 2), new(0, 0, 0, 0, 1))));
@@ -133,7 +135,7 @@ public class ForwardLookingTracker_Test
         FakeCollideable c = new([Vector3.Zero, stepVec, stepVec], [Vector3.Zero, velVec, stepVec]);
         ForwardLookingTracker t = new(c, 0, 1, 10, 1, velocityFactor);
         Assert.AreEqual(Vector3.Zero, t.CurrValue, "Sanity Check");
-        Scene s = new(new());
+        Scene s = new FakeScene();
         FrameTime f = new(new());
         t.Create(s, f);
         t.Tick(s, new(new(new(0, 0, 0, 0, 2), new(0, 0, 0, 0, 1))));

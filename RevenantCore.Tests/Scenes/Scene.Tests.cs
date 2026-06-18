@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
@@ -10,12 +9,13 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene(SceneSpec spec) : Scene(spec)
+    private class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, spec, trigger)
     {
-        internal FakeScene() : this(new())
-        {
+        internal FakeScene(SceneSpec spec) : this(new(new([]), new([])), spec, "default")
+        { }
 
-        }
+        internal FakeScene() : this(new())
+        { }
 
         public int currDrawOrder = 0;
     }

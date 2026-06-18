@@ -53,7 +53,7 @@ public class Core_Test
             z: 1
           - !fake {}
         """);
-        c.Create(new(new()), new(new()));
+        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(1, c.Z, "The cutscene should match its first child with a Z of 1.");
     }
@@ -69,7 +69,7 @@ public class Core_Test
           - !fake
             z: 2
         """);
-        c.Create(new(new()), new(new()));
+        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
@@ -91,7 +91,7 @@ public class Core_Test
           str: fake
           obj: '!concurrentBlock { children: [ !fake { z: 2 } ] }'
         """));
-        c.Create(new(new()), new(new()));
+        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
     }
@@ -152,7 +152,7 @@ public class Core_Test
         !fake
         z: 1
         """);
-        c.Create(new(new()), new(new()));
+        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
         Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
         Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
     }
