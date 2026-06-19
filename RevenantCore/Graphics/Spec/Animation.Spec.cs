@@ -85,4 +85,10 @@ public class AnimationCollectionSpec
     /// be interpreted as a standalone path.
     /// </summary>
     public string DefaultSprite { get; set; } = "base";
+
+    /// <summary>
+    /// The animation to default to if the requested one is not available. If this is null,
+    /// an error will be thrown if the requested one is not found.
+    /// </summary>
+    public string? DefaultAnimation { get; set; }
 }
