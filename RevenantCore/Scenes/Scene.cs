@@ -1,19 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
+using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Cutscenes;
 
 namespace RevenantCore.Scenes;
 
 /// <summary>
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
-public class Scene(SceneSpec spec) : Scythe
+public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -36,9 +38,9 @@ public class Scene(SceneSpec spec) : Scythe
     /// A dictionary of the walls of this scene.
     /// The walls should also be added to <see cref="collideables"/>, as well as the scene's mortal tracker.
     /// </summary>
-    private readonly ImmutableDictionary<WallSide, Wall> walls = Enum.GetValues<WallSide>()
+    private readonly FrozenDictionary<WallSide, Wall> walls = Enum.GetValues<WallSide>()
         .Select(k => new KeyValuePair<WallSide, Wall>(k, new Wall(k, spec)))
-        .ToImmutableDictionary();
+        .ToFrozenDictionary();
 
     /// <summary>
     /// A collection of cameras for all draw layers of this scene.
@@ -83,6 +85,15 @@ public class Scene(SceneSpec spec) : Scythe
         Trace.Assert(scene == this);
         foreach (Wall wall in walls.Values)
             Add(wall, scene, time);
+
+        if (spec.Triggers.TryGetValue(trigger, out CutsceneSpec? intro))
+        {
+            Cutscene cutscene = intro.Create(universe);
+            if (cutscene.IsDead)
+                cutscene.Glean(scene, time);
+            else
+                Add(intro.Create(universe), scene, time);
+        }
     }
 
     public void Draw(View view)

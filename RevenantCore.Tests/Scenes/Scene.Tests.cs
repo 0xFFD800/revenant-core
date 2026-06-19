@@ -1,5 +1,8 @@
-using System.Text.Json.Serialization;
+using System.Runtime.InteropServices;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
+using RevenantCore.Cutscenes;
+using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
@@ -10,12 +13,13 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene(SceneSpec spec) : Scene(spec)
+    private class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, spec, trigger)
     {
-        internal FakeScene() : this(new())
-        {
+        internal FakeScene(SceneSpec spec) : this(new(new([]), new([])), spec, "default")
+        { }
 
-        }
+        internal FakeScene() : this(new())
+        { }
 
         public int currDrawOrder = 0;
     }
@@ -162,6 +166,68 @@ public class Scene_Test
             Assert.AreEqual(expPos, Position);
             Assert.AreEqual(expVelocity, Velocity);
             Assert.AreEqual(Vector3.Zero, Acceleration);
+        }
+    }
+
+    private class MockCutscene : Cutscene
+    {
+        private bool created, gleaned = false;
+        private readonly MockCutsceneSpec spec;
+
+        public MockCutscene(MockCutsceneSpec spec) : base(new(new([]), new([])), spec)
+        {
+            this.spec = spec;
+            complete = spec.Complete;
+        }
+
+        public override float Z => throw new NotImplementedException();
+
+        public override void Create(Scene scene, FrameTime time)
+        {
+            created = true;
+        }
+
+        public override void Draw(View view)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Glean(Scene scene, FrameTime time)
+        {
+            base.Glean(scene, time);
+            gleaned = true;
+        }
+
+        public override void Tick(Scene scene, FrameTime time)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Validate()
+        {
+            Assert.AreEqual(spec.ExpCreated, created, "Creation state did not match expectation");
+            Assert.AreEqual(spec.ExpGleaned, gleaned, "Gleaning state did not match expectation");
+        }
+    }
+
+    private class MockCutsceneSpec(bool complete, bool expSpecCreated, bool expCreated, bool expGleaned) : CutsceneSpec
+    {
+        public bool Complete => complete;
+        public bool ExpCreated => expCreated;
+        public bool ExpGleaned => expGleaned;
+
+        private MockCutscene? cutscene;
+
+        public override Cutscene Create(Universe universe)
+        {
+            cutscene = new(this);
+            return cutscene;
+        }
+
+        public void Validate()
+        {
+            Assert.AreEqual(expSpecCreated, cutscene != null, "Cutscene creation state did not match expectation");
+            cutscene?.Validate();
         }
     }
 
@@ -468,6 +534,26 @@ public class Scene_Test
         FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [new MockTickable(false, true, false)]);
+    }
+
+    [TestCase(false, TestName = "Create Trigger (Living)", Description = "Specified living trigger should be created and added")]
+    [TestCase(true, TestName = "Create Trigger (Dead)", Description = "Specified dead trigger should be gleaned and not created")]
+    public void Create_Trigger_Add(bool complete)
+    {
+        MockCutsceneSpec defSpec = new(false, false, false, false);
+        MockCutsceneSpec testSpec = new(complete, true, !complete, complete);
+        SceneSpec spec = new()
+        {
+            Triggers = new()
+            {
+                { "default", defSpec },
+                { "testTrigger", testSpec }
+            }
+        };
+        FakeScene scene = new(new(new([]), new([])), spec, "testTrigger");
+        scene.Create(scene, new(new()));
+        defSpec.Validate();
+        testSpec.Validate();
     }
 }
 

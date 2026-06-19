@@ -136,6 +136,8 @@ file class MockCutscene : Cutscene
     }
 }
 
+public class FakeScene() : Scene(new(new([]), new([])), new(), "default");
+
 [TestFixture]
 public class Cutscene_Test
 {
@@ -165,7 +167,7 @@ public class SequentialBlock_Test
     [Test]
     public void Act_NoChildren_NoError()
     {
-        Scene scene = new(new());
+        Scene scene = new FakeScene();
         FrameTime time = new(new());
         Cutscene block = new SequentialBlockSpec().Create(Universe);
         Assert.AreEqual(0, block.Z);
@@ -196,7 +198,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet
             new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet
         ];
-        new SequentialBlockSpec() { Children = children }.Create(Universe).Create(new(new()), new(new()));
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Create(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -223,7 +225,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, null, false, false), // Active; should not be created yet.
             new(new(), true, 0, true, false, null, false, false) // Inactive; should not be gleaned yet.
         ];
-        new SequentialBlockSpec() { Children = children }.Create(Universe).Tick(new(new()), new(new()));
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Tick(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -238,8 +240,8 @@ public class SequentialBlock_Test
             new(new(), true, 0, false, false, null, false, true) // Inactive; should be gleaned.
         ];
         Cutscene block = new SequentialBlockSpec() { Children = children }.Create(Universe);
-        block.Create(new(new()), new(new()));
-        block.Glean(new(new()), new(new()));
+        block.Create(new FakeScene(), new(new()));
+        block.Glean(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -253,7 +255,7 @@ public class ConcurrentBlock_Test
     [Test]
     public void Act_NoChildren_NoError()
     {
-        Scene scene = new(new());
+        Scene scene = new FakeScene();
         FrameTime time = new(new());
         Cutscene block = new ConcurrentBlockSpec().Create(Universe);
         Assert.AreEqual(0, block.Z);
@@ -279,7 +281,7 @@ public class ConcurrentBlock_Test
                 new MockCutsceneSpec(new(), false, 1, false, true, null, false, false)
             ]
         }.Create(Universe);
-        block.Create(new(new()), new(new()));
+        block.Create(new FakeScene(), new(new()));
         Assert.AreEqual(2, block.Z);
     }
 
@@ -292,7 +294,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, null, false, false), // Ditto.
             new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
-        new ConcurrentBlockSpec() { Children = children }.Create(Universe).Create(new(new()), new(new()));
+        new ConcurrentBlockSpec() { Children = children }.Create(Universe).Create(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -305,7 +307,7 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, 0, false, false)
         ];
         Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
-        block.Create(new(new()), new(new()));
+        block.Create(new FakeScene(), new(new()));
         block.Draw(new(new FakeScreen(), 0, DrawLayer.UI));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
@@ -322,9 +324,9 @@ public class ConcurrentBlock_Test
             new(new(), true, 0, false, false, null, false, true) // Same as first element.
         ];
         Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
-        block.Create(new(new()), new(new()));
+        block.Create(new FakeScene(), new(new()));
         children[1].Cutscene.SetComplete(true);
-        block.Tick(new(new()), new(new()));
+        block.Tick(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -339,9 +341,9 @@ public class ConcurrentBlock_Test
             new(new(), false, 0, false, true, null, false, true) // Will be set to inactive after Create. Should be gleaned.
         ];
         Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
-        block.Create(new(new()), new(new()));
+        block.Create(new FakeScene(), new(new()));
         children[3].Cutscene.SetComplete(true);
-        block.Glean(new(new()), new(new()));
+        block.Glean(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -378,7 +380,7 @@ public class InstantCutscene_Test
     public void Create_Trip()
     {
         MockInstantCutscene cutscene = new(Universe, true);
-        cutscene.Create(new(new()), new(new()));
+        cutscene.Create(new FakeScene(), new(new()));
         cutscene.Validate();
     }
 
@@ -393,7 +395,7 @@ public class InstantCutscene_Test
     public void Tick_Throw()
     {
         Assert.Throws<UnreachableException>(() =>
-            new MockInstantCutscene(Universe, false).Tick(new(new()), new(new())));
+            new MockInstantCutscene(Universe, false).Tick(new FakeScene(), new(new())));
     }
 }
 
