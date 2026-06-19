@@ -8,6 +8,7 @@ using RevenantCore.Graphics;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Cutscenes;
 
 namespace RevenantCore.Scenes;
 
@@ -84,8 +85,15 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
         Trace.Assert(scene == this);
         foreach (Wall wall in walls.Values)
             Add(wall, scene, time);
+
         if (spec.Triggers.TryGetValue(trigger, out CutsceneSpec? intro))
-            Add(intro.Create(universe), scene, time);
+        {
+            Cutscene cutscene = intro.Create(universe);
+            if (cutscene.IsDead)
+                cutscene.Glean(scene, time);
+            else
+                Add(intro.Create(universe), scene, time);
+        }
     }
 
     public void Draw(View view)

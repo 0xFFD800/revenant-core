@@ -27,7 +27,7 @@ file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(uni
     }
 }
 
-public class FakeCutsceneSpec : CutsceneSpec
+file class FakeCutsceneSpec : CutsceneSpec
 {
     public float Z { get; set; } = 0;
     public string Foo { get; set; } = "";
