@@ -45,6 +45,7 @@ file class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) 
 {
     bool drawn = false;
     internal ISpriteBuffer? Buffer { get; private set; } = null;
+    internal Vector2Spec ReferenceType => referenceType;
 
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -116,6 +117,22 @@ public class Drawable_Test
         Assert.AreEqual(new Rectangle(0, 0, 1, 1), drawable.Source);
         Assert.AreEqual(Color.Black * 0.5F, drawable.Mask);
         Assert.AreEqual(SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically, drawable.Effects);
+    }
+
+    [Test]
+    public void ShallowCopy_SameRefType_DiffObj()
+    {
+        Vector2Spec refType = new();
+        MockDrawable original = (MockDrawable)new MockDrawable(refType, Vector2.One, false)
+            .SetPos(new(1, 1))
+            .SetSource(new(0, 0, 10, 10));
+        MockDrawable copy = (MockDrawable)original.ShallowCopy();
+        Assert.AreNotSame(original, copy, "Copy should not be the same object as original");
+        Assert.AreSame(original.ReferenceType, copy.ReferenceType, "Ref type object of copy should be the same object as original");
+        Assert.AreNotSame(original.Pos, copy.Pos, "Copy.Pos should not be the same object as original.Pos");
+        Assert.AreEqual(original.Pos, copy.Pos, "Copy.Pos should have the same value as original.Pos");
+        Assert.AreNotSame(original.Source, copy.Source, "Copy.Source should not be the same object as original.Source");
+        Assert.AreEqual(original.Source, copy.Source, "Copy.Source should have the same value as original.Source");
     }
 }
 
