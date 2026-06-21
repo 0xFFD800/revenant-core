@@ -6,6 +6,16 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Tests;
 
+file class FakeLoader : ILoader
+{
+    public Drawable LoadSprite(string path)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+file class FakeCore(IImpl[] impls) : Core(new FakeLoader(), impls);
+
 file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(universe, spec)
 {
     public override float Z => spec.Z;
@@ -45,7 +55,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Sequential_CreateSequential()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !sequentialBlock
         children:
@@ -53,7 +63,7 @@ public class Core_Test
             z: 1
           - !fake {}
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(1, c.Z, "The cutscene should match its first child with a Z of 1.");
     }
@@ -61,7 +71,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Concurrent_CreateConcurrent()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !concurrentBlock
         children:
@@ -69,7 +79,7 @@ public class Core_Test
           - !fake
             z: 2
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
@@ -80,7 +90,7 @@ public class Core_Test
     [TestCase("Sequential.yml", true, 0, TestName = "Load !load Cutscene (sequential, use defaults)")]
     public void LoadCutscene_Load_CreateFromParameters(string fileName, bool useDefaults, float expZ)
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/{0}
@@ -91,7 +101,7 @@ public class Core_Test
           str: fake
           obj: '!concurrentBlock { children: [ !fake { z: 2 } ] }'
         """));
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
     }
@@ -100,7 +110,7 @@ public class Core_Test
     [TestCase(true, 1, TestName = "Load !load Cutscene (fake, use defaults)")]
     public void LoadCutscene_LoadFake_CreateFromParameters(bool useDefaults, float expZ)
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/Fake.yml
@@ -116,7 +126,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_NonReferencingParameter_LiteralStr()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/NonReferencingParameter.yml
@@ -131,7 +141,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_UnmatchedBracket_CompleteParse()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/UnmatchedBracket.yml
@@ -147,12 +157,12 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Fake_CreateFake()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !fake
         z: 1
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
         Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
     }
