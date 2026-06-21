@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Graphics;
@@ -6,12 +7,23 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Tests;
 
-file class FakeLoader : ILoader
+file class FakeDrawable(string path) : Drawable
 {
-    public Drawable LoadSprite(string path)
+    internal string Path => path;
+
+    protected override Vector2 Size => throw new NotImplementedException();
+
+    public override void Draw(ISpriteBuffer buffer)
     {
         throw new NotImplementedException();
     }
+
+    protected override Drawable CopyData() => new FakeDrawable(path);
+}
+
+file class FakeLoader : ILoader
+{
+    public Drawable LoadSprite(string path) => new FakeDrawable(path);
 }
 
 file class FakeCore(IImpl[] impls) : Core(new FakeLoader(), impls);
@@ -166,4 +178,38 @@ public class Core_Test
         Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
         Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
     }
+
+    [TestCase("fooFirst", 0, "path/to/foo", TestName = "fooFirst at millis of 0")]
+    [TestCase("barFirst", 0, "path/to/bar", TestName = "barFirst at millis of 0")]
+    [TestCase("fooFirst", 101, "path/to/bar", TestName = "fooFirst at millis of 101")]
+    [TestCase("barFirst", 101, "path/to/foo", TestName = "barFirst at millis of 101")]
+    [TestCase("fooFirst", 201, "path/to/foo", TestName = "fooFirst at millis of 201 (default sprite)")]
+    [TestCase("barFirst", 201, "path/to/foo", TestName = "barFirst at millis of 201 (default sprite)")]
+    [TestCase("fooFirst", 301, "path/to/other", TestName = "fooFirst at millis of 301 (explicit path)")]
+    [TestCase("notFound", 0, "path/to/foo", TestName = "animation should default to fooFirst if not present")]
+    public void LoadAnimationCollection_Sprites(string key, int millis, string expPath)
+    {
+        Core core = new FakeCore([]);
+        AnimationCollection c = core.LoadAnimationCollection("""
+        sprites:
+          foo: path/to/foo
+          bar: path/to/bar
+        animations:
+          fooFirst:
+            - sprite: foo
+            - sprite: bar
+            - sprite: 
+            - sprite: path/to/other
+          barFirst:
+            - sprite: bar
+            - sprite: foo
+            - sprite: 
+        millisPerFrame: 100
+        defaultSprite: foo
+        defaultAnimation: fooFirst
+        """);
+        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new())))).Path);
+    }
+
+    // TODO: LoadAnimationCollection_Source
 }
