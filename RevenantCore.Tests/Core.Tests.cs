@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Graphics;
@@ -5,6 +6,27 @@ using RevenantCore.Scenes;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests;
+
+file class FakeDrawable(string path) : Drawable
+{
+    internal string Path => path;
+
+    protected override Vector2 Size => throw new NotImplementedException();
+
+    public override void Draw(ISpriteBuffer buffer)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Drawable CopyData() => new FakeDrawable(path);
+}
+
+file class FakeLoader : ILoader
+{
+    public Drawable LoadSprite(string path) => new FakeDrawable(path);
+}
+
+file class FakeCore(IImpl[] impls) : Core(new FakeLoader(), impls);
 
 file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(universe, spec)
 {
@@ -45,7 +67,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Sequential_CreateSequential()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !sequentialBlock
         children:
@@ -53,7 +75,7 @@ public class Core_Test
             z: 1
           - !fake {}
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(1, c.Z, "The cutscene should match its first child with a Z of 1.");
     }
@@ -61,7 +83,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Concurrent_CreateConcurrent()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !concurrentBlock
         children:
@@ -69,7 +91,7 @@ public class Core_Test
           - !fake
             z: 2
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
@@ -80,7 +102,7 @@ public class Core_Test
     [TestCase("Sequential.yml", true, 0, TestName = "Load !load Cutscene (sequential, use defaults)")]
     public void LoadCutscene_Load_CreateFromParameters(string fileName, bool useDefaults, float expZ)
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/{0}
@@ -91,7 +113,7 @@ public class Core_Test
           str: fake
           obj: '!concurrentBlock { children: [ !fake { z: 2 } ] }'
         """));
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
     }
@@ -100,7 +122,7 @@ public class Core_Test
     [TestCase(true, 1, TestName = "Load !load Cutscene (fake, use defaults)")]
     public void LoadCutscene_LoadFake_CreateFromParameters(bool useDefaults, float expZ)
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/Fake.yml
@@ -116,7 +138,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_NonReferencingParameter_LiteralStr()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/NonReferencingParameter.yml
@@ -131,7 +153,7 @@ public class Core_Test
     [Test]
     public void LoadCutscene_UnmatchedBracket_CompleteParse()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), string.Format("""
         !load
         fileName: ../../../TestAssets/Cutscenes/UnmatchedBracket.yml
@@ -147,13 +169,71 @@ public class Core_Test
     [Test]
     public void LoadCutscene_Fake_CreateFake()
     {
-        Core core = new([new FakeImpl()]);
+        Core core = new FakeCore([new FakeImpl()]);
         Cutscene c = core.LoadCutscene(new(core, new([])), """
         !fake
         z: 1
         """);
-        c.Create(new(new(new([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
         Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
         Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
+    }
+
+    [TestCase("fooFirst", 0, "path/to/foo", TestName = "fooFirst at millis of 0")]
+    [TestCase("barFirst", 0, "path/to/bar", TestName = "barFirst at millis of 0")]
+    [TestCase("fooFirst", 101, "path/to/bar", TestName = "fooFirst at millis of 101")]
+    [TestCase("barFirst", 101, "path/to/foo", TestName = "barFirst at millis of 101")]
+    [TestCase("fooFirst", 201, "path/to/foo", TestName = "fooFirst at millis of 201 (default sprite)")]
+    [TestCase("barFirst", 201, "path/to/foo", TestName = "barFirst at millis of 201 (default sprite)")]
+    [TestCase("fooFirst", 301, "path/to/other", TestName = "fooFirst at millis of 301 (explicit path)")]
+    [TestCase("notFound", 0, "path/to/foo", TestName = "animation should default to fooFirst if not present")]
+    public void LoadAnimationCollection_Sprites(string key, int millis, string expPath)
+    {
+        Core core = new FakeCore([]);
+        AnimationCollection c = core.LoadAnimationCollection("""
+        sprites:
+          foo: path/to/foo
+          bar: path/to/bar
+        animations:
+          fooFirst:
+            - sprite: foo
+            - sprite: bar
+            - sprite: 
+            - sprite: path/to/other
+          barFirst:
+            - sprite: bar
+            - sprite: foo
+            - sprite: 
+        millisPerFrame: 100
+        defaultSprite: foo
+        defaultAnimation: fooFirst
+        """);
+        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new())))).Path);
+    }
+
+    [TestCase("foo", 0, 0, TestName = "foo at 0 millis")]
+    [TestCase("foo", 100, 1, TestName = "foo at 100 millis")]
+    [TestCase("bar", 0, 100, TestName = "bar at 0 millis")]
+    [TestCase("bar", 100, 90, TestName = "bar at 100 millis")]
+    public void LoadAnimationCollection_Source(string key, int millis, int? expSourceX)
+    {
+        Core core = new FakeCore([]);
+        AnimationCollection c = core.LoadAnimationCollection("""
+        sprites:
+          base: path/to/base
+        animations:
+          foo:
+            - source:
+                x: 0
+            - source:
+                x: 1
+          bar:
+            - source:
+                x: 100
+            - source:
+                x: 90
+        millisPerFrame: 100
+        """);
+        Assert.AreEqual(expSourceX, c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new()))).Source?.X);
     }
 }

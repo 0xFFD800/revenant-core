@@ -127,7 +127,7 @@ public abstract class Drawable
     /// <summary>
     /// Gets the size of this drawable item.
     /// </summary>
-    internal protected abstract Vector2 Size { get; }
+    protected abstract Vector2 Size { get; }
 
     /// <summary>
     /// The position at which this sprite will be drawn.
@@ -205,7 +205,7 @@ public abstract class Drawable
     /// </summary>
     public Drawable RotateAroundCenter() => SetOrigin(Center);
 
-    public Drawable SetSource(Rectangle source)
+    public Drawable SetSource(Rectangle? source)
     {
         Source = source;
         return this;
@@ -230,6 +230,19 @@ public abstract class Drawable
     }
 
     public Drawable AddEffects(SpriteEffects effects) => SetEffects(Effects | effects);
+
+    protected abstract Drawable CopyData();
+
+    /// <summary>
+    /// Creates a shallow copy of this drawable.
+    /// Will reuse the same underlying data (sprite or string), but create a new instance.
+    /// </summary>
+    /// <returns></returns>
+    public Drawable ShallowCopy() => CopyData()
+        .SetPos(Pos)
+        .SetRotation(Rotation)
+        .SetSource(Source)
+        .SetMask(Mask);
 }
 
 /// <summary>
@@ -244,7 +257,9 @@ internal class Sprite(Texture2D texture) : Drawable
         buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, Effects);
     }
 
-    protected internal override Vector2 Size => new(texture.Width, texture.Height);
+    protected override Vector2 Size => new(texture.Width, texture.Height);
+
+    protected override Drawable CopyData() => new Sprite(texture);
 }
 
 /// <summary>
@@ -260,5 +275,7 @@ internal class DrawableText(string text, SpriteFont font) : Drawable
         buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, Effects);
     }
 
-    protected internal override Vector2 Size => font.MeasureString(text);
+    protected override Vector2 Size => font.MeasureString(text);
+
+    protected override Drawable CopyData() => new DrawableText(text, font);
 }

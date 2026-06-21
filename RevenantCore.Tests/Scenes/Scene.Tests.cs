@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
@@ -13,9 +11,17 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
+    private class FakeLoader() : ILoader
+    {
+        public Drawable LoadSprite(string path)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     private class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, spec, trigger)
     {
-        internal FakeScene(SceneSpec spec) : this(new(new([]), new([])), spec, "default")
+        internal FakeScene(SceneSpec spec) : this(new(new(new FakeLoader(), []), new([])), spec, "default")
         { }
 
         internal FakeScene() : this(new())
@@ -174,7 +180,7 @@ public class Scene_Test
         private bool created, gleaned = false;
         private readonly MockCutsceneSpec spec;
 
-        public MockCutscene(MockCutsceneSpec spec) : base(new(new([]), new([])), spec)
+        public MockCutscene(MockCutsceneSpec spec) : base(new(new(new FakeLoader(), []), new([])), spec)
         {
             this.spec = spec;
             complete = spec.Complete;
@@ -550,7 +556,7 @@ public class Scene_Test
                 { "testTrigger", testSpec }
             }
         };
-        FakeScene scene = new(new(new([]), new([])), spec, "testTrigger");
+        FakeScene scene = new(new(new(new FakeLoader(), []), new([])), spec, "testTrigger");
         scene.Create(scene, new(new()));
         defSpec.Validate();
         testSpec.Validate();

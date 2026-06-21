@@ -1,12 +1,21 @@
 using Microsoft.Xna.Framework;
 using NUnit.Framework.Internal;
+using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Scenes;
 
-file class FakeScene() : Scene(new(new([]), new([])), new(), "default");
+file class FakeLoader() : ILoader
+{
+    public Drawable LoadSprite(string path)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+file class FakeScene() : Scene(new(new(new FakeLoader(), []), new([])), new(), "default");
 
 file class FakeMoveable(Vector3[] positions) : IMoveable
 {

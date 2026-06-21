@@ -136,12 +136,22 @@ file class MockCutscene : Cutscene
     }
 }
 
-public class FakeScene() : Scene(new(new([]), new([])), new(), "default");
+file class FakeLoader() : ILoader
+{
+    public Drawable LoadSprite(string path)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+file class FakeCore() : Core(new FakeLoader(), []);
+
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
 
 [TestFixture]
 public class Cutscene_Test
 {
-    private static Universe Universe => new(new([]), new([]));
+    private static Universe Universe => new(new FakeCore(), new([]));
 
     [Test]
     public void Layer_UI()
@@ -162,7 +172,7 @@ public class Cutscene_Test
 [TestFixture]
 public class SequentialBlock_Test
 {
-    private static Universe Universe => new(new([]), new([]));
+    private static Universe Universe => new(new FakeCore(), new([]));
 
     [Test]
     public void Act_NoChildren_NoError()
@@ -250,7 +260,7 @@ public class SequentialBlock_Test
 [TestFixture]
 public class ConcurrentBlock_Test
 {
-    private static Universe Universe => new(new([]), new([]));
+    private static Universe Universe => new(new FakeCore(), new([]));
 
     [Test]
     public void Act_NoChildren_NoError()
@@ -368,7 +378,7 @@ file class MockInstantCutscene(Universe universe, bool expTrip) : InstantCutscen
 [TestFixture]
 public class InstantCutscene_Test
 {
-    private static Universe Universe => new(new([]), new([]));
+    private static Universe Universe => new(new FakeCore(), new([]));
 
     [Test]
     public void Initial_NoTrip()
@@ -462,7 +472,7 @@ public class CutsceneRegistry_Test
         IDeserializer deserializer = Serializers.CreateDeserializer([builder.Build()]);
         CutsceneSpec cutscene = deserializer.Deserialize<CutsceneSpec>(isDead ? deadYaml : liveYaml);
         if (cutscene is MockCutsceneSpec mock)
-            ((MockCutscene)mock.Create(new(new([]), new([])))).Validate();
+            ((MockCutscene)mock.Create(new(new FakeCore(), new([])))).Validate();
         else
             Assert.Fail("Expected mapping to make a new MockCutscene");
     }

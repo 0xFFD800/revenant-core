@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using RevenantCore.Graphics;
+using RevenantCore.Scenes.Spec;
 
 namespace RevenantCore.Tests.Graphics;
 
@@ -40,10 +41,11 @@ file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     }
 }
 
-file class MockDrawable(Vector2 size, bool expDrawn) : Drawable
+file class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : Drawable
 {
     bool drawn = false;
     internal ISpriteBuffer? Buffer { get; private set; } = null;
+    internal Vector2Spec ReferenceType => referenceType;
 
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -57,6 +59,8 @@ file class MockDrawable(Vector2 size, bool expDrawn) : Drawable
     {
         Assert.AreEqual(expDrawn, drawn);
     }
+
+    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn);
 }
 
 [TestFixture]
@@ -66,7 +70,7 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, 0, 0, TestName = "SetBase 0x0 -> (0,0)")]
     public void SetBase(float w, float h, float x, float y, float expX, float expY)
     {
-        Drawable drawable = new MockDrawable(new(w, h), false).SetBase(new(x, y));
+        Drawable drawable = new MockDrawable(new(), new(w, h), false).SetBase(new(x, y));
         Assert.AreEqual(new Vector2(expX, expY), drawable.Pos);
     }
 
@@ -74,7 +78,7 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, 0, 0, TestName = "SetCenter 0x0 -> (0,0)")]
     public void SetCenter(float w, float h, float x, float y, float expX, float expY)
     {
-        Drawable drawable = new MockDrawable(new(w, h), false).SetCenter(new(x, y));
+        Drawable drawable = new MockDrawable(new(), new(w, h), false).SetCenter(new(x, y));
         Assert.AreEqual(new Vector2(expX, expY), drawable.Pos);
     }
 
@@ -82,7 +86,7 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, TestName = "RotateAroundBase 0x0")]
     public void RotateAroundBase(float w, float h, float expX, float expY)
     {
-        Drawable drawable = new MockDrawable(new(w, h), false).RotateAroundBase();
+        Drawable drawable = new MockDrawable(new(), new(w, h), false).RotateAroundBase();
         Assert.AreEqual(new Vector2(expX, expY), drawable.Origin);
     }
 
@@ -90,14 +94,14 @@ public class Drawable_Test
     [TestCase(0, 0, 0, 0, TestName = "RotateAroundCenter 0x0")]
     public void RotateAroundCenter(float w, float h, float expX, float expY)
     {
-        Drawable drawable = new MockDrawable(new(w, h), false).RotateAroundCenter();
+        Drawable drawable = new MockDrawable(new(), new(w, h), false).RotateAroundCenter();
         Assert.AreEqual(new Vector2(expX, expY), drawable.Origin);
     }
 
     [Test]
     public void TestBuilder()
     {
-        Drawable drawable = new MockDrawable(new(1, 1), false)
+        Drawable drawable = new MockDrawable(new(), new(1, 1), false)
             .SetPos(new(1, 1))
             .SetRotation(1)
             .SetOrigin(new(1, 1))
@@ -113,6 +117,22 @@ public class Drawable_Test
         Assert.AreEqual(new Rectangle(0, 0, 1, 1), drawable.Source);
         Assert.AreEqual(Color.Black * 0.5F, drawable.Mask);
         Assert.AreEqual(SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically, drawable.Effects);
+    }
+
+    [Test]
+    public void ShallowCopy_SameRefType_DiffObj()
+    {
+        Vector2Spec refType = new();
+        MockDrawable original = (MockDrawable)new MockDrawable(refType, Vector2.One, false)
+            .SetPos(new(1, 1))
+            .SetSource(new(0, 0, 10, 10));
+        MockDrawable copy = (MockDrawable)original.ShallowCopy();
+        Assert.AreNotSame(original, copy, "Copy should not be the same object as original");
+        Assert.AreSame(original.ReferenceType, copy.ReferenceType, "Ref type object of copy should be the same object as original");
+        Assert.AreNotSame(original.Pos, copy.Pos, "Copy.Pos should not be the same object as original.Pos");
+        Assert.AreEqual(original.Pos, copy.Pos, "Copy.Pos should have the same value as original.Pos");
+        Assert.AreNotSame(original.Source, copy.Source, "Copy.Source should not be the same object as original.Source");
+        Assert.AreEqual(original.Source, copy.Source, "Copy.Source should have the same value as original.Source");
     }
 }
 
@@ -181,7 +201,7 @@ public class Screen_Test
         MockSpriteBuffer buffer = new(null, false);
         Screen screen = new(buffer);
         screen.Push(Matrix.Identity);
-        MockDrawable drawable = new(Vector2.One, true);
+        MockDrawable drawable = new(new(), Vector2.One, true);
         screen.Draw(drawable);
         screen.Pop();
         drawable.Validate();
