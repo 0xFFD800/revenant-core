@@ -211,5 +211,29 @@ public class Core_Test
         Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new())))).Path);
     }
 
-    // TODO: LoadAnimationCollection_Source
+    [TestCase("foo", 0, 0, TestName = "foo at 0 millis")]
+    [TestCase("foo", 100, 1, TestName = "foo at 100 millis")]
+    [TestCase("bar", 0, 100, TestName = "bar at 0 millis")]
+    [TestCase("bar", 100, 90, TestName = "bar at 100 millis")]
+    public void LoadAnimationCollection_Source(string key, int millis, int? expSourceX)
+    {
+        Core core = new FakeCore([]);
+        AnimationCollection c = core.LoadAnimationCollection("""
+        sprites:
+          base: path/to/base
+        animations:
+          foo:
+            - source:
+                x: 0
+            - source:
+                x: 1
+          bar:
+            - source:
+                x: 100
+            - source:
+                x: 90
+        millisPerFrame: 100
+        """);
+        Assert.AreEqual(expSourceX, c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new()))).Source?.X);
+    }
 }
