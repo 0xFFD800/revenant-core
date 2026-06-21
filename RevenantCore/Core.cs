@@ -62,7 +62,7 @@ public class Core
     {
         this.loader = loader;
 
-        IImpl[] allImpls = [..impls.Prepend(coreImpl)];
+        IImpl[] allImpls = [.. impls.Prepend(coreImpl)];
 
         CutsceneRegistryBuilder cutsceneBuilder = new();
         foreach (IImpl impl in allImpls)
@@ -95,9 +95,9 @@ public class Core
         Dictionary<string, Drawable> sprites = spec.Sprites
             .Select(s => new KeyValuePair<string, Drawable>(s.Key, loader.LoadSprite(s.Value)))
             .ToDictionary();
-        return new(spec.Animations.Select(a => 
-            new KeyValuePair<string, Animation>(a.Key, new([..a.Value.Select(f => 
-                sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite, 
+        return new(spec.Animations.Select(a =>
+            new KeyValuePair<string, Animation>(a.Key, new([..a.Value.Select(f =>
+                sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite,
                         loader.LoadSprite(f.Sprite ?? spec.DefaultSprite))
                     .ShallowCopy()
                     .SetSource(f.Source?.Data))], spec.MillisPerFrame)))

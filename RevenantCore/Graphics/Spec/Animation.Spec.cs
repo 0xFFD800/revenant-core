@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 namespace RevenantCore.Graphics.Spec;
 
 /// <summary>
-/// A YAML-serializable representation of a 2-dimensional integer rectanble.
+/// A YAML-serializable representation of a 2-dimensional integer rectangle.
 /// </summary>
 public class RectangleSpec
 {
