@@ -18,3 +18,12 @@ public interface IAgent
     /// <param name="time">The FrameTime of the current frame.</param>
     void Apply(Entity entity, Scene scene, FrameTime time);
 }
+
+/// <summary>
+/// An agent which does absolutely nothing.
+/// The result is a stationary entity which does not move on its own.
+/// </summary>
+public class NullAgent : IAgent
+{
+    public void Apply(Entity entity, Scene scene, FrameTime time) { }
+}
