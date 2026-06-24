@@ -56,7 +56,7 @@ public class Animation_Test
             drawables.Add(new FakeDrawable());
         Animation animation = new([.. drawables], 100);
         FrameTime frameTime = new(new(new(0, 0, 0, 0, time), new()));
-        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime));
+        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime.Millis));
     }
 }
 
@@ -71,14 +71,14 @@ public class AnimationCollection_Test
     public void GetFrame_NotFoundNoDef_Error()
     {
         AnimationCollection collection = new(MakeDict([]), null);
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
     }
 
     [Test]
     public void GetFrame_DefNotFound_Error()
     {
         AnimationCollection collection = new(MakeDict([]), "otherNotFound");
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
     }
 
     [Test]
@@ -86,7 +86,7 @@ public class AnimationCollection_Test
     {
         FakeDrawable drawable = new();
         AnimationCollection collection = new(MakeDict([("default", drawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("notFound", new(new())));
+        Assert.AreSame(drawable, collection.GetFrame("notFound", 0));
     }
 
     [Test]
@@ -95,6 +95,6 @@ public class AnimationCollection_Test
         FakeDrawable drawable = new();
         FakeDrawable defDrawable = new();
         AnimationCollection collection = new(MakeDict([("found", drawable), ("default", defDrawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("found", new(new())));
+        Assert.AreSame(drawable, collection.GetFrame("found", 0));
     }
 }

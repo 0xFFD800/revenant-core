@@ -6,11 +6,24 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Entities;
 
-public class Entity(IAgent agent, MaterialSpec material, BoundingBox bounds, DrawLayer layer) : ICollideable, ITickable, IVisible
+/// <summary>
+/// A collideable object which handles its own dynamic behavior and drawing behavior.
+/// </summary>
+/// <param name="agent">The agent which controls this entity's behavior.</param>
+/// <param name="animations">The collection of animations used to find the sprites to draw.</param>
+/// <param name="material">The spec for the material which defines physics parameters for this entity.</param>
+/// <param name="bounds">The size of this entity's bounding box along each axis.</param>
+/// <param name="layer">The layer in which this entity should be drawn.</param>
+public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec material, Vector3 bounds, DrawLayer layer) : ICollideable, ITickable, IVisible
 {
-    private readonly IAgent agent = agent;
+    /// <summary>
+    /// The agent which controls this entity's behavior.
+    /// </summary>
+    public IAgent Agent { private get; set; } = agent;
 
-    public BoundingBox CollisionBox => bounds + Position;
+    public BoundingBox CollisionBox => new(
+        Position - new Vector3(bounds.X / 2, 0, bounds.Z / 2),
+        Position + new Vector3(bounds.X / 2, bounds.Y, bounds.Z / 2));
     public MaterialSpec Material => material;
     public Vector3 Acceleration { get; set; } = new();
     public Vector3 Velocity { get; set; } = new();
@@ -26,7 +39,8 @@ public class Entity(IAgent agent, MaterialSpec material, BoundingBox bounds, Dra
 
     public void Draw(View view)
     {
-        throw new System.NotImplementedException();
+        // TODO: Need to place the sprite correctly and get the right animation
+        view.Screen.Draw(animations.GetFrame("base", view.Millis));
     }
 
     public void Glean(Scene scene, FrameTime time)
@@ -36,6 +50,6 @@ public class Entity(IAgent agent, MaterialSpec material, BoundingBox bounds, Dra
 
     public void Tick(Scene scene, FrameTime time)
     {
-        agent.Apply(this, scene, time);
+        Agent.Apply(this, scene, time);
     }
 }

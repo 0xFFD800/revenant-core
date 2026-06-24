@@ -208,7 +208,7 @@ public class Core_Test
         defaultSprite: foo
         defaultAnimation: fooFirst
         """);
-        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new())))).Path);
+        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, millis)).Path);
     }
 
     [TestCase("foo", 0, 0, TestName = "foo at 0 millis")]
@@ -234,6 +234,6 @@ public class Core_Test
                 x: 90
         millisPerFrame: 100
         """);
-        Assert.AreEqual(expSourceX, c.GetFrame(key, new(new(new(0, 0, 0, 0, millis), new()))).Source?.X);
+        Assert.AreEqual(expSourceX, c.GetFrame(key, millis).Source?.X);
     }
 }
