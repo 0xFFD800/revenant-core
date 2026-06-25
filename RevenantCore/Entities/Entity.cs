@@ -34,7 +34,7 @@ public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec m
 
     public void Create(Scene scene, FrameTime time)
     {
-        throw new System.NotImplementedException();
+        Agent.Create(scene, time);
     }
 
     public void Draw(View view)
@@ -45,7 +45,7 @@ public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec m
 
     public void Glean(Scene scene, FrameTime time)
     {
-        throw new System.NotImplementedException();
+        Agent.Glean(scene, time);
     }
 
     public void Tick(Scene scene, FrameTime time)

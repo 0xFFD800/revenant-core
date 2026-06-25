@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
 
@@ -8,7 +9,7 @@ namespace RevenantCore.Entities;
 /// Behavior may be applied in response to input, at random, 
 /// based on the environment, or not at all.
 /// </summary>
-public interface IAgent
+public interface IAgent : IMortal
 {
     /// <summary>
     /// Applies behavior for a given run of the Tick loop.
@@ -25,5 +26,42 @@ public interface IAgent
 /// </summary>
 public class NullAgent : IAgent
 {
+    public bool IsDead => false;
+
     public void Apply(Entity entity, Scene scene, FrameTime time) { }
+
+    public void Create(Scene scene, FrameTime time) { }
+
+    public void Glean(Scene scene, FrameTime time) { }
+}
+
+/// <summary>
+/// An agent which bases its movements off a tracker.
+/// </summary>
+/// <param name="tracker">The tracker which will feed this agent target information.</param>
+/// <param name="acceleration">The acceleration to apply each tick towards the tracked goal.</param>
+/// <param name="topSpeed">The top speed at which this agent is allowed to travel.</param>
+public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float topSpeed) : IAgent
+{
+    public bool IsDead => tracker.IsDead;
+
+    public void Apply(Entity entity, Scene scene, FrameTime time)
+    {
+        tracker.Tick(scene, time);
+        Vector3 acc = tracker.CurrValue - entity.Position;
+        acc.Normalize();
+        acc *= acceleration;
+        if ((entity.Velocity + acc).Length() < topSpeed)
+            entity.Acceleration += acc;
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        tracker.Create(scene, time);
+    }
+
+    public void Glean(Scene scene, FrameTime time)
+    {
+        tracker.Glean(scene, time);
+    }
 }
