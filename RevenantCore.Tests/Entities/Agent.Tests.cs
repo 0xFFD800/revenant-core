@@ -25,12 +25,17 @@ public class NullAgent_Test
     [Test]
     public void Apply_DoNothing()
     {
-        IAgent agent = new NullAgent();
+        NullAgent agent = new();
         Entity entity = new(agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene);
-        entity.Tick(new FakeScene(), new(new()));
+        Scene scene = new FakeScene();
+        FrameTime time = new(new());
+        entity.Create(scene, time);
+        entity.Tick(scene, time);
+        Assert.IsFalse(agent.IsDead);
         Assert.AreEqual(Vector3.Zero, entity.Position);
         Assert.AreEqual(Vector3.Zero, entity.Velocity);
         Assert.AreEqual(Vector3.Zero, entity.Acceleration);
+        entity.Glean(scene, time);
     }
 }
 
@@ -51,13 +56,18 @@ public class TrackerAgent_Test
     [TestCase(9, 0, 0, TestName = "Apply (At Top Speed)")]
     public void Apply_AccelTowardsTarget(float vel, float acc, float expAcc)
     {
-        IAgent agent = new TrackingAgent(new FakeTracker(Vector3.UnitX * 5), 1, 10);
+        TrackingAgent agent = new(new FakeTracker(Vector3.UnitX * 5), 1, 10);
         Entity entity = new(agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
         {
             Velocity = Vector3.UnitX * vel,
             Acceleration = Vector3.UnitX * acc
         };
-        entity.Tick(new FakeScene(), new FrameTime(new()));
+        Scene scene = new FakeScene();
+        FrameTime time = new(new());
+        entity.Create(scene, time);
+        entity.Tick(scene, time);
+        Assert.IsFalse(agent.IsDead);
         Assert.AreEqual(Vector3.UnitX * expAcc, entity.Acceleration);
+        entity.Glean(scene, time);
     }
 }
