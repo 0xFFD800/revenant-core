@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
 using RevenantCore.Scenes;
@@ -17,6 +18,13 @@ namespace RevenantCore;
 /// </summary>
 public interface IImpl
 {
+    /// <summary>
+    /// Called to register additional control spec mappings.
+    /// </summary>
+    /// <param name="registry">The registry builder to register new controls with.</param>
+    /// <returns>The registry builder passed to this method.</returns>
+    ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry);
+
     /// <summary>
     /// Called to register additional cutscene type mappings.
     /// </summary>
@@ -43,6 +51,8 @@ public interface ILoader
 /// </summary>
 internal class CoreImpl : IImpl
 {
+    public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry;
+
     public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry
         .Register("sequentialBlock", typeof(SequentialBlockSpec))
         .Register("concurrentBlock", typeof(ConcurrentBlockSpec))
@@ -58,11 +68,18 @@ public class Core
     private readonly ISpec cutsceneRegistry;
     private readonly ILoader loader;
 
+    public ControlRegistry Controls { get; }
+
     public Core(ILoader loader, IImpl[] impls)
     {
         this.loader = loader;
 
         IImpl[] allImpls = [.. impls.Prepend(coreImpl)];
+
+        ControlRegistryBuilder controlBuilder = new();
+        foreach (IImpl impl in allImpls)
+            impl.RegisterControls(controlBuilder);
+        Controls = controlBuilder.Build();
 
         CutsceneRegistryBuilder cutsceneBuilder = new();
         foreach (IImpl impl in allImpls)
