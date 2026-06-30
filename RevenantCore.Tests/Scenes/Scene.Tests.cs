@@ -11,17 +11,9 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeLoader() : ILoader
-    {
-        public Drawable LoadSprite(string path)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     private class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, spec, trigger)
     {
-        internal FakeScene(SceneSpec spec) : this(new(new(new FakeLoader(), []), new([])), spec, "default")
+        internal FakeScene(SceneSpec spec) : this(new(new FakeCore(), new([])), spec, "default")
         { }
 
         internal FakeScene() : this(new())
@@ -180,7 +172,7 @@ public class Scene_Test
         private bool created, gleaned = false;
         private readonly MockCutsceneSpec spec;
 
-        public MockCutscene(MockCutsceneSpec spec) : base(new(new(new FakeLoader(), []), new([])), spec)
+        public MockCutscene(MockCutsceneSpec spec) : base(new(new FakeCore(), new([])), spec)
         {
             this.spec = spec;
             complete = spec.Complete;
@@ -556,7 +548,7 @@ public class Scene_Test
                 { "testTrigger", testSpec }
             }
         };
-        FakeScene scene = new(new(new(new FakeLoader(), []), new([])), spec, "testTrigger");
+        FakeScene scene = new(new(new FakeCore(), new([])), spec, "testTrigger");
         scene.Create(scene, new(new()));
         defSpec.Validate();
         testSpec.Validate();

@@ -9,15 +9,7 @@ namespace RevenantCore.Tests.Entities;
 
 file class FakeAnimationCollection() : AnimationCollection(new List<KeyValuePair<string, Animation>>().ToFrozenDictionary(), null);
 
-file class FakeLoader() : ILoader
-{
-    public Drawable LoadSprite(string path)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-file class FakeScene() : Scene(new(new(new FakeLoader(), []), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
 
 [TestFixture]
 public class NullAgent_Test

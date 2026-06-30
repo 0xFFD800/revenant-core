@@ -2,6 +2,8 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Entities.Spec;
@@ -46,6 +48,13 @@ public interface ILoader
     Drawable LoadSprite(string path);
 }
 
+public interface IInputs
+{
+    KeyboardState Keyboard { get; }
+    GamePadState GamePad(PlayerIndex player);
+    MouseState Mouse { get; }
+}
+
 /// <summary>
 /// The core implementation object, which registers the core behavior.
 /// </summary>
@@ -69,10 +78,12 @@ public class Core
     private readonly ILoader loader;
 
     public ControlRegistry Controls { get; }
+    public IInputs Inputs { get; }
 
-    public Core(ILoader loader, IImpl[] impls)
+    public Core(ILoader loader, IInputs inputs, IImpl[] impls)
     {
         this.loader = loader;
+        Inputs = inputs;
 
         IImpl[] allImpls = [.. impls.Prepend(coreImpl)];
 

@@ -22,9 +22,9 @@ public enum MouseButtons
 }
 
 /// <summary>
-/// Represents the state of a given control.
+/// Represents the position of a given control.
 /// </summary>
-public enum ControlState
+public enum ControlPositions
 {
     /// <summary>
     /// A new press.
@@ -47,6 +47,13 @@ public enum ControlState
     /// </summary>
     Up
 }
+
+/// <summary>
+/// Represents the state of a given control.
+/// </summary>
+/// <param name="Position">The position which this control is currently in.</param>
+/// <param name="Millis">The number of milliseconds for which this control has been pressed.</param>
+public record struct ControlState(ControlPositions Position, double Millis);
 
 /// <summary>
 /// The result of an attempt to handle control input.

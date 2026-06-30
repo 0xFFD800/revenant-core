@@ -15,7 +15,7 @@ file class FakeLoader() : ILoader
     }
 }
 
-file class FakeScene() : Scene(new(new(new FakeLoader(), []), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
 
 file class FakeMoveable(Vector3[] positions) : IMoveable
 {

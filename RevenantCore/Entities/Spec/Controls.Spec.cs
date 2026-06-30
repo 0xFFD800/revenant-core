@@ -1,9 +1,16 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
 namespace RevenantCore.Entities.Spec;
+
+public class GamepadButton
+{
+    public Buttons Button { get; set; } = Buttons.None;
+    public PlayerIndex Player { get; set; } = PlayerIndex.One;
+}
 
 /// <summary>
 /// Represents a binding for a control. 
@@ -14,17 +21,17 @@ public class ControlBindSpec
     /// <summary>
     /// The keyboard keys to which this control is bound.
     /// </summary>
-    public Keys[] Key { get; set; } = [];
+    public Keys[] Keys { get; set; } = [];
     
     /// <summary>
     /// The gamepad buttons to which this control is bound.
     /// </summary>
-    public Buttons[] Button { get; set; } = [];
+    public GamepadButton[] Buttons { get; set; } = [];
 
     /// <summary>
     /// The mouse buttons to which this control is bound.
     /// </summary>
-    public MouseButtons[] MouseButton { get; set; } = [];
+    public MouseButtons[] MouseButtons { get; set; } = [];
 }
 
 /// <summary>
@@ -62,7 +69,7 @@ public class ControlRegistry(FrozenDictionary<string, ControlSpec> registry)
     /// <summary>
     /// All control IDs for which a mapping exists in the registry.
     /// </summary>
-    public string[] Controls => [..registry.Keys];
+    public string[] IDs => [..registry.Keys];
 
     /// <summary>
     /// Gets a single control spec by ID.
