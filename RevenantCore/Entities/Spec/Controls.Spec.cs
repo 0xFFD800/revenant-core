@@ -6,9 +6,19 @@ using Microsoft.Xna.Framework.Input;
 
 namespace RevenantCore.Entities.Spec;
 
+/// <summary>
+/// A binding to a gamepad button. Specifies both the button on the controller and which player the binding corresponds to.
+/// </summary>
 public class GamepadButton
 {
+    /// <summary>
+    /// The button on the controller.
+    /// </summary>
     public Buttons Button { get; set; } = Buttons.None;
+
+    /// <summary>
+    /// The index of the player which this binding corresponds to.
+    /// </summary>
     public PlayerIndex Player { get; set; } = PlayerIndex.One;
 }
 

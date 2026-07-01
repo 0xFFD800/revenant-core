@@ -48,10 +48,26 @@ public interface ILoader
     Drawable LoadSprite(string path);
 }
 
+/// <summary>
+/// A wrapper for the Keyboard, GamePad, and Mouse objects. Used to determine input states.
+/// </summary>
 public interface IInputs
 {
+    /// <summary>
+    /// The current state of the keyboard object.
+    /// </summary>
     KeyboardState Keyboard { get; }
+
+    /// <summary>
+    /// Gets the gamepad state for a given player index.
+    /// </summary>
+    /// <param name="player">The player to query the gamepad state for.</param>
+    /// <returns>The gamepad state for the specified player index.</returns>
     GamePadState GamePad(PlayerIndex player);
+
+    /// <summary>
+    /// The current state of the mouse object.
+    /// </summary>
     MouseState Mouse { get; }
 }
 
@@ -77,7 +93,14 @@ public class Core
     private readonly ISpec cutsceneRegistry;
     private readonly ILoader loader;
 
+    /// <summary>
+    /// The finalized control registry as created by the implementation objects.
+    /// </summary>
     public ControlRegistry Controls { get; }
+
+    /// <summary>
+    /// A view into the external inputs into this application.
+    /// </summary>
     public IInputs Inputs { get; }
 
     public Core(ILoader loader, IInputs inputs, IImpl[] impls)

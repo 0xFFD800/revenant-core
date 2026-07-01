@@ -9,6 +9,7 @@ using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Cutscenes;
+using RevenantCore.Entities;
 
 namespace RevenantCore.Scenes;
 
@@ -43,11 +44,17 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
         .ToFrozenDictionary();
 
     /// <summary>
+    /// The control tracker for this scene, updated each tick.
+    /// </summary>
+    private readonly ControlTracker controlTracker = new();
+
+    /// <summary>
     /// A collection of cameras for all draw layers of this scene.
     /// </summary>
     private readonly CameraCollection cameras = new(spec.ViewportSize.Data, new(spec.Bounds.X, spec.Bounds.Y));
 
     public override bool IsDead => false;
+    public Universe Universe => universe;
 
     private void DoPhysics(double millis)
     {
@@ -85,6 +92,8 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
         Trace.Assert(scene == this);
         foreach (Wall wall in walls.Values)
             Add(wall, scene, time);
+
+        Add(controlTracker, scene, time);
 
         if (spec.Triggers.TryGetValue(trigger, out CutsceneSpec? intro))
         {
