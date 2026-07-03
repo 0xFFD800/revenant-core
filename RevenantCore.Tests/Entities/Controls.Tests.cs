@@ -29,25 +29,43 @@ public class ControlTracker_Test
         public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry;
     }
 
-    [TestCase(false, false, ControlPositions.Up, 10, TestName = "CalcStates_Keyboard (Up, not pressed)")]
-    [TestCase(false, true, ControlPositions.Press, 0, TestName = "CalcStates_Keyboard (Up, pressed)")]
-    [TestCase(true, false, ControlPositions.Release, 0, TestName = "CalcStates_Keyboard (Down, not pressed)")]
-    [TestCase(true, true, ControlPositions.Down, 10, TestName = "CalcStates_Keyboard (Down, pressed)")]
-    public void CalcStates(bool prevPressed, bool pressed, ControlPositions expState, double expMillis)
+    public enum InputType { Keyboard, GamePad, Mouse }
+
+    [TestCase(InputType.Keyboard, false, false, ControlPositions.Up, 10, TestName = "CalcStates_Keyboard (Up, not pressed)")]
+    [TestCase(InputType.Keyboard, false, true, ControlPositions.Press, 0, TestName = "CalcStates_Keyboard (Up, pressed)")]
+    [TestCase(InputType.Keyboard, true, false, ControlPositions.Release, 0, TestName = "CalcStates_Keyboard (Down, not pressed)")]
+    [TestCase(InputType.Keyboard, true, true, ControlPositions.Down, 10, TestName = "CalcStates_Keyboard (Down, pressed)")]
+    [TestCase(InputType.GamePad, false, false, ControlPositions.Up, 10, TestName = "CalcStates_GamePad (Up, not pressed)")]
+    [TestCase(InputType.GamePad, false, true, ControlPositions.Press, 0, TestName = "CalcStates_GamePad (Up, pressed)")]
+    [TestCase(InputType.GamePad, true, false, ControlPositions.Release, 0, TestName = "CalcStates_GamePad (Down, not pressed)")]
+    [TestCase(InputType.GamePad, true, true, ControlPositions.Down, 10, TestName = "CalcStates_GamePad (Down, pressed)")]
+    [TestCase(InputType.Mouse, false, false, ControlPositions.Up, 10, TestName = "CalcStates_Mouse (Up, not pressed)")]
+    [TestCase(InputType.Mouse, false, true, ControlPositions.Press, 0, TestName = "CalcStates_Mouse (Up, pressed)")]
+    [TestCase(InputType.Mouse, true, false, ControlPositions.Release, 0, TestName = "CalcStates_Mouse (Down, not pressed)")]
+    [TestCase(InputType.Mouse, true, true, ControlPositions.Down, 10, TestName = "CalcStates_Mouse (Down, pressed)")]
+    public void CalcStates(InputType inputType, bool prevPressed, bool pressed, ControlPositions expState, double expMillis)
     {
         ControlTracker tracker = new();
         FakeInputs inputs = new();
         Scene scene = new(new(new FakeCore(inputs, [new FakeImpl()]), new([])), new(), "default");
-        scene.Universe.Bindings.Add("test", new()
+        ControlBindSpec binding = new();
+        switch (inputType) 
         {
-            Keys = [Keys.A],
-            MouseButtons = [MouseButtons.Left],
-            Buttons = [new()
-            {
-                Button = Buttons.A,
-                Player = PlayerIndex.Two
-            }]
-        });
+            case InputType.Keyboard: 
+                binding.Keys = [Keys.A];
+                break;
+            case InputType.Mouse: 
+                binding.MouseButtons = [MouseButtons.Left];
+                break;
+            case InputType.GamePad: 
+                binding.Buttons = [new()
+                {
+                    Button = Buttons.A,
+                    Player = PlayerIndex.Two
+                }];
+                break;
+        }
+        scene.Universe.Bindings.Add("test", binding);
         inputs.Pressed = prevPressed;
         tracker.Create(scene, new(new()));
         inputs.Pressed = pressed;
@@ -55,5 +73,29 @@ public class ControlTracker_Test
         ControlState state = tracker.States["test"];
         Assert.AreEqual(expState, state.Position);
         Assert.AreEqual(expMillis, state.Millis);
+    }
+}
+
+[TestFixture]
+public class ControlRegistryBuilder_Test
+{
+    [Test]
+    public void RegisterDuplicate_Error()
+    {
+        ControlRegistryBuilder registry = new();
+        ControlSpec spec = new() { ID = "test" };
+        registry.Register(spec);
+        Assert.Throws<ArgumentException>(() => registry.Register(spec));
+    }
+
+    [Test]
+    public void Build_ContainsRegisteredKeys()
+    {
+        ControlRegistryBuilder builder = new();
+        ControlSpec spec = new() { ID = "test" };
+        builder.Register(spec);
+        ControlRegistry registry = builder.Build();
+        Assert.IsTrue(registry.IDs.Contains("test"));
+        Assert.IsFalse(registry.IDs.Contains("not-test"));
     }
 }

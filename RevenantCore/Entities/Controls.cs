@@ -89,8 +89,6 @@ public enum ControlResult
 /// </summary>
 public class ControlTracker : ITickable
 {
-    private FrozenDictionary<string, ControlState> prevStates = FrozenDictionary<string, ControlState>.Empty;
-
     public bool IsDead => false;
 
     /// <summary>
@@ -100,6 +98,7 @@ public class ControlTracker : ITickable
 
     private void CalcStates(Universe universe, Core core, FrameTime time)
     {
+        FrozenDictionary<string, ControlState> prevStates = States.ToFrozenDictionary();
         Dictionary<string, ControlState> currStates = [];
         foreach (string id in core.Controls.IDs)
         {
@@ -116,16 +115,15 @@ public class ControlTracker : ITickable
             ControlState prevState = prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0));
             currStates.Add(id, prevState.Position switch
             {
-                ControlPositions.Press | ControlPositions.Down => pressed
+                ControlPositions.Press or ControlPositions.Down => pressed
                     ? new(ControlPositions.Down, prevState.Millis + time.MillisElapsed)
                     : new(ControlPositions.Release, 0),
-                ControlPositions.Release | ControlPositions.Up => pressed
+                ControlPositions.Release or ControlPositions.Up => pressed
                     ? new(ControlPositions.Press, 0)
                     : new(ControlPositions.Up, prevState.Millis + time.MillisElapsed),
                 _ => throw new ArgumentException("Unsupported control position")
             });
         }
-        prevStates = States.ToFrozenDictionary();
         States = currStates.ToFrozenDictionary();
     }
 
