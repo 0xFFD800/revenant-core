@@ -41,8 +41,9 @@ file class FakeInputs : IInputs
     }
 }
 
-public class FakeCore(IImpl[] impls) : Core(new FakeLoader(), new FakeInputs(), impls)
+public class FakeCore(IInputs inputs, IImpl[] impls) : Core(new FakeLoader(), inputs, impls)
 {
+    public FakeCore(IImpl[] impls) : this(new FakeInputs(), impls) { }
     public FakeCore() : this([]) { }
 }
 
