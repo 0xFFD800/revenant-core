@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
 
@@ -64,4 +65,35 @@ public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float t
     {
         tracker.Glean(scene, time);
     }
+}
+
+/// <summary>
+/// An agent which bases its movement off control inputs.
+/// </summary>
+/// <param name="spec">The spec which defines this agent's parameters.</param>
+public class InputAgent(InputAgentSpec spec) : IAgent
+{
+    public bool IsDead => false;
+
+    private static bool IsPressed(Scene scene, string control) => 
+        scene.GetControlState(control).Position is ControlPositions.Press or ControlPositions.Down;
+
+    public void Apply(Entity entity, Scene scene, FrameTime time)
+    {
+        Vector3 acc = Vector3.Zero;
+        if (IsPressed(scene, spec.Left)) 
+            acc -= Vector3.UnitX * spec.Acceleration;
+        if (IsPressed(scene, spec.Right)) 
+            acc += Vector3.UnitX * spec.Acceleration;
+        if (IsPressed(scene, spec.Up)) 
+            acc -= Vector3.UnitZ * spec.Acceleration;
+        if (IsPressed(scene, spec.Down)) 
+            acc += Vector3.UnitZ * spec.Acceleration;
+        if ((entity.Velocity + acc).Length() < spec.TopSpeed)
+            entity.Acceleration += acc;
+    }
+
+    public void Create(Scene scene, FrameTime time) { }
+
+    public void Glean(Scene scene, FrameTime time) { }
 }

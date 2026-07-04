@@ -87,6 +87,14 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
         walls[side].Suspended = suspended;
     }
 
+    /// <summary>
+    /// Gets the state of the specified control.
+    /// </summary>
+    /// <param name="control">The control to find the state of.</param>
+    /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
+    public ControlState GetControlState(string control) => 
+        controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
+
     public override void Create(Scene scene, FrameTime time)
     {
         Trace.Assert(scene == this);
