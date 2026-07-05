@@ -1,6 +1,8 @@
+using System.Collections.Frozen;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
@@ -226,6 +228,40 @@ public class Scene_Test
         {
             Assert.AreEqual(expSpecCreated, cutscene != null, "Cutscene creation state did not match expectation");
             cutscene?.Validate();
+        }
+    }
+
+    private class MockControlTracker(bool expCreated, bool expGleaned, bool expTick) : IControlTracker
+    {
+        private bool created = false, gleaned = false, ticked = false;
+
+        public FrozenDictionary<string, ControlState> States => new List<KeyValuePair<string, ControlState>>([
+            new KeyValuePair<string, ControlState>("foo", new(ControlPositions.Down, 10))]).ToFrozenDictionary();
+
+        public bool IsDead => false;
+
+        public void Create(Scene scene, FrameTime time)
+        {
+            Assert.IsFalse(created, "Control tracker should not be created twice");
+            created = true;
+        }
+
+        public void Glean(Scene scene, FrameTime time)
+        {
+            Assert.IsFalse(gleaned, "Control tracker should not be gleaned twice");
+            gleaned = true;
+        }
+
+        public void Tick(Scene scene, FrameTime time)
+        {
+            ticked = true;
+        }
+
+        internal void Validate()
+        {
+            Assert.AreEqual(expCreated, created);
+            Assert.AreEqual(expGleaned, gleaned);
+            Assert.AreEqual(expTick, ticked);
         }
     }
 
@@ -544,7 +580,6 @@ public class Scene_Test
         {
             Triggers = new()
             {
-                { "default", defSpec },
                 { "testTrigger", testSpec }
             }
         };
@@ -552,6 +587,26 @@ public class Scene_Test
         scene.Create(scene, new(new()));
         defSpec.Validate();
         testSpec.Validate();
+    }
+
+    [Test]
+    public void Control_Existing_Return()
+    {
+        MockControlTracker tracker = new(true, false, false);
+        Scene scene = new(new(new FakeCore(), new([])), tracker, new(), "default");
+        scene.Create(scene, new(new()));
+        Assert.AreEqual(new ControlState(ControlPositions.Down, 10), scene.GetControlState("foo"));
+        tracker.Validate();
+    }
+
+    [Test]
+    public void Control_None_Default()
+    {
+        MockControlTracker tracker = new(true, false, false);
+        Scene scene = new(new(new FakeCore(), new([])), tracker, new(), "default");
+        scene.Create(scene, new(new()));
+        Assert.AreEqual(new ControlState(ControlPositions.Up, 0), scene.GetControlState("bar"));
+        tracker.Validate();
     }
 }
 

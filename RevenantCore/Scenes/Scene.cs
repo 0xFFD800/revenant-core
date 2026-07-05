@@ -16,7 +16,11 @@ namespace RevenantCore.Scenes;
 /// <summary>
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
-public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
+/// <param name="universe">The universe in which this scene exists.</param>
+/// <param name="controlTracker">The control tracker for this scene, updated each tick.</param>
+/// <param name="spec">The spec containing data for this scene.</param>
+/// <param name="trigger">The trigger which this scene was created with.</param>
+public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -44,14 +48,11 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
         .ToFrozenDictionary();
 
     /// <summary>
-    /// The control tracker for this scene, updated each tick.
-    /// </summary>
-    private readonly ControlTracker controlTracker = new();
-
-    /// <summary>
     /// A collection of cameras for all draw layers of this scene.
     /// </summary>
     private readonly CameraCollection cameras = new(spec.ViewportSize.Data, new(spec.Bounds.X, spec.Bounds.Y));
+
+    public Scene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
 
     public override bool IsDead => false;
     public Universe Universe => universe;
@@ -92,7 +93,7 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
     /// </summary>
     /// <param name="control">The control to find the state of.</param>
     /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
-    public ControlState GetControlState(string control) => 
+    public ControlState GetControlState(string control) =>
         controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
 
     public override void Create(Scene scene, FrameTime time)

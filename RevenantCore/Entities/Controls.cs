@@ -87,13 +87,21 @@ public enum ControlResult
 /// <summary>
 /// A tracker which tracks controls and how long they have been in their current states.
 /// </summary>
-public class ControlTracker : ITickable
+public interface IControlTracker : ITickable
 {
-    public bool IsDead => false;
-
     /// <summary>
     /// The current state of the controls, calculated as of the most recent tick.
     /// </summary>
+    public FrozenDictionary<string, ControlState> States { get; }
+}
+
+/// <summary>
+/// An implementation of IControlTracker which derives the current control state from the parent scene.
+/// </summary>
+public class ControlTracker : IControlTracker
+{
+    public bool IsDead => false;
+
     public FrozenDictionary<string, ControlState> States { get; private set; } = FrozenDictionary<string, ControlState>.Empty;
 
     private void CalcStates(Universe universe, Core core, FrameTime time)
