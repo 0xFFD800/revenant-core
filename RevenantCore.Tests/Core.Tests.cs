@@ -1,6 +1,9 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
+using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
@@ -26,7 +29,23 @@ file class FakeLoader : ILoader
     public Drawable LoadSprite(string path) => new FakeDrawable(path);
 }
 
-file class FakeCore(IImpl[] impls) : Core(new FakeLoader(), impls);
+file class FakeInputs : IInputs
+{
+    public KeyboardState Keyboard => throw new NotImplementedException();
+
+    public MouseState Mouse => throw new NotImplementedException();
+
+    public GamePadState GamePad(PlayerIndex player)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FakeCore(IInputs inputs, IImpl[] impls) : Core(new FakeLoader(), inputs, impls)
+{
+    public FakeCore(IImpl[] impls) : this(new FakeInputs(), impls) { }
+    public FakeCore() : this([]) { }
+}
 
 file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(universe, spec)
 {
@@ -60,6 +79,28 @@ file class FakeCutsceneSpec : CutsceneSpec
 file class FakeImpl : IImpl
 {
     public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry.Register("fake", typeof(FakeCutsceneSpec));
+
+    public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry.Register(new()
+    {
+        ID = "fake",
+        Name = "Fake",
+        Descr = "Fake Control",
+        Default = new()
+        {
+            Keys = [Keys.A, Keys.B],
+            Buttons = [
+                new()
+                {
+                    Button = Buttons.A
+                },
+                new()
+                {
+                    Button = Buttons.B
+                }
+            ],
+            MouseButtons = [MouseButtons.Left, MouseButtons.Right]
+        }
+    });
 }
 
 public class Core_Test

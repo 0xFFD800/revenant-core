@@ -2,8 +2,11 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
 using RevenantCore.Scenes;
@@ -17,6 +20,13 @@ namespace RevenantCore;
 /// </summary>
 public interface IImpl
 {
+    /// <summary>
+    /// Called to register additional control spec mappings.
+    /// </summary>
+    /// <param name="registry">The registry builder to register new controls with.</param>
+    /// <returns>The registry builder passed to this method.</returns>
+    ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry);
+
     /// <summary>
     /// Called to register additional cutscene type mappings.
     /// </summary>
@@ -39,10 +49,35 @@ public interface ILoader
 }
 
 /// <summary>
+/// A wrapper for the Keyboard, GamePad, and Mouse objects. Used to determine input states.
+/// </summary>
+public interface IInputs
+{
+    /// <summary>
+    /// The current state of the keyboard object.
+    /// </summary>
+    KeyboardState Keyboard { get; }
+
+    /// <summary>
+    /// Gets the gamepad state for a given player index.
+    /// </summary>
+    /// <param name="player">The player to query the gamepad state for.</param>
+    /// <returns>The gamepad state for the specified player index.</returns>
+    GamePadState GamePad(PlayerIndex player);
+
+    /// <summary>
+    /// The current state of the mouse object.
+    /// </summary>
+    MouseState Mouse { get; }
+}
+
+/// <summary>
 /// The core implementation object, which registers the core behavior.
 /// </summary>
 internal class CoreImpl : IImpl
 {
+    public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry;
+
     public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry
         .Register("sequentialBlock", typeof(SequentialBlockSpec))
         .Register("concurrentBlock", typeof(ConcurrentBlockSpec))
@@ -58,11 +93,27 @@ public class Core
     private readonly ISpec cutsceneRegistry;
     private readonly ILoader loader;
 
-    public Core(ILoader loader, IImpl[] impls)
+    /// <summary>
+    /// The finalized control registry as created by the implementation objects.
+    /// </summary>
+    public ControlRegistry Controls { get; }
+
+    /// <summary>
+    /// A view into the external inputs into this application.
+    /// </summary>
+    public IInputs Inputs { get; }
+
+    public Core(ILoader loader, IInputs inputs, IImpl[] impls)
     {
         this.loader = loader;
+        Inputs = inputs;
 
         IImpl[] allImpls = [.. impls.Prepend(coreImpl)];
+
+        ControlRegistryBuilder controlBuilder = new();
+        foreach (IImpl impl in allImpls)
+            impl.RegisterControls(controlBuilder);
+        Controls = controlBuilder.Build();
 
         CutsceneRegistryBuilder cutsceneBuilder = new();
         foreach (IImpl impl in allImpls)

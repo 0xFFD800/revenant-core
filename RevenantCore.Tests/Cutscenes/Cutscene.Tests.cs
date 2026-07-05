@@ -135,17 +135,6 @@ file class MockCutscene : Cutscene
         Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
-
-file class FakeLoader() : ILoader
-{
-    public Drawable LoadSprite(string path)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-file class FakeCore() : Core(new FakeLoader(), []);
-
 file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
 
 [TestFixture]
