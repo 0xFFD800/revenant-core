@@ -1,9 +1,49 @@
+using RevenantCore.Scenes.Spec;
+
 namespace RevenantCore.Entities.Spec;
 
 /// <summary>
-/// The YAML-deserializable spec for an agent which determines its movements according to control inputs.
+/// Base class for YAML-deserializable dataspec of entity agents.
 /// </summary>
-public class InputAgentSpec
+public abstract class AgentSpec
+{
+    /// <summary>
+    /// Creates the agent which this spec represents.
+    /// </summary>
+    /// <returns>The agent represented by this data spec.</returns>
+    public abstract IAgent Create();
+}
+
+/// <summary>
+/// The spec for an agent which does not move or interact with other entities.
+/// </summary>
+public class NullAgentSpec : AgentSpec
+{
+    public override IAgent Create() => new NullAgent();
+}
+
+/// <summary>
+/// The spec for an agent which determines its movements from a tracker.
+/// </summary>
+public class TrackingAgentSpec : AgentSpec
+{
+    /// <summary>
+    /// The spec for the tracker which will determine this agent's movements.
+    /// </summary>
+    public Vec3TrackerSpec TrackerSpec { get; set; }
+
+    /// <summary>
+    /// The rate at which the agent should accelerate while moving.
+    /// </summary>
+    public float Acceleration { get; set; } = 0.0002F;
+
+    public override IAgent Create() => new TrackingAgent(TrackerSpec.Create(), Acceleration, (float) TrackerSpec.Speed);
+}
+
+/// <summary>
+/// The spec for an agent which determines its movements according to control inputs.
+/// </summary>
+public class InputAgentSpec : AgentSpec
 {
     /// <summary>
     /// The ID of the control which causes this agent to move left.
@@ -34,4 +74,6 @@ public class InputAgentSpec
     /// The top speed at which inputs should cause this agent to move.
     /// </summary>
     public float TopSpeed { get; set; } = 0.2F;
+
+    public override IAgent Create() => new InputAgent(this);
 }
