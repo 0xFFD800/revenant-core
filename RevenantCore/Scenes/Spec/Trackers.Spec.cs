@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 
 namespace RevenantCore.Scenes.Spec;
@@ -33,4 +34,24 @@ public abstract class Vec3TrackerSpec
     /// </summary>
     /// <returns>The tracker represented by this spec.</returns>
     public abstract Tracker<Vector3> Create();
+}
+
+/// <summary>
+/// The spec for a tracker which picks random values within a certain range of a certain point.
+/// </summary>
+public class WanderTrackerSpec : Vec3TrackerSpec
+{
+    private readonly Random random = new();
+
+    /// <summary>
+    /// The position around which target points will be picked.
+    /// </summary>
+    public Vector3Spec Home { get; set; } = new();
+
+    /// <summary>
+    /// How far from Home target points should be allowed to deviate.
+    /// </summary>
+    public float Range { get; set; } = 50F;
+
+    public override Tracker<Vector3> Create() => new WanderTracker(Home.Data, this, () => random.NextSingle() * Range);
 }

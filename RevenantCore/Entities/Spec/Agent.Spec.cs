@@ -30,7 +30,7 @@ public class TrackingAgentSpec : AgentSpec
     /// <summary>
     /// The spec for the tracker which will determine this agent's movements.
     /// </summary>
-    public Vec3TrackerSpec TrackerSpec { get; set; }
+    public Vec3TrackerSpec TrackerSpec { get; set; } = new WanderTrackerSpec();
 
     /// <summary>
     /// The rate at which the agent should accelerate while moving.
