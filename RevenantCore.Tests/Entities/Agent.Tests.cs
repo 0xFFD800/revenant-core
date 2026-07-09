@@ -1,8 +1,10 @@
 using System.Collections.Frozen;
 using Microsoft.Xna.Framework;
 using RevenantCore.Entities;
+using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Entities;
@@ -17,7 +19,9 @@ public class NullAgent_Test
     [Test]
     public void Apply_DoNothing()
     {
-        NullAgent agent = new();
+        IAgent a = new NullAgentSpec().Create();
+        Assert.IsInstanceOf<NullAgent>(a);
+        NullAgent agent = (NullAgent)a;
         Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene);
         Scene scene = new FakeScene();
         FrameTime time = new(new());
@@ -40,6 +44,11 @@ file class FakeTracker(Vector3 trackerTarget) : Tracker<Vector3>(10, 0)
     protected override Vector3 Interpolate(Vector3 current, Vector3 target, FrameTime time) => trackerTarget;
 }
 
+file class FakeTrackerSpec(Vector3 trackerTarget) : Vec3TrackerSpec
+{
+    public override Tracker<Vector3> Create() => new FakeTracker(trackerTarget);
+}
+
 [TestFixture]
 public class TrackerAgent_Test
 {
@@ -48,7 +57,13 @@ public class TrackerAgent_Test
     [TestCase(9, 0, 0, TestName = "Apply (At Top Speed)")]
     public void Apply_AccelTowardsTarget(float vel, float acc, float expAcc)
     {
-        TrackingAgent agent = new(new FakeTracker(Vector3.UnitX * 5), 1, 10);
+        IAgent a = new TrackingAgentSpec()
+        {
+            Acceleration = 1,
+            TrackerSpec = new FakeTrackerSpec(Vector3.UnitX * 5) { Speed = 10 }
+        }.Create();
+        Assert.IsInstanceOf<TrackingAgent>(a);
+        TrackingAgent agent = (TrackingAgent)a;
         Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
         {
             Velocity = Vector3.UnitX * vel,
@@ -98,11 +113,13 @@ public class InputAgent_Test
     [TestCase(ControlPositions.Up, ControlPositions.Down, ControlPositions.Up, ControlPositions.Up, 10, 0, 0, TestName = "Apply_Controls_AddAccel (Already at top speed -> no accel)")]
     public void Apply_Controls_AddAccel(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown, float vel, float expX, float expZ)
     {
-        InputAgent agent = new(new()
+        IAgent a = new InputAgentSpec()
         {
             Acceleration = 1F,
             TopSpeed = 10F
-        });
+        }.Create();
+        Assert.IsInstanceOf<InputAgent>(a);
+        InputAgent agent = (InputAgent)a;
         Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
         {
             Velocity = Vector3.UnitX * vel
