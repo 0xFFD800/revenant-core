@@ -610,6 +610,18 @@ public class Scene_Test
         Assert.AreEqual(new ControlState(ControlPositions.Up, 0), scene.GetControlState("bar"));
         tracker.Validate();
     }
+
+    [TestCase(false, TestName = "TryGetMoveable_Absent_False")]
+    [TestCase(true, TestName = "TryGetMoveable_Present_TrueOut")]
+    public void TryGetMoveable(bool present)
+    {
+        IMoveable? moveable;
+        FakeScene scene = new();
+        if (present)
+            scene.Add(new MockCollideable("foo", false, false), scene, new(new()));
+        Assert.AreEqual(present, scene.TryGetMoveable("foo", out moveable));
+        Assert.AreEqual(present, moveable != null);
+    }
 }
 
 [TestFixture]
