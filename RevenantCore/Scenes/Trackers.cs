@@ -39,7 +39,7 @@ public abstract class Tracker<T>(uint depth, double interval) : ITickable
     protected abstract T NextTarget { get; }
     protected bool QueueEmpty => queue.Count == 0;
 
-    public void Create(Scene scene, FrameTime time)
+    public virtual void Create(Scene scene, FrameTime time)
     {
         queue.Enqueue(NextTarget);
         lastUpdate = time.Millis;
@@ -102,12 +102,28 @@ public abstract class Vec3Tracker(Vec3TrackerSpec spec) : Tracker<Vector3>(spec.
 /// <summary>
 /// A tracker which follows a moveable through 3D space within a scene.
 /// </summary>
-/// <param name="toTrack">The moveable object to track.</param>
 /// <param name="spec">The parameters this tracker should use to determine its behavior.</param>
-public class MoveableTracker(IMoveable toTrack, Vec3TrackerSpec spec) : Vec3Tracker(spec)
+public class MoveableTracker(Vector3 initialPos, MoveableTrackerSpec spec) : Vec3Tracker(spec)
 {
-    public override bool IsDead => toTrack.IsDead;
-    protected override Vector3 NextTarget => toTrack.Position;
+    private IMoveable? toTrack;
+    private bool created = false;
+
+    public MoveableTracker(IMoveable moveable, MoveableTrackerSpec spec) 
+        : this(spec.InitialPos.Data, spec)
+    {
+        toTrack = moveable;
+    }
+
+    public override bool IsDead => toTrack?.IsDead ?? !created;
+    protected override Vector3 NextTarget => toTrack?.Position ?? initialPos;
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        base.Create(scene, time);
+        if (toTrack == null)
+            scene.TryGetMoveable(spec.Moveable, out toTrack);
+        created = true;
+    }
 }
 
 /// <summary>
@@ -119,7 +135,7 @@ public class MoveableTracker(IMoveable toTrack, Vec3TrackerSpec spec) : Vec3Trac
 /// The factor by which to multiply <paramref name="toTrack"/>.Velocity.
 /// This is equivalent to the number of milliseconds until toTrack will be at the next target position, assuming its velocity does not change.
 /// </param>
-public class ForwardLookingTracker(ICollideable toTrack, Vec3TrackerSpec spec, float velocityFactor) : MoveableTracker(toTrack, spec)
+public class ForwardLookingTracker(ICollideable toTrack, MoveableTrackerSpec spec, float velocityFactor) : MoveableTracker(toTrack, spec)
 {
     protected override Vector3 NextTarget => base.NextTarget + (toTrack.Velocity * velocityFactor);
 }

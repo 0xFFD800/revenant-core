@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Entities;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
+using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Entities;
 
@@ -21,12 +21,16 @@ public class ControlTracker_Test
 
     private class FakeImpl : IImpl
     {
+        public SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry) => registry;
+
         public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry.Register(new()
         {
             ID = "test"
         });
 
-        public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry;
+        public SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry) => registry;
+
+        public SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry) => registry;
     }
 
     public enum InputType { Keyboard, GamePad, Mouse }

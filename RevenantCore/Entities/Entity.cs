@@ -9,12 +9,13 @@ namespace RevenantCore.Entities;
 /// <summary>
 /// A collideable object which handles its own dynamic behavior and drawing behavior.
 /// </summary>
+/// <param name="id">The unique ID by which this entity will be identified within its scene.</param>
 /// <param name="agent">The agent which controls this entity's behavior.</param>
 /// <param name="animations">The collection of animations used to find the sprites to draw.</param>
 /// <param name="material">The spec for the material which defines physics parameters for this entity.</param>
 /// <param name="bounds">The size of this entity's bounding box along each axis.</param>
 /// <param name="layer">The layer in which this entity should be drawn.</param>
-public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec material, Vector3 bounds, DrawLayer layer) : ICollideable, ITickable, IVisible
+public class Entity(string id, IAgent agent, AnimationCollection animations, MaterialSpec material, Vector3 bounds, DrawLayer layer) : ICollideable, ITickable, IVisible
 {
     /// <summary>
     /// The agent which controls this entity's behavior.
@@ -31,6 +32,8 @@ public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec m
     public bool IsDead => false;
     public DrawLayer Layer => layer;
     public float Z => Position.Z;
+
+    public string ID => id;
 
     public void Create(Scene scene, FrameTime time)
     {

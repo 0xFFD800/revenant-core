@@ -35,6 +35,11 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     private readonly List<ITickable> tickables = [];
 
     /// <summary>
+    /// TODO
+    /// </summary>
+    private readonly Dictionary<string, IMoveable> moveables = [];
+
+    /// <summary>
     /// All objects in this view with collision boxes.
     /// </summary>
     private readonly List<ICollideable> collideables = [];
@@ -96,6 +101,14 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     public ControlState GetControlState(string control) =>
         controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="moveable"></param>
+    /// <returns></returns>
+    public bool TryGetMoveable(string id, out IMoveable? moveable) => moveables.TryGetValue(id, out moveable);
+
     public override void Create(Scene scene, FrameTime time)
     {
         Trace.Assert(scene == this);
@@ -140,6 +153,8 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             visibles.Add(visible.Layer, visible);
         if (mortal is ITickable tickable)
             tickables.Add(tickable);
+        if (mortal is IMoveable moveable)
+            moveables.Add(moveable.ID, moveable);
         if (mortal is ICollideable collideable)
             collideables.Add(collideable);
     }
@@ -193,6 +208,8 @@ public class Wall(WallSide side, SceneSpec scene) : ICollideable
     public Vector3 Position { get => origin + new Vector3(bounds.X / 2, 0, bounds.Z / 2); set { } }
 
     public bool IsDead => false;
+
+    public string ID => "wall" + Enum.GetName(side);
 
     public void Create(Scene scene, FrameTime time)
     {

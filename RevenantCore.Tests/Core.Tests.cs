@@ -78,7 +78,7 @@ file class FakeCutsceneSpec : CutsceneSpec
 
 file class FakeImpl : IImpl
 {
-    public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry.Register("fake", typeof(FakeCutsceneSpec));
+    public SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry) => registry.Register("fake", typeof(FakeCutsceneSpec));
 
     public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry.Register(new()
     {
@@ -101,6 +101,12 @@ file class FakeImpl : IImpl
             MouseButtons = [MouseButtons.Left, MouseButtons.Right]
         }
     });
+
+    // TODO
+    public SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry) => registry;
+
+    // TODO 
+    public SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry) => registry;
 }
 
 public class Core_Test

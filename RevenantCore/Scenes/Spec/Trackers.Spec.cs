@@ -37,6 +37,24 @@ public abstract class Vec3TrackerSpec
 }
 
 /// <summary>
+/// TODO
+/// </summary>
+public class MoveableTrackerSpec : Vec3TrackerSpec
+{
+    /// <summary>
+    /// TODO
+    /// </summary>
+    public string Moveable { get; set; } = "player";
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    public Vector3Spec InitialPos { get; set; } = new();
+
+    public override Tracker<Vector3> Create() => new MoveableTracker(InitialPos.Data, this);
+}
+
+/// <summary>
 /// The spec for a tracker which picks random values within a certain range of a certain point.
 /// </summary>
 public class WanderTrackerSpec : Vec3TrackerSpec

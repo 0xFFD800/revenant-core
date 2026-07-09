@@ -18,7 +18,7 @@ public class NullAgent_Test
     public void Apply_DoNothing()
     {
         NullAgent agent = new();
-        Entity entity = new(agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene);
+        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene);
         Scene scene = new FakeScene();
         FrameTime time = new(new());
         entity.Create(scene, time);
@@ -49,7 +49,7 @@ public class TrackerAgent_Test
     public void Apply_AccelTowardsTarget(float vel, float acc, float expAcc)
     {
         TrackingAgent agent = new(new FakeTracker(Vector3.UnitX * 5), 1, 10);
-        Entity entity = new(agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
+        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
         {
             Velocity = Vector3.UnitX * vel,
             Acceleration = Vector3.UnitX * acc
@@ -103,7 +103,7 @@ public class InputAgent_Test
             Acceleration = 1F,
             TopSpeed = 10F
         });
-        Entity entity = new(agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
+        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
         {
             Velocity = Vector3.UnitX * vel
         };
