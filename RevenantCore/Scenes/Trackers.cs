@@ -123,7 +123,7 @@ public class MoveableTracker(Vector3 initialPos, MoveableTrackerSpec spec) : Vec
         toTrack = moveable;
     }
 
-    public override bool IsDead => toTrack?.IsDead ?? !created;
+    public override bool IsDead => toTrack?.IsDead ?? created;
     protected override Vector3 NextTarget => toTrack?.Position ?? initialPos;
 
     public override void Create(Scene scene, FrameTime time)

@@ -120,6 +120,16 @@ public class MoveableTracker_Test
             Assert.AreEqual(expVec, t.CurrValue);
         }
     }
+
+    [Test]
+    public void CreateFromSpec_MissingTarget_Dead()
+    {
+        Tracker<Vector3> t = new MoveableTrackerSpec().Create();
+        Assert.IsInstanceOf<MoveableTracker>(t);
+        Assert.IsFalse(t.IsDead);
+        t.Create(new FakeScene(), new(new()));
+        Assert.IsTrue(t.IsDead);
+    }
 }
 
 file class FakeCollideable(Vector3[] positions, Vector3[] velocities) : FakeMoveable(positions), ICollideable
@@ -152,6 +162,18 @@ public class ForwardLookingTracker_Test
         t.Tick(s, new(new(new(0, 0, 0, 0, 2), new(0, 0, 0, 0, 1))));
         Vector3 expVec = new(expPosX, 0, expPosZ);
         Assert.AreEqual(expVec, t.CurrValue);
+    }
+
+    [Test]
+    public void CreateFromSpec_WrongTypeTarget_Dead()
+    {
+        Tracker<Vector3> t = new ForwardLookingTrackerSpec() { Moveable = "fake" }.Create();
+        Scene s = new FakeScene();
+        s.Add(new FakeMoveable([]), s, new(new()));
+        Assert.IsInstanceOf<ForwardLookingTracker>(t);
+        Assert.IsFalse(t.IsDead);
+        t.Create(s, new(new()));
+        Assert.IsTrue(t.IsDead);
     }
 }
 
