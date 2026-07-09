@@ -55,6 +55,22 @@ public class MoveableTrackerSpec : Vec3TrackerSpec
 }
 
 /// <summary>
+/// The spec for a tracker which attempts to follow ahead of a collideable object.
+/// Note that the target object must implement ICollideable (MoveableTracker only requires IMoveable).
+/// </summary>
+public class ForwardLookingTrackerSpec : MoveableTrackerSpec
+{
+    /// <summary>
+    /// The factor by which to multiply the velocity of the tracked object.
+    /// This is equivalent to the number of milliseconds until the tracked object 
+    /// will be at the next target position, assuming its velocity does not change.
+    /// </summary>
+    public float VelocityFactor { get; set; } = 0;
+
+    public override Tracker<Vector3> Create() => new ForwardLookingTracker(this);
+}
+
+/// <summary>
 /// The spec for a tracker which picks random values within a certain range of a certain point.
 /// </summary>
 public class WanderTrackerSpec : Vec3TrackerSpec

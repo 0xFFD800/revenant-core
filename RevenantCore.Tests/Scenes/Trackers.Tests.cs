@@ -144,7 +144,7 @@ public class ForwardLookingTracker_Test
         Vector3 stepVec = Vector3.UnitX * step;
         Vector3 velVec = Vector3.UnitZ * velocity;
         FakeCollideable c = new([Vector3.Zero, stepVec, stepVec], [Vector3.Zero, velVec, stepVec]);
-        ForwardLookingTracker t = new(c, new() { Depth = 0, Interval = 1, Smoothing = 1, Speed = 10 }, velocityFactor);
+        ForwardLookingTracker t = new(c, new() { Depth = 0, Interval = 1, Smoothing = 1, Speed = 10, VelocityFactor = velocityFactor });
         Assert.AreEqual(Vector3.Zero, t.CurrValue, "Sanity Check");
         Scene s = new FakeScene();
         FrameTime f = new(new());

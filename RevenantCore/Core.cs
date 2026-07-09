@@ -10,6 +10,7 @@ using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
 using RevenantCore.Scenes;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 using YamlDotNet.Serialization;
 
@@ -103,7 +104,9 @@ internal class CoreImpl : IImpl
         .Register("inputAgent", typeof(InputAgentSpec));
     
     public SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry) => registry
-        .Register("wander", typeof(WanderTracker));
+        .Register("moveableTracker", typeof(MoveableTrackerSpec))
+        .Register("forwardLookingTracker", typeof(ForwardLookingTrackerSpec))
+        .Register("wanderTracker", typeof(WanderTrackerSpec));
 }
 
 /// <summary>

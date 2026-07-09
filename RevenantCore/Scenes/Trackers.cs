@@ -102,12 +102,21 @@ public abstract class Vec3Tracker(Vec3TrackerSpec spec) : Tracker<Vector3>(spec.
 /// <summary>
 /// A tracker which follows a moveable through 3D space within a scene.
 /// </summary>
+/// <param name="initialPos">The position at which this tracker should be initialized, before the object being tracked is identified.</param>
 /// <param name="spec">The parameters this tracker should use to determine its behavior.</param>
 public class MoveableTracker(Vector3 initialPos, MoveableTrackerSpec spec) : Vec3Tracker(spec)
 {
-    private IMoveable? toTrack;
+    /// <summary>
+    /// The object being tracked by this tracker.
+    /// </summary>
+    protected IMoveable? toTrack;
     private bool created = false;
 
+    /// <summary>
+    /// An alternative constructor which allows defining the target object at creation.
+    /// </summary>
+    /// <param name="moveable">The moveable object to track.</param>
+    /// <param name="spec">The parameters this tracker should use to determine its behavior.</param>
     public MoveableTracker(IMoveable moveable, MoveableTrackerSpec spec) 
         : this(spec.InitialPos.Data, spec)
     {
@@ -120,24 +129,41 @@ public class MoveableTracker(Vector3 initialPos, MoveableTrackerSpec spec) : Vec
     public override void Create(Scene scene, FrameTime time)
     {
         base.Create(scene, time);
-        if (toTrack == null)
-            scene.TryGetMoveable(spec.Moveable, out toTrack);
+        if (toTrack == null && !TryGetTarget(scene))
+            toTrack = null;
         created = true;
     }
+
+    /// <summary>
+    /// Attempts to find a target for this tracker's parameters.
+    /// </summary>
+    /// <param name="scene">The scene to search for a target object in.</param>
+    /// <returns>Whether an acceptable target could be found.</returns>
+    protected virtual bool TryGetTarget(Scene scene) => scene.TryGetMoveable(spec.Moveable, out toTrack);
 }
 
 /// <summary>
 /// A tracker which follows a collideable through 3D space, targeting positions it is likely to move to next based on its velocity.
 /// </summary>
-/// <param name="toTrack">The collideable object to track.</param>
 /// <param name="spec">The parameters this tracker should use to determine its behavior.</param>
-/// <param name="velocityFactor">
-/// The factor by which to multiply <paramref name="toTrack"/>.Velocity.
-/// This is equivalent to the number of milliseconds until toTrack will be at the next target position, assuming its velocity does not change.
-/// </param>
-public class ForwardLookingTracker(ICollideable toTrack, MoveableTrackerSpec spec, float velocityFactor) : MoveableTracker(toTrack, spec)
+public class ForwardLookingTracker(ForwardLookingTrackerSpec spec) : MoveableTracker(spec.InitialPos.Data, spec)
 {
-    protected override Vector3 NextTarget => base.NextTarget + (toTrack.Velocity * velocityFactor);
+    private ICollideable? Collideable => (ICollideable?)toTrack;
+
+    /// <summary>
+    /// An alternative constructor which allows defining the target object at creation.
+    /// </summary>
+    /// <param name="collideable">The collideable object to track.</param>
+    /// <param name="spec">The parameters this tracker should use to determine its behavior.</param>
+    public ForwardLookingTracker(ICollideable collideable, ForwardLookingTrackerSpec spec)
+        : this(spec)
+    {
+        toTrack = collideable;
+    }
+
+    protected override Vector3 NextTarget => base.NextTarget + ((Collideable?.Velocity ?? Vector3.Zero) * spec.VelocityFactor);
+
+    protected override bool TryGetTarget(Scene scene) => base.TryGetTarget(scene) && toTrack is ICollideable;
 }
 
 /// <summary>
