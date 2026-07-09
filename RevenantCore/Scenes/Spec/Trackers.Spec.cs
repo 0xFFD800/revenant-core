@@ -37,17 +37,17 @@ public abstract class Vec3TrackerSpec
 }
 
 /// <summary>
-/// TODO
+/// The spec for a tracker which follows a moveable object.
 /// </summary>
 public class MoveableTrackerSpec : Vec3TrackerSpec
 {
     /// <summary>
-    /// TODO
+    /// The ID of the moveable object to follow.
     /// </summary>
     public string Moveable { get; set; } = "player";
 
     /// <summary>
-    /// TODO
+    /// The position at which the tracker should be initialized before it identifies the object.
     /// </summary>
     public Vector3Spec InitialPos { get; set; } = new();
 

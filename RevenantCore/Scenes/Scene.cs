@@ -35,7 +35,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     private readonly List<ITickable> tickables = [];
 
     /// <summary>
-    /// TODO
+    /// The moveable objects in this scene, organized by their unique identifier.
     /// </summary>
     private readonly Dictionary<string, IMoveable> moveables = [];
 
@@ -102,11 +102,11 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
         controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
 
     /// <summary>
-    /// TODO
+    /// Attempts to find a moveable object for a given ID within a scene.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="moveable"></param>
-    /// <returns></returns>
+    /// <param name="id">The identifier to find a moveable object for.</param>
+    /// <param name="moveable">The moveable object with the given identifier, if it exists.</param>
+    /// <returns>Whether the moveable object was successfully found.</returns>
     public bool TryGetMoveable(string id, out IMoveable? moveable) => moveables.TryGetValue(id, out moveable);
 
     public override void Create(Scene scene, FrameTime time)
