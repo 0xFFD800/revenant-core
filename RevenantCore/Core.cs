@@ -32,7 +32,21 @@ public interface IImpl
     /// </summary>
     /// <param name="registry">The registry builder to register new type mappings with.</param>
     /// <returns>The registry builder passed to this method.</returns>
-    CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry);
+    SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry);
+
+    /// <summary>
+    /// Called to register additional agent type mappings.
+    /// </summary>
+    /// <param name="registry">The registry builder to register new type mappings with.</param>
+    /// <returns>The registry builder passed to this method.</returns>
+    SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry);
+
+    /// <summary>
+    /// Called to register additional tracker type mappings.
+    /// </summary>
+    /// <param name="registry">The registry builder to register new type mappings with.</param>
+    /// <returns>The registry builder passed to this method.</returns>
+    SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry);
 }
 
 /// <summary>
@@ -78,10 +92,18 @@ internal class CoreImpl : IImpl
 {
     public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry;
 
-    public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry
+    public SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry) => registry
         .Register("sequentialBlock", typeof(SequentialBlockSpec))
         .Register("concurrentBlock", typeof(ConcurrentBlockSpec))
         .Register("load", typeof(LoadCutsceneSpec));
+
+    public SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry) => registry
+        .Register("nullAgent", typeof(NullAgentSpec))
+        .Register("trackingAgent", typeof(TrackingAgentSpec))
+        .Register("inputAgent", typeof(InputAgentSpec));
+    
+    public SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry) => registry
+        .Register("wander", typeof(WanderTracker));
 }
 
 /// <summary>
@@ -90,7 +112,7 @@ internal class CoreImpl : IImpl
 public class Core
 {
     private readonly CoreImpl coreImpl = new();
-    private readonly ISpec cutsceneRegistry;
+    private readonly ISpec cutsceneRegistry, agentRegistry, trackerRegistry;
     private readonly ILoader loader;
 
     /// <summary>
@@ -115,10 +137,20 @@ public class Core
             impl.RegisterControls(controlBuilder);
         Controls = controlBuilder.Build();
 
-        CutsceneRegistryBuilder cutsceneBuilder = new();
+        SpecRegistryBuilder cutsceneBuilder = new();
         foreach (IImpl impl in allImpls)
             impl.RegisterCutscenes(cutsceneBuilder);
         cutsceneRegistry = cutsceneBuilder.Build();
+
+        SpecRegistryBuilder agentBuilder = new();
+        foreach (IImpl impl in allImpls)
+            impl.RegisterAgents(agentBuilder);
+        agentRegistry = agentBuilder.Build();
+
+        SpecRegistryBuilder trackerBuilder = new();
+        foreach (IImpl impl in allImpls)
+            impl.RegisterTrackers(trackerBuilder);
+        trackerRegistry = trackerBuilder.Build();
     }
 
     /// <summary>

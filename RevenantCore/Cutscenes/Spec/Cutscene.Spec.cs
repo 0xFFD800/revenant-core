@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
-using YamlDotNet.Serialization;
 
 namespace RevenantCore.Cutscenes.Spec;
 
@@ -143,46 +140,4 @@ public class LoadCutsceneSpec : CutsceneSpec
             paramValues[param.Key] = param.Value;
         return universe.Core.LoadCutscene(universe, InsertParameters(paramValues, fileSpec.Cutscene));
     }
-}
-
-/// <summary>
-/// A finalized cutscene spec registry. Contains all type mappings populated during the registry phase.
-/// </summary>
-/// <param name="registry">The finalized tag to type map.</param>
-internal class CutsceneRegistry(FrozenDictionary<string, Type> registry) : ISpec
-{
-    public T PopulateOptions<T>(T builder) where T : BuilderSkeleton<T>
-    {
-        foreach (KeyValuePair<string, Type> item in registry)
-            builder.WithTagMapping(item.Key, item.Value);
-        return builder;
-    }
-}
-
-/// <summary>
-/// A builder object used to create the cutscene registry.
-/// </summary>
-public class CutsceneRegistryBuilder
-{
-    private readonly Dictionary<string, Type> registry = [];
-
-    /// <summary>
-    /// Registers a new tag-to-type mapping.
-    /// </summary>
-    /// <param name="tag">The tag to map, without the "!" prefix.</param>
-    /// <param name="type">The spec type to map. Must have no constructor arguments.</param>
-    /// <returns>This builder object.</returns>
-    /// <exception cref="ArgumentException">Thrown if the tag has already been registered.</exception>
-    public CutsceneRegistryBuilder Register(string tag, Type type)
-    {
-        if (!registry.TryAdd("!" + tag, type))
-            throw new ArgumentException("Duplicate tag name " + tag, nameof(tag));
-        return this;
-    }
-
-    /// <summary>
-    /// Builds and finalizes the cutscene registry.
-    /// </summary>
-    /// <returns>The finalized cutscene registry.</returns>
-    public ISpec Build() => new CutsceneRegistry(registry.ToFrozenDictionary());
 }
