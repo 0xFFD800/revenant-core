@@ -187,4 +187,11 @@ public class WanderTracker_Test()
         Assert.IsFalse(t.IsDead);
         Assert.AreEqual(Vector3.One * 2, t.CurrValue);
     }
+
+    [Test]
+    public void CreateFromSpec()
+    {
+        Tracker<Vector3> t = new WanderTrackerSpec().Create();
+        Assert.IsInstanceOf<WanderTracker>(t);
+    }
 }
