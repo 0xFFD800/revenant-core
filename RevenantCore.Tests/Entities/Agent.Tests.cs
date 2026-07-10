@@ -19,15 +19,18 @@ public class NullAgent_Test
     [Test]
     public void Apply_DoNothing()
     {
-        IAgent a = new NullAgentSpec().Create();
-        Assert.IsInstanceOf<NullAgent>(a);
-        NullAgent agent = (NullAgent)a;
-        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene);
+        Entity entity = new(new()
+        {
+            ID = "foo",
+            Agent = new NullAgentSpec(),
+            Bounds = new() { X = 1, Y = 1, Z = 1 }
+        }, new FakeAnimationCollection());
         Scene scene = new FakeScene();
         FrameTime time = new(new());
         entity.Create(scene, time);
         entity.Tick(scene, time);
-        Assert.IsFalse(agent.IsDead);
+        Assert.IsInstanceOf<NullAgent>(entity.Agent);
+        Assert.IsFalse(entity.Agent.IsDead);
         Assert.AreEqual(Vector3.Zero, entity.Position);
         Assert.AreEqual(Vector3.Zero, entity.Velocity);
         Assert.AreEqual(Vector3.Zero, entity.Acceleration);
@@ -57,14 +60,16 @@ public class TrackerAgent_Test
     [TestCase(9, 0, 0, TestName = "Apply (At Top Speed)")]
     public void Apply_AccelTowardsTarget(float vel, float acc, float expAcc)
     {
-        IAgent a = new TrackingAgentSpec()
+        Entity entity = new(new()
         {
-            Acceleration = 1,
-            TrackerSpec = new FakeTrackerSpec(Vector3.UnitX * 5) { Speed = 10 }
-        }.Create();
-        Assert.IsInstanceOf<TrackingAgent>(a);
-        TrackingAgent agent = (TrackingAgent)a;
-        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
+            ID = "foo",
+            Agent = new TrackingAgentSpec()
+            {
+                Acceleration = 1F,
+                TrackerSpec = new FakeTrackerSpec(Vector3.UnitX * 5) { Speed = 10 }
+            },
+            Bounds = new() { X = 1, Y = 1, Z = 1 }
+        }, new FakeAnimationCollection())
         {
             Velocity = Vector3.UnitX * vel,
             Acceleration = Vector3.UnitX * acc
@@ -73,7 +78,8 @@ public class TrackerAgent_Test
         FrameTime time = new(new());
         entity.Create(scene, time);
         entity.Tick(scene, time);
-        Assert.IsFalse(agent.IsDead);
+        Assert.IsInstanceOf<TrackingAgent>(entity.Agent);
+        Assert.IsFalse(entity.Agent.IsDead);
         Assert.AreEqual(Vector3.UnitX * expAcc, entity.Acceleration);
         entity.Glean(scene, time);
     }
@@ -113,14 +119,16 @@ public class InputAgent_Test
     [TestCase(ControlPositions.Up, ControlPositions.Down, ControlPositions.Up, ControlPositions.Up, 10, 0, 0, TestName = "Apply_Controls_AddAccel (Already at top speed -> no accel)")]
     public void Apply_Controls_AddAccel(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown, float vel, float expX, float expZ)
     {
-        IAgent a = new InputAgentSpec()
+        Entity entity = new(new()
         {
-            Acceleration = 1F,
-            TopSpeed = 10F
-        }.Create();
-        Assert.IsInstanceOf<InputAgent>(a);
-        InputAgent agent = (InputAgent)a;
-        Entity entity = new("foo", agent, new FakeAnimationCollection(), new(), Vector3.One, DrawLayer.Scene)
+            ID = "foo",
+            Agent = new InputAgentSpec()
+            {
+                Acceleration = 1F,
+                TopSpeed = 10F
+            },
+            Bounds = new() { X = 1, Y = 1, Z = 1 }
+        }, new FakeAnimationCollection())
         {
             Velocity = Vector3.UnitX * vel
         };
@@ -128,7 +136,8 @@ public class InputAgent_Test
         FrameTime time = new(new());
         entity.Create(scene, time);
         entity.Tick(scene, time);
-        Assert.IsFalse(agent.IsDead);
+        Assert.IsInstanceOf<InputAgent>(entity.Agent);
+        Assert.IsFalse(entity.Agent.IsDead);
         Assert.AreEqual(new Vector3(expX, 0, expZ), entity.Acceleration);
         entity.Glean(scene, time);
     }

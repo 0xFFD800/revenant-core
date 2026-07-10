@@ -1,11 +1,13 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
@@ -188,5 +190,17 @@ public class Core
                     .ShallowCopy()
                     .SetSource(f.Source?.Data))], spec.MillisPerFrame)))
             .ToFrozenDictionary(), spec.DefaultAnimation);
+    }
+
+    /// <summary>
+    /// Loads an entity from spec.
+    /// </summary>
+    /// <param name="yaml">The YAML to deserialize and load into a new entity.</param>
+    /// <returns>The entity instance created for the provided YAML.</returns>
+    public Entity LoadEntity(string yaml)
+    {
+        IDeserializer deserializer = Serializers.CreateDeserializer([agentRegistry, trackerRegistry]);
+        EntitySpec spec = deserializer.Deserialize<EntitySpec>(yaml);
+        return new Entity(spec, LoadAnimationCollection(File.ReadAllText(spec.Animations)));
     }
 }
