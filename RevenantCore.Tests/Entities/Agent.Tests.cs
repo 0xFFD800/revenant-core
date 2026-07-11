@@ -21,7 +21,7 @@ public class NullAgent_Test
     {
         Entity entity = new(new()
         {
-            ID = "foo",
+            Id = "foo",
             Agent = new NullAgentSpec(),
             Bounds = new() { X = 1, Y = 1, Z = 1 }
         }, new FakeAnimationCollection());
@@ -62,7 +62,7 @@ public class TrackerAgent_Test
     {
         Entity entity = new(new()
         {
-            ID = "foo",
+            Id = "foo",
             Agent = new TrackingAgentSpec()
             {
                 Acceleration = 1F,
@@ -121,7 +121,7 @@ public class InputAgent_Test
     {
         Entity entity = new(new()
         {
-            ID = "foo",
+            Id = "foo",
             Agent = new InputAgentSpec()
             {
                 Acceleration = 1F,

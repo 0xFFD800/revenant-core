@@ -11,7 +11,7 @@ public class EntitySpec
     /// <summary>
     /// The unique ID by which this entity will be identified within its scene.
     /// </summary>
-    public string ID { get; set; } = "entity";
+    public string Id { get; set; } = "entity";
 
     /// <summary>
     /// The agent which controls this entity's behavior.

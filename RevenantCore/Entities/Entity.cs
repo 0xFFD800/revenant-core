@@ -32,7 +32,7 @@ public class Entity(EntitySpec spec, AnimationCollection animations) : ICollidea
     public DrawLayer Layer => spec.Layer;
     public float Z => Position.Z;
 
-    public string ID => spec.ID;
+    public string ID => spec.Id;
 
     public void Create(Scene scene, FrameTime time)
     {
