@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
@@ -6,6 +7,7 @@ using RevenantCore.Entities;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests;
@@ -76,9 +78,37 @@ file class FakeCutsceneSpec : CutsceneSpec
     public override Cutscene Create(Universe universe) => new FakeCutscene(universe, this);
 }
 
+file class FakeAgentSpec : AgentSpec
+{
+    public string Bar { get; set; } = "wrong";
+    public override IAgent Create() => new FakeAgent();
+}
+
+file class FakeAgent : IAgent
+{
+    public bool IsDead => false;
+    public void Apply(Entity entity, Scene scene, FrameTime time) { }
+    public void Create(Scene scene, FrameTime time) { }
+    public void Glean(Scene scene, FrameTime time) { }
+}
+
+file class FakeTrackerSpec : Vec3TrackerSpec
+{
+    public string Bar { get; set; } = "wrong";
+    public override Tracker<Vector3> Create() => new FakeTracker();
+}
+
+
+file class FakeTracker() : Tracker<Vector3>(0, 10)
+{
+    public override bool IsDead => false;
+    protected override Vector3 NextTarget => Vector3.UnitX * 10;
+    protected override Vector3 Interpolate(Vector3 current, Vector3 target, FrameTime time) => target;
+}
+
 file class FakeImpl : IImpl
 {
-    public CutsceneRegistryBuilder RegisterCutscenes(CutsceneRegistryBuilder registry) => registry.Register("fake", typeof(FakeCutsceneSpec));
+    public SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry) => registry.Register("fake", typeof(FakeCutsceneSpec));
 
     public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry.Register(new()
     {
@@ -101,6 +131,10 @@ file class FakeImpl : IImpl
             MouseButtons = [MouseButtons.Left, MouseButtons.Right]
         }
     });
+
+    public SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry) => registry.Register("fakeAgent", typeof(FakeAgentSpec));
+
+    public SpecRegistryBuilder RegisterTrackers(SpecRegistryBuilder registry) => registry.Register("fakeTracker", typeof(FakeTrackerSpec));
 }
 
 public class Core_Test
@@ -276,5 +310,65 @@ public class Core_Test
         millisPerFrame: 100
         """);
         Assert.AreEqual(expSourceX, c.GetFrame(key, millis).Source?.X);
+    }
+
+    [Test]
+    public void LoadEntity_FakeAgent()
+    {
+        Core core = new FakeCore([new FakeImpl()]);
+        Entity entity = core.LoadEntity("""
+          id: foo
+          agent: !fakeAgent
+            bar: baz
+          animations: ../../../TestAssets/AnimationCollections/Fake.yml
+          material:
+            mass: 1
+            materialAbsorption: 1
+            friction: 1
+            staticFriction: 1
+          bounds:
+            x: 1
+            y: 1
+            z: 1
+          layer: scene
+        """);
+        entity.Create(new(new(core, new([])), new(), "default"), new(new()));
+        Assert.IsInstanceOf<FakeAgent>(entity.Agent);
+        Assert.AreEqual(1, entity.Material.Mass);
+        Assert.AreEqual(Vector3.One, entity.CollisionBox.Max - entity.CollisionBox.Min);
+        Assert.AreEqual(DrawLayer.Scene, entity.Layer);
+    }
+
+    [Test]
+    public void LoadEntity_FakeTracker()
+    {
+        Core core = new FakeCore([new FakeImpl()]);
+        Scene scene = new(new(core, new([])), new(), "default");
+        Entity entity = core.LoadEntity("""
+          id: foo
+          agent: !trackingAgent
+            trackerSpec: !fakeTracker
+              bar: baz
+              speed: 10
+            acceleration: 1
+          animations: ../../../TestAssets/AnimationCollections/Fake.yml
+          material:
+            mass: 1
+            materialAbsorption: 1
+            friction: 1
+            staticFriction: 1
+          bounds:
+            x: 1
+            y: 1
+            z: 1
+          layer: scene
+        """);
+        entity.Create(scene, new(new()));
+        entity.Tick(scene, new(new()));
+        Assert.IsInstanceOf<TrackingAgent>(entity.Agent);
+        Assert.AreEqual(Vector3.UnitX, entity.Acceleration);    
+        Assert.AreEqual(1, entity.Material.Mass);
+        Assert.AreEqual(Vector3.One, entity.CollisionBox.Max - entity.CollisionBox.Min);
+        Assert.AreEqual(DrawLayer.Scene, entity.Layer);
     }
 }

@@ -1,0 +1,5 @@
+animations:
+  default:
+    - sprite: path/to/sprite/foo
+    - sprite: path/to/sprite/bar
+defaultAnimation: default
