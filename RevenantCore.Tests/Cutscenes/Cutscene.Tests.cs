@@ -445,7 +445,7 @@ public class CutsceneRegistry_Test
     [TestCase(true, TestName = "PopulateOptions and Serialize (dead)")]
     public void PopulateOptions_Serialize_CreateTags(bool isDead)
     {
-        CutsceneRegistryBuilder builder = new();
+        SpecRegistryBuilder builder = new();
         builder.Register("mock", typeof(MockCutsceneSpec));
         ISerializer serializer = Serializers.CreateSerializer([builder.Build()]);
         string yaml = serializer.Serialize(new MockCutsceneSpec() { Complete = isDead, ExpDead = isDead });
@@ -456,7 +456,7 @@ public class CutsceneRegistry_Test
     [TestCase(true, TestName = "PopulateOptions and Deserialize (dead)")]
     public void PopulateOptions_Deserialize_MapTags(bool isDead)
     {
-        CutsceneRegistryBuilder builder = new();
+        SpecRegistryBuilder builder = new();
         builder.Register("mock", typeof(MockCutsceneSpec));
         IDeserializer deserializer = Serializers.CreateDeserializer([builder.Build()]);
         CutsceneSpec cutscene = deserializer.Deserialize<CutsceneSpec>(isDead ? deadYaml : liveYaml);
@@ -469,7 +469,7 @@ public class CutsceneRegistry_Test
     [Test]
     public void DuplicateTagName_Error()
     {
-        CutsceneRegistryBuilder builder = new();
+        SpecRegistryBuilder builder = new();
         builder.Register("foo", typeof(MockCutsceneSpec));
         Assert.Throws<ArgumentException>(() => builder.Register("foo", typeof(MockCutsceneSpec)));
     }

@@ -86,6 +86,12 @@ public interface ITickable : IMortal
 public interface IMoveable : IMortal
 {
     /// <summary>
+    /// A unique string identifier which can be used to identify this moveable object within the scene.
+    /// Used to reference this object from cutscenes.
+    /// </summary>
+    string ID { get; }
+
+    /// <summary>
     /// The position of this object within its scene, relative to the origin.
     /// The origin (0, 0, 0) is the bottom left corner of the accessible area of the scene, at floor level.
     /// Positive X values are towards the right, positive Y values are up, and positive Z values are further from the camera.
