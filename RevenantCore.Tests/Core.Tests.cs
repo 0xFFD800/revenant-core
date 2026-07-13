@@ -57,7 +57,7 @@ file class FakeCutscene(Universe universe, FakeCutsceneSpec spec) : Cutscene(uni
         // do nothing
     }
 
-    public override void Draw(View view)
+    public override void Draw(View view, Camera camera)
     {
         // do nothing
     }

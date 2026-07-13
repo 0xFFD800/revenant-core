@@ -44,7 +44,7 @@ public class Scene_Test
             Assert.AreSame(this.scene, scene, "Visible was not created for the expected scene!");
         }
 
-        public void Draw(View view)
+        public void Draw(View view, Camera camera)
         {
             drawn = true;
             Assert.AreEqual(Layer, view.Layer, "Visible was not drawn on the expected layer!");
@@ -187,7 +187,7 @@ public class Scene_Test
             created = true;
         }
 
-        public override void Draw(View view)
+        public override void Draw(View view, Camera camera)
         {
             throw new NotImplementedException();
         }

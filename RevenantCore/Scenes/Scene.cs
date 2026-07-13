@@ -116,9 +116,10 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
 
     public void Draw(View view)
     {
-        view.Screen.Push(cameras.Get(view.Layer).Transform);
+        Camera camera = cameras.Get(view.Layer);
+        view.Screen.Push(camera.Transform);
         foreach (IVisible visible in visibles.Get(view.Layer))
-            visible.Draw(view);
+            visible.Draw(view, camera);
         view.Screen.Pop();
     }
 

@@ -37,10 +37,11 @@ public class Entity(IAgent agent, AnimationCollection animations, MaterialSpec m
         Agent.Create(scene, time);
     }
 
-    public void Draw(View view)
+    public virtual void Draw(View view, Camera camera)
     {
-        // TODO: Need to place the sprite correctly and get the right animation
-        view.Screen.Draw(animations.GetFrame("base", view.Millis));
+        view.Screen.Draw(animations.GetFrame(Agent.Animation, view.Millis)
+            .SetBase(camera.Project(Position))
+            .RotateAroundCenter());
     }
 
     public void Glean(Scene scene, FrameTime time)

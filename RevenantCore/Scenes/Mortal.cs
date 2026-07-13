@@ -46,7 +46,8 @@ public interface IVisible : IMortal
     /// </list>
     /// </summary>
     /// <param name="view">The graphics object for this run of the Draw loop.</param>
-    void Draw(View view);
+    /// <param name="camera">The camera object defining how this object is being viewed.</param>
+    void Draw(View view, Camera camera);
 
     /// <summary>
     /// The graphics layer in which this object will be drawn.

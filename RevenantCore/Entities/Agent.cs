@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
@@ -13,6 +14,11 @@ namespace RevenantCore.Entities;
 public interface IAgent : IMortal
 {
     /// <summary>
+    /// The animation which the entity should currently use if it is not overridden.
+    /// </summary>
+    string Animation { get; }
+    
+    /// <summary>
     /// Applies behavior for a given run of the Tick loop.
     /// </summary>
     /// <param name="entity">The entity to which to apply behavior to.</param>
@@ -27,6 +33,7 @@ public interface IAgent : IMortal
 /// </summary>
 public class NullAgent : IAgent
 {
+    public virtual string Animation => "idle";
     public bool IsDead => false;
 
     public void Apply(Entity entity, Scene scene, FrameTime time) { }
@@ -36,32 +43,51 @@ public class NullAgent : IAgent
     public void Glean(Scene scene, FrameTime time) { }
 }
 
+public abstract class WalkAgent : IAgent
+{
+    protected Vector3 movement = Vector3.Zero;
+
+    public virtual string Animation => Math.Atan2(movement.Z, movement.X) switch
+    {
+        var x when x >= Math.PI * 0.25 && x < Math.PI * 0.75 => "walkRight",
+        var x when x >= Math.PI * 0.75 && x < Math.PI * 1.25 => "walkDown",
+        var x when x >= Math.PI * 1.25 && x < Math.PI * 1.75 => "walkLeft",
+        var x when x >= Math.PI * 1.75 || x < Math.PI * 0.25 => "walkUp",
+        _ => "idle"
+    };
+    public abstract bool IsDead { get; }
+
+    public abstract void Apply(Entity entity, Scene scene, FrameTime time);
+    public abstract void Create(Scene scene, FrameTime time);
+    public abstract void Glean(Scene scene, FrameTime time);
+}
+
 /// <summary>
 /// An agent which bases its movements off a tracker.
 /// </summary>
 /// <param name="tracker">The tracker which will feed this agent target information.</param>
 /// <param name="acceleration">The acceleration to apply each tick towards the tracked goal.</param>
 /// <param name="topSpeed">The top speed at which this agent is allowed to travel.</param>
-public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float topSpeed) : IAgent
+public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float topSpeed) : WalkAgent, IAgent
 {
-    public bool IsDead => tracker.IsDead;
+    public override bool IsDead => tracker.IsDead;
 
-    public void Apply(Entity entity, Scene scene, FrameTime time)
+    public override void Apply(Entity entity, Scene scene, FrameTime time)
     {
         tracker.Tick(scene, time);
-        Vector3 acc = tracker.CurrValue - entity.Position;
-        acc.Normalize();
-        acc *= acceleration;
-        if ((entity.Velocity + acc).Length() < topSpeed)
-            entity.Acceleration += acc;
+        movement = tracker.CurrValue - entity.Position;
+        movement.Normalize();
+        movement *= acceleration;
+        if ((entity.Velocity + movement).Length() < topSpeed)
+            entity.Acceleration += movement;
     }
 
-    public void Create(Scene scene, FrameTime time)
+    public override void Create(Scene scene, FrameTime time)
     {
         tracker.Create(scene, time);
     }
 
-    public void Glean(Scene scene, FrameTime time)
+    public override void Glean(Scene scene, FrameTime time)
     {
         tracker.Glean(scene, time);
     }
@@ -71,29 +97,28 @@ public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float t
 /// An agent which bases its movement off control inputs.
 /// </summary>
 /// <param name="spec">The spec which defines this agent's parameters.</param>
-public class InputAgent(InputAgentSpec spec) : IAgent
+public class InputAgent(InputAgentSpec spec) : WalkAgent, IAgent
 {
-    public bool IsDead => false;
+    public override bool IsDead => false;
 
     private static bool IsPressed(Scene scene, string control) => 
         scene.GetControlState(control).Position is ControlPositions.Press or ControlPositions.Down;
 
-    public void Apply(Entity entity, Scene scene, FrameTime time)
+    public override void Apply(Entity entity, Scene scene, FrameTime time)
     {
-        Vector3 acc = Vector3.Zero;
         if (IsPressed(scene, spec.Left)) 
-            acc -= Vector3.UnitX * spec.Acceleration;
+            movement -= Vector3.UnitX * spec.Acceleration;
         if (IsPressed(scene, spec.Right)) 
-            acc += Vector3.UnitX * spec.Acceleration;
+            movement += Vector3.UnitX * spec.Acceleration;
         if (IsPressed(scene, spec.Up)) 
-            acc -= Vector3.UnitZ * spec.Acceleration;
+            movement -= Vector3.UnitZ * spec.Acceleration;
         if (IsPressed(scene, spec.Down)) 
-            acc += Vector3.UnitZ * spec.Acceleration;
-        if ((entity.Velocity + acc).Length() < spec.TopSpeed)
-            entity.Acceleration += acc;
+            movement += Vector3.UnitZ * spec.Acceleration;
+        if ((entity.Velocity + movement).Length() < spec.TopSpeed)
+            entity.Acceleration += movement;
     }
 
-    public void Create(Scene scene, FrameTime time) { }
+    public override void Create(Scene scene, FrameTime time) { }
 
-    public void Glean(Scene scene, FrameTime time) { }
+    public override void Glean(Scene scene, FrameTime time) { }
 }
