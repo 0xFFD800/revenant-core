@@ -17,6 +17,12 @@ file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
 public class NullAgent_Test
 {
     [Test]
+    public void Animation_Idle()
+    {
+        Assert.AreEqual("idle", new NullAgent().Animation);
+    }
+
+    [Test]
     public void Apply_DoNothing()
     {
         Entity entity = new(new()
@@ -50,6 +56,36 @@ file class FakeTracker(Vector3 trackerTarget) : Tracker<Vector3>(10, 0)
 file class FakeTrackerSpec(Vector3 trackerTarget) : Vec3TrackerSpec
 {
     public override Tracker<Vector3> Create() => new FakeTracker(trackerTarget);
+}
+
+[TestFixture]
+public class WalkAgent_Test
+{
+    private class FakeWalkAgent(Vector3 dir) : WalkAgent
+    {
+        public override bool IsDead => false;
+
+        public override void Apply(Entity entity, Scene scene, FrameTime time)
+        {
+            movement = dir;
+        }
+
+        public override void Create(Scene scene, FrameTime time) { }
+
+        public override void Glean(Scene scene, FrameTime time) { }
+    }
+
+    [TestCase(0, 0, "idle", TestName = "Animation_NoMove_Idle")]
+    [TestCase(-1, 0, "walkLeft", TestName = "Animation_MoveLeft_WalkLeft")]
+    [TestCase(1, 0, "walkRight", TestName = "Animation_MoveRight_WalkRight")]
+    [TestCase(0, -1, "walkUp", TestName = "Animation_MoveUp_WalkUp")]
+    [TestCase(0, 1, "walkDown", TestName = "Animation_MoveDown_WalkDown")]
+    public void Animation(float xMov, float zMov, string expAnim)
+    {
+        IAgent agent = new FakeWalkAgent(new(xMov, 0, zMov));
+        agent.Apply(new(new(), new FakeAnimationCollection()), new FakeScene(), new(new()));
+        Assert.AreEqual(expAnim, agent.Animation);
+    }
 }
 
 [TestFixture]

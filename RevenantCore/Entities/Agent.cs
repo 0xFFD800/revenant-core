@@ -17,7 +17,7 @@ public interface IAgent : IMortal
     /// The animation which the entity should currently use if it is not overridden.
     /// </summary>
     string Animation { get; }
-    
+
     /// <summary>
     /// Applies behavior for a given run of the Tick loop.
     /// </summary>
@@ -47,14 +47,27 @@ public abstract class WalkAgent : IAgent
 {
     protected Vector3 movement = Vector3.Zero;
 
-    public virtual string Animation => Math.Atan2(movement.Z, movement.X) switch
+    public virtual string Animation
     {
-        var x when x >= Math.PI * 0.25 && x < Math.PI * 0.75 => "walkRight",
-        var x when x >= Math.PI * 0.75 && x < Math.PI * 1.25 => "walkDown",
-        var x when x >= Math.PI * 1.25 && x < Math.PI * 1.75 => "walkLeft",
-        var x when x >= Math.PI * 1.75 || x < Math.PI * 0.25 => "walkUp",
-        _ => "idle"
-    };
+        get
+        {
+            if (movement.X == 0 && movement.Z == 0)
+                return "idle";
+
+            double t = Math.Atan2(movement.Z, movement.X);
+            if (t < 0)
+                t = Math.PI - t;
+            return t switch
+            {
+                var x when x >= Math.PI * 0.25 && x < Math.PI * 0.75 => "walkDown",
+                var x when x >= Math.PI * 0.75 && x < Math.PI * 1.25 => "walkLeft",
+                var x when x >= Math.PI * 1.25 && x < Math.PI * 1.75 => "walkUp",
+                var x when x >= Math.PI * 1.75 || x < Math.PI * 0.25 => "walkRight",
+                _ => "idle"
+            };
+        }
+    }
+
     public abstract bool IsDead { get; }
 
     public abstract void Apply(Entity entity, Scene scene, FrameTime time);
@@ -101,18 +114,18 @@ public class InputAgent(InputAgentSpec spec) : WalkAgent, IAgent
 {
     public override bool IsDead => false;
 
-    private static bool IsPressed(Scene scene, string control) => 
+    private static bool IsPressed(Scene scene, string control) =>
         scene.GetControlState(control).Position is ControlPositions.Press or ControlPositions.Down;
 
     public override void Apply(Entity entity, Scene scene, FrameTime time)
     {
-        if (IsPressed(scene, spec.Left)) 
+        if (IsPressed(scene, spec.Left))
             movement -= Vector3.UnitX * spec.Acceleration;
-        if (IsPressed(scene, spec.Right)) 
+        if (IsPressed(scene, spec.Right))
             movement += Vector3.UnitX * spec.Acceleration;
-        if (IsPressed(scene, spec.Up)) 
+        if (IsPressed(scene, spec.Up))
             movement -= Vector3.UnitZ * spec.Acceleration;
-        if (IsPressed(scene, spec.Down)) 
+        if (IsPressed(scene, spec.Down))
             movement += Vector3.UnitZ * spec.Acceleration;
         if ((entity.Velocity + movement).Length() < spec.TopSpeed)
             entity.Acceleration += movement;
