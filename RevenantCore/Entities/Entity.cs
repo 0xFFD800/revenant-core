@@ -28,7 +28,7 @@ public class Entity(EntitySpec spec, AnimationCollection animations) : ICollidea
     public Vector3 Acceleration { get; set; } = new();
     public Vector3 Velocity { get; set; } = new();
     public Vector3 Position { get; set; } = new();
-    public bool IsDead => false;
+    public bool IsDead { get; set; } = false;
     public DrawLayer Layer => spec.Layer;
     public float Z => Position.Z;
 

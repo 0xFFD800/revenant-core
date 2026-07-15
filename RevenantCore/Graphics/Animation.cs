@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Frozen;
-using RevenantCore.Util;
 
 namespace RevenantCore.Graphics;
 
