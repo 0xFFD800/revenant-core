@@ -140,7 +140,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     {
         base.Tick(scene, time);
         Trace.Assert(scene == this);
-        visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
+        visibles.Sort((x, y) => Math.Sign(y.Z - x.Z));
         foreach (ITickable tickable in tickables)
             tickable.Tick(scene, time);
         DoPhysics(time.MillisElapsed);
