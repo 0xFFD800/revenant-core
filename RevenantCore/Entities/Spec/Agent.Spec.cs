@@ -46,24 +46,9 @@ public class TrackingAgentSpec : AgentSpec
 public class InputAgentSpec : AgentSpec
 {
     /// <summary>
-    /// The ID of the control which causes this agent to move left.
+    /// The spec for the controls which specify the walk direction of this agent.
     /// </summary>
-    public string Left { get; set; } = "walkLeft";
-
-    /// <summary>
-    /// The ID of the control which causes this agent to move right.
-    /// </summary>
-    public string Right { get; set; } = "walkRight";
-
-    /// <summary>
-    /// The ID of the control which causes this agent to move up.
-    /// </summary>
-    public string Up { get; set; } = "walkUp";
-
-    /// <summary>
-    /// The ID of the control which causes this agent to move down.
-    /// </summary>
-    public string Down { get; set; } = "walkDown";
+    public DirectionControlSpec Controls { get; set; } = new();
 
     /// <summary>
     /// The rate at which the agent should accelerate while moving.
