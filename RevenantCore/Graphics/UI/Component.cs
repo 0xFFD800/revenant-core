@@ -48,17 +48,30 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         prevFocused = component;
     }
 
+    private bool TryFocusKeyboardSel(Scene scene, string control, Func<Rectangle, Rectangle, bool> canSwitchTo, Func<Rectangle, Rectangle, int> distance)
+    {
+        if (prevFocused == null || scene.GetControlState(control).Position != ControlPositions.Press)
+            return false;
+
+        // Select targets based on CanSwitchTo
+        IComponent[] targets = [.. components.Where(c => canSwitchTo(prevFocused.Area, c.Area))];
+        // Sort targets by ascending distance
+        targets.Sort((c1, c2) => Math.Sign(distance(prevFocused.Area, c2.Area) - distance(prevFocused.Area, c1.Area)));
+        // Select closest target, if there are any
+        IComponent? target = targets.FirstOrDefault();
+        if (target != null)
+            SetFocused(target);
+        return target != null;
+    }
+
+
     private void UpdateFocus(Scene scene)
     {
-        // The following "if" statements should exit the method if they change the focused control.
-        if (scene.GetControlState(controls.Left).Position == ControlPositions.Press)
-            throw new NotImplementedException();
-        if (scene.GetControlState(controls.Right).Position == ControlPositions.Press)
-            throw new NotImplementedException();
-        if (scene.GetControlState(controls.Up).Position == ControlPositions.Press)
-            throw new NotImplementedException();
-        if (scene.GetControlState(controls.Down).Position == ControlPositions.Press)
-            throw new NotImplementedException();
+        if (TryFocusKeyboardSel(scene, controls.Left, (prev, target) => prev.X > target.X + target.Width, (prev, target) => prev.X - (target.X + target.Width))
+         || TryFocusKeyboardSel(scene, controls.Right, (prev, target) => prev.X + prev.Width < target.X, (prev, target) => target.X - (prev.X + prev.Width))
+         || TryFocusKeyboardSel(scene, controls.Up, (prev, target) => prev.Y > target.Y + target.Height, (prev, target) => prev.Y - (target.Y + target.Height))
+         || TryFocusKeyboardSel(scene, controls.Down, (prev, target) => prev.Y + prev.Height < target.Y, (prev, target) => target.Y - (prev.Y + prev.Height)))
+            return;
 
         // Start searching from the end, because we want the highest Z value.
         IComponent? currMouseFocused = components.LastOrDefault(
