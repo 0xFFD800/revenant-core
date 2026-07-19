@@ -127,7 +127,7 @@ public abstract class Drawable
     /// <summary>
     /// Gets the size of this drawable item.
     /// </summary>
-    protected abstract Vector2 Size { get; }
+    public abstract Vector2 Size { get; }
 
     /// <summary>
     /// The position at which this sprite will be drawn.
@@ -257,7 +257,7 @@ internal class Sprite(Texture2D texture) : Drawable
         buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, Effects);
     }
 
-    protected override Vector2 Size => new(texture.Width, texture.Height);
+    public override Vector2 Size => new(texture.Width, texture.Height);
 
     protected override Drawable CopyData() => new Sprite(texture);
 }
@@ -275,7 +275,7 @@ internal class DrawableText(string text, SpriteFont font) : Drawable
         buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, Effects);
     }
 
-    protected override Vector2 Size => font.MeasureString(text);
+    public override Vector2 Size => font.MeasureString(text);
 
     protected override Drawable CopyData() => new DrawableText(text, font);
 }

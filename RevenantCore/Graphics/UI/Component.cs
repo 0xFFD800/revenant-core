@@ -118,14 +118,33 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 }
 
 /// <summary>
+/// A record containing all the components which may be drawn with this button.
+/// Each list should be organized in the desired draw order.
+/// </summary>
+/// <param name="Unfocused">The drawable components of the visible component when it is not focused or disabled.</param>
+/// <param name="Disabled">The components to draw when this component is disabled.</param>
+/// <param name="Focused">The components to draw when this component is focused.</param> 
+/// <param name="Clicked">The components to draw when this component is clicked.</param>
+public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, Drawable[] Focused, Drawable[] Clicked);
+
+/// <summary>
 /// Base class for a component which performs an action when interacted with.
 /// </summary>
+/// <param name="area">The area which bounds this control.</param>
+/// <param name="toDraw">A record containing the drawable components of this button.</param>
 /// <param name="click">The control which triggers this button's action.</param>
 /// <param name="onClick">The action taken when this control is interacted with.</param>
 /// <param name="z">The Z-value of this control, identifying where in the draw order it should be drawn.</param>
-public abstract class Button(string click, Action onClick, float z) : IComponent
+public class Button(Rectangle area, ButtonDrawables toDraw, string click, Action onClick, float z) : IComponent
 {
-    public abstract Rectangle Area { get; }
+    private bool isClicked = false;
+
+    public Button(ButtonDrawables toDraw, string click, Action onClick, float z) : this(
+        toDraw.Unfocused.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint()))),
+        toDraw, click, onClick, z)
+    { }
+
+    public Rectangle Area => area;
     public bool Enabled { get; set; } = true;
     public bool HasFocus { private get; set; } = false;
     public bool IsDead => false;
@@ -134,13 +153,20 @@ public abstract class Button(string click, Action onClick, float z) : IComponent
 
     public virtual void Create(Scene scene, FrameTime time) { }
 
-    public abstract void Draw(View view, Camera camera);
+    public virtual void Draw(View view, Camera camera)
+    {
+        Drawable[] drawables = !Enabled ? toDraw.Disabled : isClicked ? toDraw.Clicked : HasFocus ? toDraw.Focused : toDraw.Unfocused;
+        foreach (Drawable drawable in drawables)
+            view.Screen.Draw(drawable);
+    }
 
     public virtual void Glean(Scene scene, FrameTime time) { }
 
-    public void Tick(Scene scene, FrameTime time)
+    public virtual void Tick(Scene scene, FrameTime time)
     {
-        if (Enabled && HasFocus && scene.GetControlState(click).Position == ControlPositions.Press)
+        ControlPositions position = scene.GetControlState(click).Position;
+        isClicked = position is ControlPositions.Press or ControlPositions.Down;
+        if (Enabled && HasFocus && position == ControlPositions.Release)
             onClick();
     }
 }
