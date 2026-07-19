@@ -57,6 +57,13 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// </summary>
     private readonly CameraCollection cameras = new(spec.ViewportSize.Data, new(spec.Bounds.X, spec.Bounds.Y));
 
+    /// <summary>
+    /// The stack of active control capturers.
+    /// Children of a block are not added to this stack--only cutscenes triggered by the active block.
+    /// TODO switch this to an IControllable interface which is implemented by Cutscene and extended by IComponent
+    /// </summary>
+    private readonly Stack<Cutscene> controlCapture = [];
+
     public Scene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
 
     public override bool IsDead => false;
@@ -96,10 +103,15 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// <summary>
     /// Gets the state of the specified control.
     /// </summary>
+    /// <param name="controllable">The item testing for the specified control.</param>
     /// <param name="control">The control to find the state of.</param>
     /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
-    public ControlState GetControlState(string control) =>
-        controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
+    public ControlState GetControlState(Cutscene? controllable, string control) =>
+        !controlCapture.TryPeek(out Cutscene? capturer) || (controllable != null && capturer.Matches(controllable))
+            ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
+            : new(ControlPositions.Up, 0);
+    
+    public ControlState GetControlState(string control) => GetControlState(null, control);
 
     /// <summary>
     /// Attempts to find a moveable object for a given ID within a scene.
@@ -158,6 +170,8 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             moveables.Add(moveable.ID, moveable);
         if (mortal is ICollideable collideable)
             collideables.Add(collideable);
+        if (mortal is Cutscene cutscene)
+            controlCapture.Push(cutscene);
     }
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
@@ -168,8 +182,12 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             visibles.Remove(visible.Layer, visible);
         if (mortal is ITickable tickable)
             tickables.Remove(tickable);
+        if (mortal is IMoveable moveable)
+            moveables.Remove(moveable.ID);
         if (mortal is ICollideable collideable)
             collideables.Remove(collideable);
+        if (mortal is Cutscene)
+            controlCapture.Pop();
     }
 }
 

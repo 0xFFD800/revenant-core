@@ -33,6 +33,14 @@ public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible,
     public abstract void Draw(View view, Camera camera);
     public abstract void Tick(Scene scene, FrameTime time);
 
+    /// <summary>
+    /// Whether the provided cutscene is part of the current block of cutscenes or not.
+    /// Used to determine whether this cutscene is part of the control-capturing chain.
+    /// </summary>
+    /// <param name="cutscene">The cutscene to attempt to match to this cutscene or block.</param>
+    /// <returns>Whether the provided cutscene is part of this cutscene's active block.</returns>
+    public virtual bool Matches(Cutscene cutscene) => cutscene == this;
+
     public virtual void Glean(Scene scene, FrameTime time)
     {
         complete = false;
@@ -79,6 +87,8 @@ internal class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cu
         complete = ActiveChild == null;
     }
 
+    public override bool Matches(Cutscene cutscene) => base.Matches(cutscene) || (ActiveChild?.Matches(cutscene) ?? false);
+
     public override void Create(Scene scene, FrameTime time)
     {
         index = 0;
@@ -121,6 +131,8 @@ internal class ConcurrentBlock(Universe universe, ConcurrentBlockSpec spec) : Cu
         activeChildren.Sort((c1, c2) => c1.Z.CompareTo(c2.Z));
         complete = activeChildren.Count == 0;
     }
+
+    public override bool Matches(Cutscene cutscene) => base.Matches(cutscene) || activeChildren.Any(c => c.Matches(cutscene));
 
     public override void Create(Scene scene, FrameTime time)
     {

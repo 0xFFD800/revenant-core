@@ -59,7 +59,7 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 
     private bool TryFocusKeyboardSel(Scene scene, string control, Func<Rectangle, Rectangle, bool> canSwitchTo, Func<Rectangle, Rectangle, int> distance)
     {
-        if (prevFocused == null || scene.GetControlState(control).Position != ControlPositions.Press)
+        if (prevFocused == null || scene.GetControlState(this, control).Position != ControlPositions.Press)
             return false;
 
         // Select targets based on CanSwitchTo
@@ -164,7 +164,7 @@ public class Button(Rectangle area, ButtonDrawables toDraw, string click, Action
 
     public virtual void Tick(Scene scene, FrameTime time)
     {
-        ControlPositions position = scene.GetControlState(click).Position;
+        ControlPositions position = scene.GetControlState(this, click).Position;
         isClicked = position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
             onClick();
