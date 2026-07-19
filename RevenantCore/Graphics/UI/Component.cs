@@ -24,11 +24,19 @@ public interface IComponent : IVisible, ITickable
     /// Indicates the area of the viewport that this component covers.
     /// </summary>
     Rectangle Area { get; }
+
+    /// <summary>
+    /// Indicates whether the component can receive focus and/or input.
+    /// </summary>
+    bool Enabled { get; set; }
 }
 
 /// <summary>
 /// The base class for containers, which are components which manage other components.
 /// </summary>
+/// <param name="components"> The list of components which are part of this container.</param>
+/// <param name="area">The area which bounds this container. Should contain all of its components' areas.</param>
+/// <param name="controls">The controls which will be used to change focus via the keyboard or gamepad.</param>
 public class Container(List<IComponent> components, Rectangle area, DirectionControlSpec controls) : Scythe, IComponent
 {
     private IComponent? prevMouseFocused, prevFocused = null;
@@ -37,6 +45,7 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         : this(components, components.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)), new()) { }
 
     public Rectangle Area => area;
+    public bool Enabled { get; set; } = true;
     public bool HasFocus { private get; set; } = false;
     public override bool IsDead => components.Count == 0 || components.All(c => c.IsDead);
     public DrawLayer Layer => DrawLayer.UI;
@@ -54,7 +63,7 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
             return false;
 
         // Select targets based on CanSwitchTo
-        IComponent[] targets = [.. components.Where(c => canSwitchTo(prevFocused.Area, c.Area))];
+        IComponent[] targets = [.. components.Where(c => c.Enabled && canSwitchTo(prevFocused.Area, c.Area))];
         // Sort targets by ascending distance
         targets.Sort((c1, c2) => Math.Sign(distance(prevFocused.Area, c2.Area) - distance(prevFocused.Area, c1.Area)));
         // Select closest target, if there are any
@@ -75,7 +84,7 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 
         // Start searching from the end, because we want the highest Z value.
         IComponent? currMouseFocused = components.LastOrDefault(
-            c => c.Area.Contains(scene.Universe.Core.Inputs.Mouse.Position));
+            c => c.Enabled && c.Area.Contains(scene.Universe.Core.Inputs.Mouse.Position));
         if (currMouseFocused != prevMouseFocused && currMouseFocused != null)
             SetFocused(currMouseFocused);
         prevMouseFocused = currMouseFocused;
@@ -105,5 +114,33 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         }
         UpdateFocus(scene);
         base.Tick(scene, time);
+    }
+}
+
+/// <summary>
+/// Base class for a component which performs an action when interacted with.
+/// </summary>
+/// <param name="click">The control which triggers this button's action.</param>
+/// <param name="onClick">The action taken when this control is interacted with.</param>
+/// <param name="z">The Z-value of this control, identifying where in the draw order it should be drawn.</param>
+public abstract class Button(string click, Action onClick, float z) : IComponent
+{
+    public abstract Rectangle Area { get; }
+    public bool Enabled { get; set; } = true;
+    public bool HasFocus { private get; set; } = false;
+    public bool IsDead => false;
+    public DrawLayer Layer => DrawLayer.UI;
+    public float Z => z;
+
+    public virtual void Create(Scene scene, FrameTime time) { }
+
+    public abstract void Draw(View view, Camera camera);
+
+    public virtual void Glean(Scene scene, FrameTime time) { }
+
+    public void Tick(Scene scene, FrameTime time)
+    {
+        if (Enabled && HasFocus && scene.GetControlState(click).Position == ControlPositions.Press)
+            onClick();
     }
 }
