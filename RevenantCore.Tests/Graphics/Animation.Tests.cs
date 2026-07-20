@@ -9,7 +9,7 @@ namespace RevenantCore.Tests.Graphics;
 
 file class FakeDrawable : Drawable
 {
-    protected override Vector2 Size => throw new NotImplementedException();
+    public override Vector2 Size => throw new NotImplementedException();
 
     public override void Draw(ISpriteBuffer buffer)
     {

@@ -13,7 +13,7 @@ namespace RevenantCore.Graphics.UI;
 /// The base interface for a UI component, which may be a container for other UI components, 
 /// define its own behavior, or both.
 /// </summary>
-public interface IComponent : IVisible, ITickable
+public interface IComponent : IVisible, ITickable, IControllable
 {
     /// <summary>
     /// Indicates whether this component is focused or not; i.e., whether it should directly respond to controls.
@@ -115,6 +115,8 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         UpdateFocus(scene);
         base.Tick(scene, time);
     }
+
+    public bool Matches(IControllable other) => other == this || components.Any(c => c.Matches(other));
 }
 
 /// <summary>
@@ -169,4 +171,6 @@ public class Button(Rectangle area, ButtonDrawables toDraw, string click, Action
         if (Enabled && HasFocus && position == ControlPositions.Release)
             onClick();
     }
+
+    public bool Matches(IControllable other) => other == this;
 }

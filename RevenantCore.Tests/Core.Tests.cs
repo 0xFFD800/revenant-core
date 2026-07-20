@@ -16,7 +16,7 @@ file class FakeDrawable(string path) : Drawable
 {
     internal string Path => path;
 
-    protected override Vector2 Size => throw new NotImplementedException();
+    public override Vector2 Size => throw new NotImplementedException();
 
     public override void Draw(ISpriteBuffer buffer)
     {

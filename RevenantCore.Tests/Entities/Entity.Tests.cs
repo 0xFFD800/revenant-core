@@ -39,7 +39,7 @@ public class Entity_Test
     {
         public string FrameName => frameName;
 
-        protected override Vector2 Size => new(2, 4);
+        public override Vector2 Size => new(2, 4);
         public override void Draw(ISpriteBuffer buffer) { }
         protected override Drawable CopyData() => this;
     }

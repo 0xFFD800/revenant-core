@@ -53,7 +53,7 @@ file class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) 
         Buffer = buffer;
     }
 
-    protected override Vector2 Size => size;
+    public override Vector2 Size => size;
 
     public void Validate()
     {

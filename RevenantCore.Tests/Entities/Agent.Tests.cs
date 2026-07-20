@@ -127,10 +127,10 @@ public class InputAgent_Test
     private class FakeControlTracker(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown) : IControlTracker
     {
         public FrozenDictionary<string, ControlState> States => new List<KeyValuePair<string, ControlState>>([
-            new("walkLeft", new(walkLeft, 0)),
-            new("walkRight", new(walkRight, 0)),
-            new("walkUp", new(walkUp, 0)),
-            new("walkDown", new(walkDown, 0))
+            new("left", new(walkLeft, 0)),
+            new("right", new(walkRight, 0)),
+            new("up", new(walkUp, 0)),
+            new("down", new(walkDown, 0))
         ]).ToFrozenDictionary();
 
         public bool IsDead => false;

@@ -59,10 +59,9 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
 
     /// <summary>
     /// The stack of active control capturers.
-    /// Children of a block are not added to this stack--only cutscenes triggered by the active block.
-    /// TODO switch this to an IControllable interface which is implemented by Cutscene and extended by IComponent
+    /// Children of a cutscene block or UI container are not added to this stack--only separate ones triggered by the active chain.
     /// </summary>
-    private readonly Stack<Cutscene> controlCapture = [];
+    private readonly Stack<IControllable> controlCapture = [];
 
     public Scene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
 
@@ -106,8 +105,9 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// <param name="controllable">The item testing for the specified control.</param>
     /// <param name="control">The control to find the state of.</param>
     /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
-    public ControlState GetControlState(Cutscene? controllable, string control) =>
-        !controlCapture.TryPeek(out Cutscene? capturer) || (controllable != null && capturer.Matches(controllable))
+    public ControlState GetControlState(IControllable? controllable, string control) =>
+        !controlCapture.TryPeek(out IControllable? capturer) 
+                || (controllable != null && capturer.Matches(controllable))
             ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
             : new(ControlPositions.Up, 0);
     

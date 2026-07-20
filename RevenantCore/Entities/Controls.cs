@@ -147,3 +147,17 @@ public class ControlTracker : IControlTracker
         CalcStates(scene.Universe, scene.Universe.Core, time);
     }
 }
+
+/// <summary>
+/// An object which can capture controls from the current scene to handle them exclusively.
+/// </summary>
+public interface IControllable
+{
+    /// <summary>
+    /// Whether the provided controllable object is part of this chain of controllables or not.
+    /// Used to determine whether this object is part of the control-capturing chain.
+    /// </summary>
+    /// <param name="other">The object to attempt to match to this chain.</param>
+    /// <returns>Whether the provided cutscene is part of this cutscene's active block.</returns>
+    bool Matches(IControllable other);
+}
