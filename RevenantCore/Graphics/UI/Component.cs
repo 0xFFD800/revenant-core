@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Entities;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace RevenantCore.Graphics.UI;
 
@@ -120,6 +121,37 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 }
 
 /// <summary>
+/// A component which has its area and appearance defined by one or more drawables.
+/// </summary>
+/// <param name="toDraw">A list of drawables to be drawn as part of this component, in order.</param>
+/// <param name="z">The z-value at which the provided drawables should be drawn.</param>
+public class Label(Drawable[] toDraw, float z) : IComponent
+{
+    public Rectangle Area => toDraw.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
+    public bool Enabled { get; set; } = true;
+    public bool HasFocus { protected get; set; } = false;
+    public bool IsDead => false;
+    public DrawLayer Layer => DrawLayer.UI;
+    public float Z => z;
+
+    protected virtual Drawable[] ToDraw => toDraw;
+
+    public virtual void Create(Scene scene, FrameTime time) { }
+
+    public virtual void Draw(View view, Camera camera)
+    {
+        foreach (Drawable drawable in ToDraw)
+            view.Screen.Draw(drawable);
+    }
+
+    public virtual void Glean(Scene scene, FrameTime time) { }
+
+    public virtual void Tick(Scene scene, FrameTime time) { }
+
+    public bool Matches(IControllable other) => other == this;
+}
+
+/// <summary>
 /// A record containing all the components which may be drawn with this button.
 /// Each list should be organized in the desired draw order.
 /// </summary>
@@ -132,45 +164,46 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
 /// <summary>
 /// Base class for a component which performs an action when interacted with.
 /// </summary>
-/// <param name="area">The area which bounds this control.</param>
 /// <param name="toDraw">A record containing the drawable components of this button.</param>
 /// <param name="click">The control which triggers this button's action.</param>
 /// <param name="onClick">The action taken when this control is interacted with.</param>
 /// <param name="z">The Z-value of this control, identifying where in the draw order it should be drawn.</param>
-public class Button(Rectangle area, ButtonDrawables toDraw, string click, Action onClick, float z) : IComponent
+public class Button(ButtonDrawables toDraw, string click, Action onClick, float z) : Label(toDraw.Unfocused, z), IComponent
 {
     private bool isClicked = false;
 
-    public Button(ButtonDrawables toDraw, string click, Action onClick, float z) : this(
-        toDraw.Unfocused.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint()))),
-        toDraw, click, onClick, z)
-    { }
+    protected override Drawable[] ToDraw => !Enabled ? toDraw.Disabled : isClicked ? toDraw.Clicked : HasFocus ? toDraw.Focused : toDraw.Unfocused;
 
-    public Rectangle Area => area;
-    public bool Enabled { get; set; } = true;
-    public bool HasFocus { private get; set; } = false;
-    public bool IsDead => false;
-    public DrawLayer Layer => DrawLayer.UI;
-    public float Z => z;
-
-    public virtual void Create(Scene scene, FrameTime time) { }
-
-    public virtual void Draw(View view, Camera camera)
-    {
-        Drawable[] drawables = !Enabled ? toDraw.Disabled : isClicked ? toDraw.Clicked : HasFocus ? toDraw.Focused : toDraw.Unfocused;
-        foreach (Drawable drawable in drawables)
-            view.Screen.Draw(drawable);
-    }
-
-    public virtual void Glean(Scene scene, FrameTime time) { }
-
-    public virtual void Tick(Scene scene, FrameTime time)
+    public override void Tick(Scene scene, FrameTime time)
     {
         ControlPositions position = scene.GetControlState(this, click).Position;
         isClicked = position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
             onClick();
     }
+}
 
-    public bool Matches(IControllable other) => other == this;
+/// <summary>
+/// A space for the user to input some text.
+/// </summary>
+/// <param name="font">The font in which to draw the text.</param>
+/// <param name="pos">The position on screen at which the text should be drawn.</param>
+/// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
+/// <param name="textColor">The color in which to draw the text.</param>
+/// <param name="z">The z-value at which this component should be drawn.</param>
+public class TextInput(SpriteFont font, Point pos, string textHint, Color textColor, float z) : Label([new DrawableText("", font)], z), IComponent
+{
+    public string Buffer { get; private set; } = "";
+
+    protected override Drawable[] ToDraw => Buffer.Length == 0 ? (textHint.Length == 0 ? [] : [MakeDrawable(textHint).SetOpacity(0.5F)]) : [MakeDrawable(Buffer)];
+
+    private Drawable MakeDrawable(string text) => new DrawableText(text, font)
+        .SetPos(pos.ToVector2())
+        .SetMask(textColor);
+
+    public override void Tick(Scene scene, FrameTime time)
+    {
+        base.Tick(scene, time);
+        throw new NotImplementedException(); // Need to somehow map from keyboard to text inputs?
+    }
 }
