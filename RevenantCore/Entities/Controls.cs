@@ -157,8 +157,14 @@ public class ControlTracker : IControlTracker
 /// </summary>
 public class KeyboardTracker : ControlTracker, IControlTracker
 {
-    public const string Back = "BACK";
-    public const string Delete = "DELETE";
+    public const string Back = "back";
+    public const string Delete = "delete";
+    public const string Home = "home";
+    public const string End = "end";
+    public readonly static DirectionControlSpec Directions = new();
+
+    // This should probably be configurable in settings.
+    public const int RepeatMillis = 1500;
 
     private static string? ShiftedNumKey(Keys key) => key switch
     {
@@ -184,8 +190,10 @@ public class KeyboardTracker : ControlTracker, IControlTracker
             (>= Keys.D0) and (<= Keys.D9) => shift ? ShiftedNumKey(key) : (key - Keys.D0).ToString(),
             (>= Keys.NumPad0) and (<= Keys.NumPad9) => numLock ? (key - Keys.NumPad0).ToString() : null,
             Keys.Space => " ",
-            Keys.Back => Back, // Special ID for backspace
-            Keys.Delete => Delete, // Special ID for delete
+            Keys.Back => Back,
+            Keys.Delete => Delete,
+            Keys.Home => Home,
+            Keys.End => End,
             Keys.Add => "+",
             Keys.Divide => "/",
             Keys.Enter => "\n",
@@ -203,6 +211,10 @@ public class KeyboardTracker : ControlTracker, IControlTracker
             Keys.OemTilde => shift ? "~" : "`",
             Keys.Subtract => "-",
             Keys.Tab => "\t",
+            Keys.Right => Directions.Right,
+            Keys.Left => Directions.Left,
+            Keys.Up => Directions.Up,
+            Keys.Down => Directions.Down,
             _ => null
         };
     }
