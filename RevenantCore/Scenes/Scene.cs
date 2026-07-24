@@ -17,10 +17,9 @@ namespace RevenantCore.Scenes;
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
 /// <param name="universe">The universe in which this scene exists.</param>
-/// <param name="controlTracker">The control tracker for this scene, updated each tick.</param>
 /// <param name="spec">The spec containing data for this scene.</param>
 /// <param name="trigger">The trigger which this scene was created with.</param>
-public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec spec, string trigger) : Scythe
+public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -63,7 +62,10 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// </summary>
     private readonly Stack<IControllable> controlCapture = [];
 
-    public Scene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
+    /// <summary>
+    /// The control tracker for this scene, updated each tick.
+    /// </summary>
+    private readonly ControlTracker controlTracker = new(), keyboardTracker = new KeyboardTracker();
 
     public override bool IsDead => false;
     public Universe Universe => universe;
@@ -99,19 +101,25 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
         walls[side].Suspended = suspended;
     }
 
+    private bool IsCapturing(IControllable? controllable) =>
+        !controlCapture.TryPeek(out IControllable? capturer) 
+            || (controllable != null && capturer.Matches(controllable));
+
     /// <summary>
     /// Gets the state of the specified control.
     /// </summary>
     /// <param name="controllable">The item testing for the specified control.</param>
     /// <param name="control">The control to find the state of.</param>
     /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
-    public ControlState GetControlState(IControllable? controllable, string control) =>
-        !controlCapture.TryPeek(out IControllable? capturer) 
-                || (controllable != null && capturer.Matches(controllable))
-            ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
-            : new(ControlPositions.Up, 0);
+    public ControlState GetControlState(IControllable? controllable, string control) => IsCapturing(controllable) 
+        ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
+        : new(ControlPositions.Up, 0);
     
     public ControlState GetControlState(string control) => GetControlState(null, control);
+
+    public string[] GetPressedKeys(IControllable? controllable) => IsCapturing(controllable) 
+        ? [..keyboardTracker.States.Where(s => s.Value.Position == ControlPositions.Press || s.Value.Millis > KeyboardTracker.RepeatMillis).Select(s => s.Key)]
+        : [];
 
     /// <summary>
     /// Attempts to find a moveable object for a given ID within a scene.
