@@ -194,6 +194,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
 public class TextInput(SpriteFont font, Point pos, string textHint, Color textColor, float z) : Label([new DrawableText("", font)], z), IComponent
 {
     public string Buffer { get; private set; } = "";
+    private Point cursor = Point.Zero;
 
     protected override Drawable[] ToDraw => Buffer.Length == 0 ? (textHint.Length == 0 ? [] : [MakeDrawable(textHint).SetOpacity(0.5F)]) : [MakeDrawable(Buffer)];
 
@@ -204,6 +205,8 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
     public override void Tick(Scene scene, FrameTime time)
     {
         base.Tick(scene, time);
-        throw new NotImplementedException(); // Need to somehow map from keyboard to text inputs?
+
+        foreach(string key in scene.GetPressedKeys(this))
+            throw new NotImplementedException(); 
     }
 }
