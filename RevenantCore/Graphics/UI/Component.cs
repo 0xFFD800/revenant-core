@@ -7,6 +7,7 @@ using System;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Entities;
 using Microsoft.Xna.Framework.Graphics;
+using YamlDotNet.Core;
 
 namespace RevenantCore.Graphics.UI;
 
@@ -196,6 +197,7 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
     public string Buffer { get; private set; } = "";
     private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
+    private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
 
     protected override Drawable[] ToDraw => Buffer.Length == 0 ? (textHint.Length == 0 ? [] : [MakeDrawable(textHint).SetOpacity(0.5F)]) : [MakeDrawable(Buffer)];
 
@@ -207,8 +209,9 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
     {
         base.Tick(scene, time);
 
-        string line = Lines[cursor.Y];
         foreach (string key in scene.GetPressedKeys(this))
+        {
+            string line = Lines[cursor.Y];
             if (key == KeyboardTracker.Directions.Left && cursor.X > 0)
                 cursor.X--;
             else if (key == KeyboardTracker.Directions.Up && cursor.Y > 0)
@@ -223,8 +226,17 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
                 cursor.Y++;
                 FixCursor();
             }
+            else if (key == KeyboardTracker.End)
+                cursor.X = line.Length - 1;
+            else if (key == KeyboardTracker.Home)
+                cursor.X = 0;
+            else if (key == KeyboardTracker.Back)
+                Buffer = Buffer.Remove(Math.Max(0, BufferIndex - 1), 1);
+            else if (key == KeyboardTracker.Delete)
+                Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 2), 1);
             else
-                throw new NotImplementedException();
+                Buffer += key;
+        }
     }
 
     private void FixCursor()
