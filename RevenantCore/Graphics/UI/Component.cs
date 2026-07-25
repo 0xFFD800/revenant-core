@@ -194,6 +194,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
 public class TextInput(SpriteFont font, Point pos, string textHint, Color textColor, float z) : Label([new DrawableText("", font)], z), IComponent
 {
     public string Buffer { get; private set; } = "";
+    private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
 
     protected override Drawable[] ToDraw => Buffer.Length == 0 ? (textHint.Length == 0 ? [] : [MakeDrawable(textHint).SetOpacity(0.5F)]) : [MakeDrawable(Buffer)];
@@ -206,7 +207,29 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
     {
         base.Tick(scene, time);
 
-        foreach(string key in scene.GetPressedKeys(this))
-            throw new NotImplementedException(); 
+        string line = Lines[cursor.Y];
+        foreach (string key in scene.GetPressedKeys(this))
+            if (key == KeyboardTracker.Directions.Left && cursor.X > 0)
+                cursor.X--;
+            else if (key == KeyboardTracker.Directions.Up && cursor.Y > 0)
+            {
+                cursor.Y--;
+                FixCursor();
+            }
+            else if (key == KeyboardTracker.Directions.Right && cursor.X < line.Length - 1)
+                cursor.X++;
+            else if (key == KeyboardTracker.Directions.Down && cursor.Y < Lines.Length - 1)
+            {
+                cursor.Y++;
+                FixCursor();
+            }
+            else
+                throw new NotImplementedException();
+    }
+
+    private void FixCursor()
+    {
+        int length = Lines[cursor.Y].Length;
+        cursor.X = Math.Min(cursor.X, length);
     }
 }
