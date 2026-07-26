@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Frozen;
+using RevenantCore.Scenes;
 
 namespace RevenantCore.Graphics;
 
@@ -40,4 +41,16 @@ public class AnimationCollection(FrozenDictionary<string, Animation> animations,
             || (defAnim != null && animations.TryGetValue(defAnim, out animation)))
         ? animation.GetFrame(millis)
         : throw new ArgumentException("No animations were found for the requested key and no default was found", nameof(key));
+}
+
+/// <summary>
+/// A hook which applies an extrinsic animation onto drawables of any type.
+/// </summary>
+public interface IAnimationHook : IMortal
+{
+    /// <summary>
+    /// Applies the animation hook to a drawable.
+    /// </summary>
+    /// <param name="drawable">The drawable object on which to apply this animation hook.</param>
+    public void Apply(Drawable drawable);
 }

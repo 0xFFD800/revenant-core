@@ -7,7 +7,6 @@ using System;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Entities;
 using Microsoft.Xna.Framework.Graphics;
-using YamlDotNet.Core;
 
 namespace RevenantCore.Graphics.UI;
 
@@ -31,6 +30,12 @@ public interface IComponent : IVisible, ITickable, IControllable
     /// Indicates whether the component can receive focus and/or input.
     /// </summary>
     bool Enabled { get; set; }
+
+    /// <summary>
+    /// Adds an animation hook to this component to alter the display of its drawables.
+    /// </summary>
+    /// <param name="hook">The hook with which to animate this component.</param>
+    void Animate(IAnimationHook hook, Scene scene, FrameTime time);
 }
 
 /// <summary>
@@ -119,6 +124,12 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
     }
 
     public bool Matches(IControllable other) => other == this || components.Any(c => c.Matches(other));
+
+    public void Animate(IAnimationHook hook, Scene scene, FrameTime time)
+    {
+        foreach (IComponent component in components)
+            component.Animate(hook, scene, time);
+    }
 }
 
 /// <summary>
@@ -126,30 +137,56 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 /// </summary>
 /// <param name="toDraw">A list of drawables to be drawn as part of this component, in order.</param>
 /// <param name="z">The z-value at which the provided drawables should be drawn.</param>
-public class Label(Drawable[] toDraw, float z) : IComponent
+public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
 {
+    private readonly List<IAnimationHook> hooks = [];
+
     public Rectangle Area => toDraw.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = true;
     public bool HasFocus { protected get; set; } = false;
-    public bool IsDead => false;
+    public override bool IsDead => false;
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => z;
 
     protected virtual Drawable[] ToDraw => toDraw;
 
-    public virtual void Create(Scene scene, FrameTime time) { }
+    public override void Add(IMortal mortal, Scene scene, FrameTime time)
+    {
+        base.Add(mortal, scene, time);
+        if (mortal is IAnimationHook hook)
+            hooks.Add(hook);
+    }
+
+    public void Animate(IAnimationHook hook, Scene scene, FrameTime time)
+    {
+        Add(hook, scene, time);
+    }
+
+    public override void Create(Scene scene, FrameTime time) { }
 
     public virtual void Draw(View view, Camera camera)
     {
         foreach (Drawable drawable in ToDraw)
+        {
+            Drawable copy = drawable.ShallowCopy();
+            foreach (IAnimationHook hook in hooks)
+                hook.Apply(copy);
             view.Screen.Draw(drawable);
+        }
     }
 
-    public virtual void Glean(Scene scene, FrameTime time) { }
+    public override void Glean(Scene scene, FrameTime time) { }
 
-    public virtual void Tick(Scene scene, FrameTime time) { }
+    public override void Tick(Scene scene, FrameTime time) { }
 
     public bool Matches(IControllable other) => other == this;
+
+    protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
+    {
+        base.Reap(mortal, scene, time);
+        if (mortal is IAnimationHook hook)
+            hooks.Remove(hook);
+    }
 }
 
 /// <summary>
