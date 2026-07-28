@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Frozen;
+using System.Numerics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
 
@@ -71,6 +72,32 @@ public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
     {
         float opacity = (float)(counter++ / lengthMillis);
         drawable.SetOpacity(reverse ? 1 - opacity : opacity);
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        counter = 0;
+    }
+
+    public void Glean(Scene scene, FrameTime time) { }
+}
+
+/// <summary>
+/// An animation which moves along a straight line.
+/// Note that this animation assumes the drawable being animated is a copy rather than the original.
+/// </summary>
+/// <param name="lengthMillis">The length, in milliseconds, of the movement animation.</param>
+/// <param name="trip">The line from the drawable's current positions which the animation should trace</param>
+public class MoveAnimation(double lengthMillis, Vector2 trip) : IAnimationHook
+{
+    private double counter = 0;
+
+    public bool IsDead => counter >= lengthMillis;
+
+    public void Apply(Drawable drawable)
+    {
+        float ratio = (float)(counter++ / lengthMillis);
+        drawable.Pos += trip * ratio;
     }
 
     public void Create(Scene scene, FrameTime time)
