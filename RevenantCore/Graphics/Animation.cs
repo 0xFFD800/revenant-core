@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Frozen;
 using RevenantCore.Scenes;
+using RevenantCore.Util;
 
 namespace RevenantCore.Graphics;
 
@@ -53,4 +54,29 @@ public interface IAnimationHook : IMortal
     /// </summary>
     /// <param name="drawable">The drawable object on which to apply this animation hook.</param>
     public void Apply(Drawable drawable);
+}
+
+/// <summary>
+/// An animation which fades in opacity from clear to opaque or vice versa.
+/// </summary>
+/// <param name="lengthMillis">The length, in milliseconds, of the fade animation.</param>
+/// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
+public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
+{
+    private double counter = 0;
+
+    public bool IsDead => counter >= lengthMillis;
+
+    public void Apply(Drawable drawable)
+    {
+        float opacity = (float)(counter++ / lengthMillis);
+        drawable.SetOpacity(reverse ? 1 - opacity : opacity);
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        counter = 0;
+    }
+
+    public void Glean(Scene scene, FrameTime time) { }
 }
