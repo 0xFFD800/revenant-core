@@ -107,3 +107,29 @@ public class MoveAnimation(double lengthMillis, Vector2 trip) : IAnimationHook
 
     public void Glean(Scene scene, FrameTime time) { }
 }
+
+/// <summary>
+/// An animation which rotates along a pre-defined arc.
+/// Rotates around whatever point is already defined for this drawable.
+/// </summary>
+/// <param name="lengthMillis">The length, in milliseconds, of the movement animation.</param>
+/// <param name="radians">The angle which the animation should trace out.</param>
+public class RotateAnimation(double lengthMillis, float radians) : IAnimationHook
+{
+    private double counter = 0;
+
+    public bool IsDead => counter >= lengthMillis;
+
+    public void Apply(Drawable drawable)
+    {
+        double ratio = counter++ / lengthMillis;
+        drawable.Rotation += (float)(ratio * radians);
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        counter = 0;
+    }
+
+    public void Glean(Scene scene, FrameTime time) { }
+}
