@@ -13,7 +13,7 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    private class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, spec, trigger)
+    public class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, new ControlTracker(), spec, trigger)
     {
         internal FakeScene(SceneSpec spec) : this(new(new FakeCore(), new([])), spec, "default")
         { }

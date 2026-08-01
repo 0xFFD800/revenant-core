@@ -19,7 +19,7 @@ namespace RevenantCore.Scenes;
 /// <param name="universe">The universe in which this scene exists.</param>
 /// <param name="spec">The spec containing data for this scene.</param>
 /// <param name="trigger">The trigger which this scene was created with.</param>
-public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
+public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -63,9 +63,9 @@ public class Scene(Universe universe, SceneSpec spec, string trigger) : Scythe
     private readonly Stack<IControllable> controlCapture = [];
 
     /// <summary>
-    /// The control tracker for this scene, updated each tick.
+    /// The keyboard tracker for this scene, updated each tick.
     /// </summary>
-    private readonly ControlTracker controlTracker = new(), keyboardTracker = new KeyboardTracker();
+    private readonly ControlTracker keyboardTracker = new KeyboardTracker();
 
     public override bool IsDead => false;
     public Universe Universe => universe;

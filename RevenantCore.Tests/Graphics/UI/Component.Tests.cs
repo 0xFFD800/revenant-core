@@ -7,48 +7,77 @@ using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Graphics.UI;
 
-public class FakeComponent : IComponent
+file class FakeScreen : IScreen
 {
-    public bool HasFocus { set => throw new NotImplementedException(); }
+    public int currDrawOrder = 0;
 
-    public Rectangle Area => throw new NotImplementedException();
+    public void Draw(Drawable drawable)
+    {
+        throw new NotImplementedException();
+    }
 
-    public bool Enabled { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public void Pop()
+    {
+        throw new NotImplementedException();
+    }
 
-    public DrawLayer Layer => throw new NotImplementedException();
+    public void Push(Matrix transform)
+    {
+        throw new NotImplementedException();
+    }
+}
 
-    public float Z => throw new NotImplementedException();
+public class FakeComponent(Rectangle area, bool initEnabled, bool initHasFocus, float z, bool isDead, bool expAnimate, bool expCreate, int? expDrawOrder, bool expGlean, bool expTick) : IComponent
+{
+    private bool animated = false, created = false, gleaned = false, matched = false, ticked = false;
+    private int? drawOrder = null;
 
-    public bool IsDead => throw new NotImplementedException();
+    public bool HasFocus { get; set; } = initHasFocus;
+    public Rectangle Area => area;
+    public bool Enabled { get; set; } = initEnabled;
+    public DrawLayer Layer => DrawLayer.UI;
+    public float Z => z;
+
+    public bool IsDead => isDead;
 
     public void Animate(IAnimationHook hook, Scene scene, FrameTime time)
     {
-        throw new NotImplementedException();
+        animated = true;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
-        throw new NotImplementedException();
+        created = true;
     }
 
     public void Draw(View view, Camera camera)
     {
-        throw new NotImplementedException();
+        drawOrder = ((FakeScreen)view.Screen).currDrawOrder++;
     }
 
     public void Glean(Scene scene, FrameTime time)
     {
-        throw new NotImplementedException();
+        gleaned = true;
     }
 
     public bool Matches(IControllable other)
     {
-        throw new NotImplementedException();
+        matched = true;
+        return other == this;
     }
 
     public void Tick(Scene scene, FrameTime time)
     {
-        throw new NotImplementedException();
+        ticked = true;
+    }
+
+    public void Validate()
+    {
+        Assert.AreEqual(expAnimate, animated);
+        Assert.AreEqual(expCreate, created);
+        Assert.AreEqual(expDrawOrder, drawOrder);
+        Assert.AreEqual(expGlean, gleaned);
+        Assert.AreEqual(expTick, ticked);
     }
 }
 
