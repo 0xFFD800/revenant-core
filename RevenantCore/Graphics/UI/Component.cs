@@ -105,7 +105,7 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 
     public void Draw(View view, Camera camera)
     {
-        view.Screen.Push(Matrix.CreateTranslation(new(Area.X, 0, Area.Y)));
+        view.Screen.Push(Matrix.CreateTranslation(new(Area.X, Area.Y, 0)));
         foreach (IComponent c in components)
             c.Draw(view, camera);
         view.Screen.Pop();

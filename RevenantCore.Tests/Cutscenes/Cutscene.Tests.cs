@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
@@ -135,7 +136,7 @@ file class MockCutscene : Cutscene
         Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new(), "default");
 
 [TestFixture]
 public class Cutscene_Test

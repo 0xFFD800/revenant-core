@@ -4,12 +4,14 @@ using RevenantCore.Graphics;
 using RevenantCore.Graphics.UI;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
+using static RevenantCore.Tests.Scenes.Scene_Test;
 
 namespace RevenantCore.Tests.Graphics.UI;
 
 file class FakeScreen : IScreen
 {
     public int currDrawOrder = 0;
+    public Matrix? matrix = null;
 
     public void Draw(Drawable drawable)
     {
@@ -18,19 +20,20 @@ file class FakeScreen : IScreen
 
     public void Pop()
     {
-        throw new NotImplementedException();
+        matrix = null;
     }
 
     public void Push(Matrix transform)
     {
-        throw new NotImplementedException();
+        matrix = transform;
     }
 }
 
-public class FakeComponent(Rectangle area, bool initEnabled, bool initHasFocus, float z, bool isDead, bool expAnimate, bool expCreate, int? expDrawOrder, bool expGlean, bool expTick) : IComponent
+public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, float z, bool isDead, bool expAnimate, bool expCreate, int? expDrawOrder, bool expMatched, bool expGlean, bool expTick, Matrix? expTranslation) : IComponent
 {
     private bool animated = false, created = false, gleaned = false, matched = false, ticked = false;
     private int? drawOrder = null;
+    private Matrix? translation = null;
 
     public bool HasFocus { get; set; } = initHasFocus;
     public Rectangle Area => area;
@@ -52,7 +55,9 @@ public class FakeComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
 
     public void Draw(View view, Camera camera)
     {
-        drawOrder = ((FakeScreen)view.Screen).currDrawOrder++;
+        FakeScreen screen = (FakeScreen)view.Screen;
+        drawOrder = screen.currDrawOrder++;
+        translation = screen.matrix;
     }
 
     public void Glean(Scene scene, FrameTime time)
@@ -76,16 +81,39 @@ public class FakeComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
         Assert.AreEqual(expAnimate, animated);
         Assert.AreEqual(expCreate, created);
         Assert.AreEqual(expDrawOrder, drawOrder);
+        Assert.AreEqual(expMatched, matched);
         Assert.AreEqual(expGlean, gleaned);
         Assert.AreEqual(expTick, ticked);
+        Assert.AreEqual(expTranslation, translation);
     }
 }
 
 [TestFixture]
 public class Container_Test
 {
+    [Test]
+    public void EmptyDraw_SanityCheck()
+    {
+        Assert.DoesNotThrow(() => new Container([]).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new())));
+    }
+
+    [Test]
+    public void DrawOrder()
+    {
+        Vector3 pos = new(4, 6, 0);
+        Matrix matrix = Matrix.CreateTranslation(pos);
+        MockComponent mock1 = new(new(0, 1, 4, 2), true, false, 1, false, false, true, 1, false, false, true, matrix);
+        MockComponent mock2 = new(new(7, 0, 2, 4), true, false, 2, false, false, true, 0, false, false, true, matrix);
+        Container container = new([mock1, mock2], new(4, 6, 4, 4), new());
+        Scene scene = new FakeScene();
+        container.Create(scene, new(new()));
+        container.Tick(scene, new(new()));
+        container.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        mock1.Validate();
+        mock2.Validate();
+    }
+
     // To test:
-    // * Draw Order & translation 
     // * Tick Loop Sanity Check & Focus Changes
     // * Matches
     // * Animate Sanity Check

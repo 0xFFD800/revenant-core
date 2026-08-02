@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using NUnit.Framework.Internal;
+using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
@@ -15,7 +16,7 @@ file class FakeLoader() : ILoader
     }
 }
 
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new(), "default");
 
 file class FakeMoveable(Vector3[] positions) : IMoveable
 {

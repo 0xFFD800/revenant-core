@@ -51,7 +51,7 @@ public class ControlTracker_Test
     {
         ControlTracker tracker = new();
         FakeInputs inputs = new();
-        Scene scene = new(new(new FakeCore(inputs, [new FakeImpl()]), new([])), new(), "default");
+        Scene scene = new(new(new FakeCore(inputs, [new FakeImpl()]), new([])), new ControlTracker(), new(), "default");
         ControlBindSpec binding = new();
         switch (inputType) 
         {
