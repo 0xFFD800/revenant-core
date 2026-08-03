@@ -172,4 +172,27 @@ public class Container_Test
     {
         Assert.AreEqual(DrawLayer.UI, new Container([]).Layer);
     }
+
+    [Test]
+    public void IsDead_Empty_True()
+    {
+        Assert.IsTrue(new Container([]).IsDead);
+    }
+
+    [TestCase(false, TestName = "IsDead_OneLiving_False")]
+    [TestCase(true, TestName = "IsDead_AllDead_True")]
+    public void IsDead_AllDead(bool secondDead)
+    {
+        Container c = new([new MockComponent(new(), false, false, 0, true, false, false, null, false, false, false, null),
+            new MockComponent(new(), false, false, 0, secondDead, false, false, null, false, false, false, null)]);
+        Assert.AreEqual(secondDead, c.IsDead);
+    }
+
+    [Test]
+    public void Z_MaxZ()
+    {
+        Container c = new([new MockComponent(new(), false, false, 1, false, false, false, null, false, false, false, null),
+            new MockComponent(new(), false, false, 2, false, false, false, null, false, false, false, null)]);
+        Assert.AreEqual(2, c.Z);
+    }
 }
