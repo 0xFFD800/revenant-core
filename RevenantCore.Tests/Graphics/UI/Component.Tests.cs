@@ -91,6 +91,11 @@ public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
 [TestFixture]
 public class Container_Test
 {
+    private class FakeControllable(bool matches) : IControllable
+    {
+        public bool Matches(IControllable other) => matches;
+    }
+
     [Test]
     public void EmptyDraw_SanityCheck()
     {
@@ -113,8 +118,58 @@ public class Container_Test
         mock2.Validate();
     }
 
+    [Test]
+    public void EmptyTick_SanityCheck()
+    {
+        Assert.DoesNotThrow(() => new Container([]).Tick(new FakeScene(), new(new())));
+    }
+
     // To test:
-    // * Tick Loop Sanity Check & Focus Changes
-    // * Matches
-    // * Animate Sanity Check
+    // * Focus Changes
+    
+    [Test]
+    public void Matches_Fake_False()
+    {
+        Assert.IsFalse(new Container([]).Matches(new FakeControllable(false)));
+    }
+
+    [Test]
+    public void Matches_Same_True()
+    {
+        Container c = new([]);
+        Assert.IsTrue(c.Matches(c));
+    }
+
+    [Test]
+    public void Matches_Subobj_True()
+    {
+        IComponent component = new MockComponent(new(), false, false, 0, false, false, false, null, false, false, false, null);
+        Container c = new([component]);
+        Assert.IsTrue(c.Matches(component));
+    }
+
+    [Test]
+    public void EmptyAnimate_SanityCheck()
+    {
+        Assert.DoesNotThrow(() => new Container([]).Animate(new FadeAnimation(0, false), new FakeScene(), new(new())));
+    }
+
+    [Test]
+    public void Animate_ApplyToSubobjs()
+    {
+        MockComponent mock1 = new(new(), true, false, 0, false, true, true, null, false, false, false, null);
+        MockComponent mock2 = new(new(), true, false, 0, false, true, true, null, false, false, false, null);
+        Container c = new([mock1, mock2]);
+        Scene scene = new FakeScene();
+        c.Create(scene, new(new()));
+        c.Animate(new FadeAnimation(0, false), scene, new(new()));
+        mock1.Validate();
+        mock2.Validate();
+    }
+
+    [Test]
+    public void Layer_UI()
+    {
+        Assert.AreEqual(DrawLayer.UI, new Container([]).Layer);
+    }
 }
