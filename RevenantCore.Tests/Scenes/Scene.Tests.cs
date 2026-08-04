@@ -13,13 +13,12 @@ namespace RevenantCore.Tests.Scenes;
 [TestFixture]
 public class Scene_Test
 {
-    public class FakeScene(Universe universe, SceneSpec spec, string trigger) : Scene(universe, new ControlTracker(), spec, trigger)
+    public class FakeScene(Universe universe, IControlTracker tracker, SceneSpec spec, string trigger) : Scene(universe, tracker, spec, trigger)
     {
-        internal FakeScene(SceneSpec spec) : this(new(new FakeCore(), new([])), spec, "default")
-        { }
-
-        internal FakeScene() : this(new())
-        { }
+        internal FakeScene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
+        internal FakeScene(IControlTracker tracker) : this(new(new FakeCore(), new([])), tracker, new(), "default") { }
+        internal FakeScene(SceneSpec spec) : this(new(new FakeCore(), new([])), spec, "default") { }
+        internal FakeScene() : this(new SceneSpec()) { }
 
         public int currDrawOrder = 0;
     }
@@ -367,7 +366,7 @@ public class Scene_Test
     [Test(Description = "If there are no collisions or friction and the objects are at floor level, objects should just be moved")]
     public void Tick_NoCollisions_Move()
     {
-        FakeScene scene = new(new()
+        FakeScene scene = new(new SceneSpec()
         {
             Bounds =
             {
@@ -389,7 +388,7 @@ public class Scene_Test
     [TestCase(0.0F, 10, 1, 1, 0, 0, 0, 20, 1, 1, 0, TestName = "Gravity (scene with zero gravity)")]
     public void Tick_NoCollisions_Gravity(float gravity, float currPosX, float currPosY, float currVelX, float currVelY, float currAccX, float currAccY, float expPosX, float expPosY, float expVelX, float expVelY)
     {
-        FakeScene scene = new(new()
+        FakeScene scene = new(new SceneSpec()
         {
             Gravity = gravity
         });
@@ -442,7 +441,7 @@ public class Scene_Test
     [Test(Description = "An object should not move if its velocity does not exceed its static friction")]
     public void Tick_Floor_StaticFriction()
     {
-        FakeScene scene = new(new());
+        FakeScene scene = new(new SceneSpec());
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [new MockCollideable("foo", new(1, 0, 1), Vector3.UnitX * 0.0025F, Vector3.Zero, Vector3.One, new() { StaticFriction = 0.0025F, Mass = 1 }, false, false, new(1, 0, 1), Vector3.Zero)]);
     }
@@ -529,7 +528,7 @@ public class Scene_Test
     [TestCase(1F, 1F, 40, 76, 4, -2, 26, 110, -2, 4, TestName = "Collide Straight (Different Speeds)")]
     public void Tick_Collideable_CollideStraight(float? mass2, float? absorption2, float pos1, float pos2, float vel1, float vel2, float expPos1, float expPos2, float expVel1, float expVel2)
     {
-        FakeScene scene = new(new());
+        FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [
             new MockCollideable("foo", new(pos1, 0, 40), new(vel1, 0, 0), Vector3.Zero, Vector3.One * 10 * Math.Abs(vel1), new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPos1, 0, 40), new(expVel1, 0, 0)),
@@ -545,7 +544,7 @@ public class Scene_Test
     [TestCase(0.5F, 1F, 1, 30, 50, 55, 3.75F, 0, -2.25F, -3, 28.75F, 27, 47, 31, -1.125F, -1.5F, 7.5F, 0, TestName = "Collide Oblique (Different Masses)")]
     public void Tick_Collideable_CollideOblique(float? mass2, float? absorption2, float posX1, float posZ1, float posX2, float posZ2, float velX1, float velZ1, float velX2, float velZ2, float expPosX1, float expPosZ1, float expPosX2, float expPosZ2, float expVelX1, float expVelZ1, float expVelX2, float expVelZ2)
     {
-        FakeScene scene = new(new());
+        FakeScene scene = new();
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [
             new MockCollideable("foo", new(posX1, 0, posZ1), new(velX1, 0, velZ1), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = 1, Mass = 1 }, false, false, new(expPosX1, 0, expPosZ1), new(expVelX1, 0, expVelZ1)),

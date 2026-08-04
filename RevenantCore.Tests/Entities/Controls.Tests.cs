@@ -10,7 +10,7 @@ namespace RevenantCore.Tests.Entities;
 [TestFixture]
 public class ControlTracker_Test
 {
-    private class FakeInputs : IInputs
+    public class FakeInputs : IInputs
     {
         public bool Pressed { get; set; } = false;
 
@@ -19,13 +19,15 @@ public class ControlTracker_Test
         public GamePadState GamePad(PlayerIndex player) => new(new(), new(), new(player == PlayerIndex.Two && Pressed ? Buttons.A : Buttons.None), new());
     }
 
-    private class FakeImpl : IImpl
+    public class FakeImpl(string id) : IImpl
     {
+        internal FakeImpl() : this("test") { }
+
         public SpecRegistryBuilder RegisterAgents(SpecRegistryBuilder registry) => registry;
 
         public ControlRegistryBuilder RegisterControls(ControlRegistryBuilder registry) => registry.Register(new()
         {
-            ID = "test"
+            ID = id
         });
 
         public SpecRegistryBuilder RegisterCutscenes(SpecRegistryBuilder registry) => registry;

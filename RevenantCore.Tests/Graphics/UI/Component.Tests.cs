@@ -1,9 +1,11 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.UI;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
+using static RevenantCore.Tests.Entities.ControlTracker_Test;
 using static RevenantCore.Tests.Scenes.Scene_Test;
 
 namespace RevenantCore.Tests.Graphics.UI;
@@ -124,15 +126,22 @@ public class Container_Test
         Assert.DoesNotThrow(() => new Container([]).Tick(new FakeScene(), new(new())));
     }
 
-    [Test]
-    public void Tick_NoneInDir_NoChange()
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Tick_FocusChange(bool pressed)
     {
         MockComponent mock1 = new(new(0, 0, 1, 1), true, true, 1, false, false, true, null, false, false, true, null);
         MockComponent mock2 = new(new(2, 0, 1, 1), true, false, 2, false, false, true, null, false, false, true, null);
         Container container = new([mock1, mock2]);
+        FakeInputs inputs = new()
+        {
+            Pressed = pressed
+        };
+        Core core = new FakeCore(inputs, [new FakeImpl("left")]);
+        Universe universe = new(core, new([]));
+        universe.Bindings.Add("left", new() { Keys = [Keys.A] });
         Scene scene = new FakeScene();
         container.Create(scene, new(new()));
-        // TODO: Setup controls
         container.Tick(scene, new(new()));
         // TODO: Setup focus validation
         mock1.Validate();
