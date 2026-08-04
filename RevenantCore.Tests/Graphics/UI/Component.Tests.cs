@@ -124,6 +124,21 @@ public class Container_Test
         Assert.DoesNotThrow(() => new Container([]).Tick(new FakeScene(), new(new())));
     }
 
+    [Test]
+    public void Tick_NoneInDir_NoChange()
+    {
+        MockComponent mock1 = new(new(0, 0, 1, 1), true, true, 1, false, false, true, null, false, false, true, null);
+        MockComponent mock2 = new(new(2, 0, 1, 1), true, false, 2, false, false, true, null, false, false, true, null);
+        Container container = new([mock1, mock2]);
+        Scene scene = new FakeScene();
+        container.Create(scene, new(new()));
+        // TODO: Setup controls
+        container.Tick(scene, new(new()));
+        // TODO: Setup focus validation
+        mock1.Validate();
+        mock2.Validate();
+    }
+
     // To test:
     // * Focus Changes
     
