@@ -19,7 +19,7 @@ public interface IComponent : IVisible, ITickable, IControllable
     /// <summary>
     /// Indicates whether this component is focused or not; i.e., whether it should directly respond to controls.
     /// </summary>
-    bool HasFocus { set; }
+    bool HasFocus { get; set; }
 
     /// <summary>
     /// Indicates the area of the viewport that this component covers.
@@ -46,14 +46,14 @@ public interface IComponent : IVisible, ITickable, IControllable
 /// <param name="controls">The controls which will be used to change focus via the keyboard or gamepad.</param>
 public class Container(List<IComponent> components, Rectangle area, DirectionControlSpec controls) : Scythe, IComponent
 {
-    private IComponent? prevMouseFocused, prevFocused = null;
+    private IComponent? prevMouseFocused = null, prevFocused = components.FindLast(c => c.HasFocus);
 
     public Container(List<IComponent> components)
         : this(components, components.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)), new()) { }
 
     public Rectangle Area => area;
     public bool Enabled { get; set; } = true;
-    public bool HasFocus { private get; set; } = false;
+    public bool HasFocus { get; set; } = false;
     public override bool IsDead => components.Count == 0 || components.All(c => c.IsDead);
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => components.Max(c => c.Z);
@@ -81,20 +81,23 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
     }
 
 
-    private void UpdateFocus(Scene scene)
+    private bool TryUpdateFocus(Scene scene)
     {
         if (TryFocusKeyboardSel(scene, controls.Left, (prev, target) => prev.X > target.X + target.Width, (prev, target) => prev.X - (target.X + target.Width))
          || TryFocusKeyboardSel(scene, controls.Right, (prev, target) => prev.X + prev.Width < target.X, (prev, target) => target.X - (prev.X + prev.Width))
          || TryFocusKeyboardSel(scene, controls.Up, (prev, target) => prev.Y > target.Y + target.Height, (prev, target) => prev.Y - (target.Y + target.Height))
          || TryFocusKeyboardSel(scene, controls.Down, (prev, target) => prev.Y + prev.Height < target.Y, (prev, target) => target.Y - (prev.Y + prev.Height)))
-            return;
+            return true;
 
         // Start searching from the end, because we want the highest Z value.
         IComponent? currMouseFocused = components.LastOrDefault(
             c => c.Enabled && c.Area.Contains(scene.Universe.Core.Inputs.Mouse.Position));
-        if (currMouseFocused != prevMouseFocused && currMouseFocused != null)
+        bool ret = currMouseFocused != prevMouseFocused && currMouseFocused != null;
+        if (ret && currMouseFocused != null)
             SetFocused(currMouseFocused);
+
         prevMouseFocused = currMouseFocused;
+        return ret;
     }
 
     public override void Create(Scene scene, FrameTime time)
@@ -119,7 +122,8 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
             c.Tick(scene, time);
             c.HasFocus = false;
         }
-        UpdateFocus(scene);
+        if (!TryUpdateFocus(scene) && prevFocused != null)
+            SetFocused(prevFocused);
         base.Tick(scene, time);
     }
 
@@ -143,7 +147,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
 
     public Rectangle Area => toDraw.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = true;
-    public bool HasFocus { protected get; set; } = false;
+    public bool HasFocus { get; set; } = false;
     public override bool IsDead => false;
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => z;

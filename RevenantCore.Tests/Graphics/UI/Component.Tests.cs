@@ -87,7 +87,7 @@ public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
         Assert.AreEqual(expGlean, gleaned);
         Assert.AreEqual(expTick, ticked);
         Assert.AreEqual(expTranslation, translation);
-        Assert.AreEqual(HasFocus, expHasFocus);
+        Assert.AreEqual(expHasFocus, HasFocus);
     }
 }
 
@@ -127,22 +127,26 @@ public class Container_Test
         Assert.DoesNotThrow(() => new Container([]).Tick(new FakeScene(), new(new())));
     }
 
-    [TestCase(false, TestName = "Tick_NoPress_NoFocusChange")]
-    [TestCase(true, TestName = "Tick_PressNoneInDir_NoFocusChange")]
-    public void Tick_FocusChange(bool pressed)
+    [TestCase("left", false, true, false, TestName = "Tick_NoPress_NoFocusChange")]
+    [TestCase("left", true, true, false, TestName = "Tick_PressNoneInDir_NoFocusChange")]
+    [TestCase("right", true, false, true, TestName = "Tick_PressInDir_FocusChange")]
+    public void Tick_FocusChange(string input, bool pressed, bool expLeftFocus, bool expRightFocus)
     {
-        MockComponent mock1 = new(new(0, 0, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, true);
-        MockComponent mock2 = new(new(2, 0, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, false);
-        Container container = new([mock1, mock2]);
+        MockComponent mock1 = new(new(0, 1, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, expLeftFocus);
+        MockComponent mock2 = new(new(2, 1, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, expRightFocus);
+        Container container = new([mock1, mock2])
+        {
+            HasFocus = true
+        };
         FakeInputs inputs = new()
         {
             Pressed = pressed
         };
-        // TODO: Additional cases...
-        Core core = new FakeCore(inputs, [new FakeImpl("left")]);
+        Core core = new FakeCore(inputs, [new FakeImpl(input)]);
         Universe universe = new(core, new([]));
-        universe.Bindings.Add("left", new() { Keys = [Keys.A] });
-        Scene scene = new FakeScene();
+        universe.Bindings.Add(input, new() { Keys = [Keys.A] });
+        Scene scene = new FakeScene(universe, new(), "default");
+        scene.Create(scene, new(new()));
         container.Create(scene, new(new()));
         container.Tick(scene, new(new()));
         mock1.Validate();
