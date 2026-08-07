@@ -64,6 +64,7 @@ public interface IAnimationHook : IMortal
 /// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
 public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 {
+    // TODO: None of these counters are correct. Need to replace them all with time trackers.
     private double counter = 0;
 
     public bool IsDead => counter >= lengthMillis;

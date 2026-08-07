@@ -154,7 +154,7 @@ public class Container_Test
         mock1.Validate();
         mock2.Validate();
     }
-    
+
     [Test]
     public void Matches_Fake_False()
     {
@@ -222,5 +222,33 @@ public class Container_Test
         Container c = new([new MockComponent(new(), false, false, 1, false, false, false, null, false, false, false, null, false),
             new MockComponent(new(), false, false, 2, false, false, false, null, false, false, false, null, false)]);
         Assert.AreEqual(2, c.Z);
+    }
+}
+
+[TestFixture]
+public class Label_Test
+{
+    [Test]
+    public void Area_UnionOfDrawables()
+    {
+        Assert.AreEqual(new Rectangle(1, 1, 11, 15), new Label([
+            new MockDrawable(new(1, 1)).SetPos(new(1, 1)),
+            new MockDrawable(new(2, 4)).SetPos(new(10, 12))
+        ], 0).Area);
+    }
+
+    [Test]
+    public void ConstsAndFields()
+    {
+        Label l = new([], 0);
+        Assert.IsTrue(l.Enabled);
+        l.Enabled = false;
+        Assert.IsFalse(l.Enabled);
+        Assert.IsFalse(l.HasFocus);
+        l.HasFocus = true;
+        Assert.IsTrue(l.HasFocus);
+        Assert.IsFalse(l.IsDead);
+        Assert.AreEqual(DrawLayer.UI, l.Layer);
+        Assert.AreEqual(0, l.Z);
     }
 }

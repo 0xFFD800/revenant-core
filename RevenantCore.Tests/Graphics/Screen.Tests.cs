@@ -41,8 +41,10 @@ file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     }
 }
 
-file class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : Drawable
+internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : Drawable
 {
+    internal MockDrawable(Vector2 size) : this(new(), size, false) { }
+
     bool drawn = false;
     internal ISpriteBuffer? Buffer { get; private set; } = null;
     internal Vector2Spec ReferenceType => referenceType;
@@ -172,7 +174,7 @@ public class Screen_Test
         screen.Pop();
         buffer.Validate();
     }
-    
+
     [Test(Description = "Multiple pushes with no corresponding pop should combine their matrices")]
     public void PushTwo_NoPop_Combine()
     {

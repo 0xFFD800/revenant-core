@@ -145,7 +145,8 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
 {
     private readonly List<IAnimationHook> hooks = [];
 
-    public Rectangle Area => toDraw.Aggregate(new Rectangle(), (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
+    public Rectangle Area => toDraw.Aggregate(new Rectangle(toDraw.FirstOrDefault()?.Pos.ToPoint() ?? new(), new()),
+        (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = true;
     public bool HasFocus { get; set; } = false;
     public override bool IsDead => false;
