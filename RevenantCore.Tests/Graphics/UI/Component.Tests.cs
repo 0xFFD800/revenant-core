@@ -127,20 +127,22 @@ public class Container_Test
         Assert.DoesNotThrow(() => new Container([]).Tick(new FakeScene(), new(new())));
     }
 
-    [TestCase("left", false, true, false, TestName = "Tick_NoPress_NoFocusChange")]
-    [TestCase("left", true, true, false, TestName = "Tick_PressNoneInDir_NoFocusChange")]
-    [TestCase("right", true, false, true, TestName = "Tick_PressInDir_FocusChange")]
-    public void Tick_FocusChange(string input, bool pressed, bool expLeftFocus, bool expRightFocus)
+    [TestCase("left", false, 0, true, false, TestName = "Tick_NoPress_NoFocusChange")]
+    [TestCase("left", true, 0, true, false, TestName = "Tick_PressNoneInDir_NoFocusChange")]
+    [TestCase("right", true, 0, false, true, TestName = "Tick_PressInDir_FocusChange")]
+    [TestCase("left", false, 3, false, true, TestName = "Tick_MouseOver_FocusChange")]
+    public void Tick_FocusChange(string input, bool pressed, int mouseX, bool expLeftFocus, bool expRightFocus)
     {
-        MockComponent mock1 = new(new(0, 1, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, expLeftFocus);
-        MockComponent mock2 = new(new(2, 1, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, expRightFocus);
+        MockComponent mock1 = new(new(1, 1, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, expLeftFocus);
+        MockComponent mock2 = new(new(3, 1, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, expRightFocus);
         Container container = new([mock1, mock2])
         {
             HasFocus = true
         };
         FakeInputs inputs = new()
         {
-            Pressed = pressed
+            Pressed = pressed,
+            MousePos = new(mouseX, 1)
         };
         Core core = new FakeCore(inputs, [new FakeImpl(input)]);
         Universe universe = new(core, new([]));

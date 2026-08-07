@@ -13,9 +13,10 @@ public class ControlTracker_Test
     public class FakeInputs : IInputs
     {
         public bool Pressed { get; set; } = false;
+        public Point MousePos { get; set; } = new();
 
         public KeyboardState Keyboard => new(Pressed ? [Keys.A] : []);
-        public MouseState Mouse => new(0, 0, 0, Pressed ? ButtonState.Pressed : ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+        public MouseState Mouse => new(MousePos.X, MousePos.Y, 0, Pressed ? ButtonState.Pressed : ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
         public GamePadState GamePad(PlayerIndex player) => new(new(), new(), new(player == PlayerIndex.Two && Pressed ? Buttons.A : Buttons.None), new());
     }
 
