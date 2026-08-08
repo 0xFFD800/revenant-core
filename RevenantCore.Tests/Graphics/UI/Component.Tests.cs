@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Entities;
@@ -15,7 +16,10 @@ file class FakeScreen : IScreen
     public int currDrawOrder = 0;
     public Matrix? matrix = null;
 
-    public void Draw(Drawable drawable) { }
+    public void Draw(Drawable drawable)
+    {
+        drawable.Draw(new MockSpriteBuffer(null, false));
+    }
 
     public void Pop()
     {
@@ -301,5 +305,92 @@ public class Label_Test
         Label l2 = new([], 0);
         Assert.IsFalse(l1.Matches(l2));
         Assert.IsTrue(l1.Matches(l1));
+    }
+}
+
+[TestFixture]
+public class Button_Test
+{
+    private static Button SetUp(ButtonDrawables d, bool enabled, bool focused, bool clicked, bool released, Action onClick)
+    {
+        Button b = new(d, "click", onClick, 0)
+        {
+            Enabled = enabled,
+            HasFocus = focused
+        };
+        FakeImpl impl = new("click");
+        FakeInputs inputs = new()
+        {
+            Pressed = clicked
+        };
+        FakeCore core = new(inputs, [impl]);
+        Universe universe = new(core, new([]));
+        universe.Bindings.Add("click", new() { Keys = [Keys.A] });
+        FakeScene scene = new(universe, new(), "default");
+        scene.Create(scene, new(new()));
+        scene.Tick(scene, new(new()));
+        b.Create(scene, new(new()));
+        if (released)
+        {
+            inputs.Pressed = false;
+            scene.Tick(scene, new(new()));
+        }
+        b.Tick(scene, new(new()));
+        return b;
+    }
+
+    [TestCase(false, true, true, false, TestName = "Release_NotEnabled_NoClick")]
+    [TestCase(true, false, true, false, TestName = "Release_NotFocused_NoClick")]
+    [TestCase(true, true, false, false, TestName = "Release_NotReleased_NoClick")]
+    [TestCase(true, true, true, true, TestName = "Release_EnabledFocused_OnClick")]
+    public void OnClick_Test(bool enabled, bool focused, bool released, bool expClick)
+    {
+        bool clicked = false;
+        SetUp(new(), enabled, focused, true, released, () => clicked = true);
+        Assert.AreEqual(expClick, clicked);
+    }
+
+    [TestCase(false, true, true, true, true, false, false, false, TestName = "Draw_Disabled")]
+    [TestCase(true, false, true, false, false, true, false, false, TestName = "Draw_Clicked")]
+    [TestCase(true, false, true, true, false, false, false, true, TestName = "Draw_Released")]
+    [TestCase(true, true, false, false, false, false, true, false, TestName = "Draw_Focused")]
+    [TestCase(true, false, false, false, false, false, false, true, TestName = "Draw_Unfocused")]
+    public void Draw_Test(bool enabled, bool focused, bool clicked, bool released, bool expDisabled, bool expClicked, bool expFocus, bool expUnfocus)
+    {
+        MockDrawable disable = new(new(), Vector2.One, expDisabled);
+        MockDrawable click = new(new(), Vector2.One, expClicked);
+        MockDrawable focus = new(new(), Vector2.One, expFocus);
+        MockDrawable unfocus = new(new(), Vector2.One, expUnfocus);
+        Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, () => {});
+        b.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(Vector2.One, Vector2.One));
+        disable.Validate();
+        click.Validate();
+        focus.Validate();
+        unfocus.Validate();
+    }
+}
+
+internal class FakeKeyboardTracker : IControlTracker
+{
+    internal ControlState? ControlState { get; set; } = null;
+    internal string? StateName { get; set; } = null;
+
+    public FrozenDictionary<string, ControlState> States => FrozenDictionary.Create<string, ControlState>(ControlState.HasValue && StateName != null 
+        ? [new(StateName, ControlState.Value)] 
+        : []);
+    public bool IsDead => false;
+    public void Create(Scene scene, FrameTime time) { }
+    public void Glean(Scene scene, FrameTime time) { }
+    public void Tick(Scene scene, FrameTime time) { }
+}
+
+[TestFixture]
+public class TextInput_Test
+{
+    private static void TypeInto(FakeKeyboardTracker keyboard, Scene scene, TextInput input, string charToType)
+    {
+        keyboard.ControlState = new(ControlPositions.Press, 0);
+        keyboard.StateName = charToType;
+        input.Tick(scene, new(new()));
     }
 }

@@ -5,7 +5,7 @@ using RevenantCore.Scenes.Spec;
 
 namespace RevenantCore.Tests.Graphics;
 
-file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
+public class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
 {
     private bool drawing = false;
     private Matrix? actMatrix;
@@ -41,17 +41,19 @@ file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     }
 }
 
-internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : Drawable
+internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn, Action<MockDrawable> setDrawn) : Drawable
 {
+    private bool drawn = false;
+
+    internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : this(referenceType, size, expDrawn, m => m.drawn = true) { }
     internal MockDrawable(Vector2 size) : this(new(), size, false) { }
 
-    bool drawn = false;
     internal ISpriteBuffer? Buffer { get; private set; } = null;
     internal Vector2Spec ReferenceType => referenceType;
 
     public override void Draw(ISpriteBuffer buffer)
     {
-        drawn = true;
+        setDrawn(this);
         Buffer = buffer;
     }
 
@@ -62,7 +64,8 @@ internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDra
         Assert.AreEqual(expDrawn, drawn);
     }
 
-    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn);
+    // set the drawn property of both this and the subobject to ensure we can test objects which will be copied.
+    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn, m => { drawn = true; m.drawn = true; });
 }
 
 [TestFixture]

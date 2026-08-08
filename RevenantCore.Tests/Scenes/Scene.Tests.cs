@@ -7,14 +7,16 @@ using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
+using YamlDotNet.Core.Tokens;
 
 namespace RevenantCore.Tests.Scenes;
 
 [TestFixture]
 public class Scene_Test
 {
-    public class FakeScene(Universe universe, IControlTracker tracker, SceneSpec spec, string trigger) : Scene(universe, tracker, spec, trigger)
+    public class FakeScene(Universe universe, IControlTracker tracker, IControlTracker keyboard, SceneSpec spec, string trigger) : Scene(universe, tracker, keyboard, spec, trigger)
     {
+        internal FakeScene(Universe universe, IControlTracker tracker, SceneSpec spec, string trigger) : this(universe, tracker, new KeyboardTracker(), spec, trigger) { }
         internal FakeScene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
         internal FakeScene(IControlTracker tracker) : this(new(new FakeCore(), new([])), tracker, new(), "default") { }
         internal FakeScene(SceneSpec spec) : this(new(new FakeCore(), new([])), spec, "default") { }
@@ -594,7 +596,7 @@ public class Scene_Test
     public void Control_Existing_Return()
     {
         MockControlTracker tracker = new(true, false, false);
-        Scene scene = new(new(new FakeCore(), new([])), tracker, new(), "default");
+        Scene scene = new(new(new FakeCore(), new([])), tracker, new KeyboardTracker(), new(), "default");
         scene.Create(scene, new(new()));
         Assert.AreEqual(new ControlState(ControlPositions.Down, 10), scene.GetControlState("foo"));
         tracker.Validate();
@@ -604,7 +606,7 @@ public class Scene_Test
     public void Control_None_Default()
     {
         MockControlTracker tracker = new(true, false, false);
-        Scene scene = new(new(new FakeCore(), new([])), tracker, new(), "default");
+        Scene scene = new(new(new FakeCore(), new([])), tracker, new KeyboardTracker(), new(), "default");
         scene.Create(scene, new(new()));
         Assert.AreEqual(new ControlState(ControlPositions.Up, 0), scene.GetControlState("bar"));
         tracker.Validate();

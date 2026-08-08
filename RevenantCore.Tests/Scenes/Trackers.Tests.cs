@@ -16,7 +16,7 @@ file class FakeLoader() : ILoader
     }
 }
 
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
 
 file class FakeMoveable(Vector3[] positions) : IMoveable
 {

@@ -136,7 +136,7 @@ file class MockCutscene : Cutscene
         Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
 
 [TestFixture]
 public class Cutscene_Test

@@ -17,9 +17,11 @@ namespace RevenantCore.Scenes;
 /// Represents a gameplay area where entities exist and can interact.
 /// </summary>
 /// <param name="universe">The universe in which this scene exists.</param>
+/// <param name="controlTracker">The control tracker for this scene, updated each tick.</param>
+/// <param name="keyboardTracker">The keyboard tracker for this scene, updated each tick.</param>
 /// <param name="spec">The spec containing data for this scene.</param>
 /// <param name="trigger">The trigger which this scene was created with.</param>
-public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec spec, string trigger) : Scythe
+public class Scene(Universe universe, IControlTracker controlTracker, IControlTracker keyboardTracker, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -61,11 +63,6 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// Children of a cutscene block or UI container are not added to this stack--only separate ones triggered by the active chain.
     /// </summary>
     private readonly Stack<IControllable> controlCapture = [];
-
-    /// <summary>
-    /// The keyboard tracker for this scene, updated each tick.
-    /// </summary>
-    private readonly ControlTracker keyboardTracker = new KeyboardTracker();
 
     public override bool IsDead => false;
     public Universe Universe => universe;
@@ -178,8 +175,8 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             moveables.Add(moveable.ID, moveable);
         if (mortal is ICollideable collideable)
             collideables.Add(collideable);
-        if (mortal is Cutscene cutscene)
-            controlCapture.Push(cutscene);
+        if (mortal is IControllable controllable)
+            controlCapture.Push(controllable);
     }
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
@@ -194,7 +191,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             moveables.Remove(moveable.ID);
         if (mortal is ICollideable collideable)
             collideables.Remove(collideable);
-        if (mortal is Cutscene)
+        if (mortal is IControllable)
             controlCapture.Pop();
     }
 }
