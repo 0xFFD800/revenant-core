@@ -15,10 +15,7 @@ file class FakeScreen : IScreen
     public int currDrawOrder = 0;
     public Matrix? matrix = null;
 
-    public void Draw(Drawable drawable)
-    {
-        throw new NotImplementedException();
-    }
+    public void Draw(Drawable drawable) { }
 
     public void Pop()
     {
@@ -88,6 +85,36 @@ public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
         Assert.AreEqual(expTick, ticked);
         Assert.AreEqual(expTranslation, translation);
         Assert.AreEqual(expHasFocus, HasFocus);
+    }
+}
+
+public class MockAnimation(int expAppliedCt, bool expCreate, bool expGlean) : IAnimationHook
+{
+    private int appliedCt = 0;
+    private bool created = false, gleaned = false;
+
+    public bool IsDead { get; set; } = false;
+
+    public void Apply(Drawable drawable)
+    {
+        appliedCt++;
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        created = true;
+    }
+
+    public void Glean(Scene scene, FrameTime time)
+    {
+        gleaned = true;
+    }
+
+    public void Validate()
+    {
+        Assert.AreEqual(expAppliedCt, appliedCt);
+        Assert.AreEqual(expCreate, created);
+        Assert.AreEqual(expGlean, gleaned);
     }
 }
 
@@ -250,5 +277,29 @@ public class Label_Test
         Assert.IsFalse(l.IsDead);
         Assert.AreEqual(DrawLayer.UI, l.Layer);
         Assert.AreEqual(0, l.Z);
+    }
+
+    [Test]
+    public void AnimateCycle()
+    {
+        Label l = new([new MockDrawable(new(), Vector2.One, true)], 0);
+        Scene scene = new FakeScene();
+        MockAnimation hook = new(1, true, true);
+        l.Create(scene, new(new()));
+        l.Animate(hook, scene, new(new()));
+        FrameTime time = new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10)));
+        l.Tick(scene, time);
+        l.Draw(new(new FakeScreen(), 10, DrawLayer.UI), new(Vector2.One, Vector2.One));
+        l.Glean(scene, time);
+        hook.Validate();
+    }
+
+    [Test]
+    public void Matches_IsSame()
+    {
+        Label l1 = new([], 0);
+        Label l2 = new([], 0);
+        Assert.IsFalse(l1.Matches(l2));
+        Assert.IsTrue(l1.Matches(l1));
     }
 }

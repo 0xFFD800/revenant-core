@@ -180,10 +180,6 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
         }
     }
 
-    public override void Glean(Scene scene, FrameTime time) { }
-
-    public override void Tick(Scene scene, FrameTime time) { }
-
     public bool Matches(IControllable other) => other == this;
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
@@ -219,6 +215,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
 
     public override void Tick(Scene scene, FrameTime time)
     {
+        base.Tick(scene, time);
         ControlPositions position = scene.GetControlState(this, click).Position;
         isClicked = position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
