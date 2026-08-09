@@ -237,8 +237,23 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
     private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
     private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
+    private bool drawCursor = false;
 
-    protected override Drawable[] ToDraw => Buffer.Length == 0 ? (textHint.Length == 0 ? [] : [MakeDrawable(textHint).SetOpacity(0.5F)]) : [MakeDrawable(Buffer)];
+    protected override Drawable[] ToDraw {
+        get {
+            List<Drawable> toDraw = [];
+            if (Buffer.Length > 0)
+                toDraw.Add(MakeDrawable(Buffer));
+            else if (textHint.Length > 0)
+                toDraw.Add(MakeDrawable(textHint));
+            
+            if (drawCursor)
+                toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
+                    font.MeasureString(Lines[cursor.Y]).X, 
+                    font.MeasureString(string.Join("\n", Lines[..(cursor.Y - 1)])).Y))); 
+            return [..toDraw];
+        }
+    }
 
     private Drawable MakeDrawable(string text) => new DrawableText(text, font)
         .SetPos(pos.ToVector2())
@@ -276,6 +291,8 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
             else
                 Buffer += key;
         }
+
+        drawCursor = time.Millis / 1000 % 2 == 0;
     }
 
     private void FixCursor()

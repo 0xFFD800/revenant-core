@@ -393,4 +393,16 @@ public class TextInput_Test
         keyboard.StateName = charToType;
         input.Tick(scene, new(new()));
     }
+    
+    public void ArrowKeys_MoveCursor(string buffer, string direction, int expCursorX, int expCursorY)
+    {
+        FakeKeyboardTracker keyboard = new();
+        FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
+        // TODO: need to be able to mock a SpriteFont...
+        TextInput input = new(null, new(1, 2), "", Color.White, 0);
+        foreach (char c in buffer.ToCharArray())
+            TypeInto(keyboard, scene, input, c.ToString());
+        TypeInto(keyboard, scene, input, direction);
+        // TODO: Need to test cursor X and Y against expectations
+    }
 }
