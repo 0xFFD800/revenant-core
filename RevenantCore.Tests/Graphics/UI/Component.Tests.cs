@@ -394,7 +394,13 @@ public class TextInput_Test
         input.Tick(scene, new(new()));
     }
     
-    public void ArrowKeys_MoveCursor(string buffer, string direction, int expCursorX, int expCursorY)
+    [TestCase("", "right", 0, 0, TestName = "Empty_NoMove")]
+    [TestCase("foo", "left", 0, 0, TestName = "LeftAt0,0_NoMove")]
+    [TestCase("foo", "right", 1, 0, TestName = "RightAt0,0_1,0")]
+    [TestCase("foo", "up", 0, 0, TestName = "UpAt0,0_NoMove")]
+    [TestCase("foo\nbar", "down", 0, 1, TestName = "DownAt0,0_0,1")]
+    // TODO: Need cases which fix cursor
+    public void ArrowKeys_MoveCursor(string buffer, string directions, int expCursorX, int expCursorY)
     {
         FakeKeyboardTracker keyboard = new();
         FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
@@ -402,7 +408,23 @@ public class TextInput_Test
         TextInput input = new(null, new(1, 2), "", Color.White, 0);
         foreach (char c in buffer.ToCharArray())
             TypeInto(keyboard, scene, input, c.ToString());
-        TypeInto(keyboard, scene, input, direction);
+        foreach (string s in directions.Split(','))
+            TypeInto(keyboard, scene, input, s);
         // TODO: Need to test cursor X and Y against expectations
     }
+    
+    [TestCase("", TestName = "Tick_Chars_EmptySanityCheck")]
+    [TestCase("abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n1234567890\n!@#$%^&*()\\|[]{};:'\",.<>/?`~-=_+", TestName = "Tick_Chars_TypeInto")]
+    public void Tick_Chars_TypeIntoBuffer(string buffer)
+    {
+        FakeKeyboardTracker keyboard = new();
+        FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
+        // TODO: need to be able to mock a SpriteFont...
+        TextInput input = new(null, new(1, 2), "", Color.White, 0);
+        foreach (char c in buffer.ToCharArray())
+            TypeInto(keyboard, scene, input, c.ToString());
+        Assert.AreEqual(buffer, input.Buffer);
+    }
+    
+    // TODO: need cases for end, home, back, delete
 }
