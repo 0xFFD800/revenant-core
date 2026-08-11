@@ -231,7 +231,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
 /// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
 /// <param name="textColor">The color in which to draw the text.</param>
 /// <param name="z">The z-value at which this component should be drawn.</param>
-public class TextInput(SpriteFont font, Point pos, string textHint, Color textColor, float z) : Label([new DrawableText("", font)], z), IComponent
+public class TextInput(IFont font, Point pos, string textHint, Color textColor, float z) : Label([font.CreateDrawable("")], z), IComponent
 {
     public string Buffer { get; private set; } = "";
     private string[] Lines => Buffer.Split('\n');
@@ -249,13 +249,13 @@ public class TextInput(SpriteFont font, Point pos, string textHint, Color textCo
             
             if (drawCursor)
                 toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
-                    font.MeasureString(Lines[cursor.Y]).X, 
-                    font.MeasureString(string.Join("\n", Lines[..(cursor.Y - 1)])).Y))); 
+                    font.MeasureText(Lines[cursor.Y]).X, 
+                    font.MeasureText(string.Join("\n", Lines[..(cursor.Y - 1)])).Y))); 
             return [..toDraw];
         }
     }
 
-    private Drawable MakeDrawable(string text) => new DrawableText(text, font)
+    private Drawable MakeDrawable(string text) => font.CreateDrawable(text)
         .SetPos(pos.ToVector2())
         .SetMask(textColor);
 

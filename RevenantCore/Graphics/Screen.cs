@@ -42,6 +42,33 @@ internal class SpriteBuffer(SpriteBatch batch) : ISpriteBuffer
 }
 
 /// <summary>
+/// Wraps the necessary methods of SpriteFont to allow client code to be tested.
+/// </summary>
+public interface IFont
+{
+    /// <summary>
+    /// Creates a new drawable object encapsulating some text.
+    /// </summary>
+    /// <param name="text">The text to draw as part of this drawable.</param>
+    /// <returns>A drawable object which shows some text when drawn on screen.</returns>
+    Drawable CreateDrawable(string text);
+
+    /// <summary>
+    /// Measures what size this text will be if drawn on-screen in this font.
+    /// </summary>
+    /// <param name="text">The text to measure.</param>
+    /// <returns>The size of this text when drawn in this font, returned as X and Y vector coordinates.</returns>
+    Vector2 MeasureText(string text);
+}
+
+[ExcludeFromCodeCoverage]
+internal class Font(SpriteFont font) : IFont
+{
+    public Drawable CreateDrawable(string text) => new DrawableText(text, font);
+    public Vector2 MeasureText(string text) => font.MeasureString(text);
+}
+
+/// <summary>
 /// A wrapper around ISpriteBuffer allowing drawing code to utilize a stack of transformation matrices.
 /// Calls to Push and Pop <em>must</em> be balanced on any given run of the Draw loop.
 /// </summary>
