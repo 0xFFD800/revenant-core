@@ -384,6 +384,13 @@ internal class FakeKeyboardTracker : IControlTracker
     public void Tick(Scene scene, FrameTime time) { }
 }
 
+internal class FakeFont(Vector2 textSize) : IFont
+{
+    public Drawable CreateDrawable(string text) => new MockDrawable(textSize);
+
+    public Vector2 MeasureText(string text) => textSize;
+}
+
 [TestFixture]
 public class TextInput_Test
 {
@@ -405,7 +412,7 @@ public class TextInput_Test
         FakeKeyboardTracker keyboard = new();
         FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
         // TODO: need to be able to mock a SpriteFont...
-        TextInput input = new(null, new(1, 2), "", Color.White, 0);
+        TextInput input = new(new FakeFont(new()), new(1, 2), "", Color.White, 0);
         foreach (char c in buffer.ToCharArray())
             TypeInto(keyboard, scene, input, c.ToString());
         foreach (string s in directions.Split(','))
@@ -419,8 +426,7 @@ public class TextInput_Test
     {
         FakeKeyboardTracker keyboard = new();
         FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
-        // TODO: need to be able to mock a SpriteFont...
-        TextInput input = new(null, new(1, 2), "", Color.White, 0);
+        TextInput input = new(new FakeFont(new()), new(1, 2), "", Color.White, 0);
         foreach (char c in buffer.ToCharArray())
             TypeInto(keyboard, scene, input, c.ToString());
         Assert.AreEqual(buffer, input.Buffer);
