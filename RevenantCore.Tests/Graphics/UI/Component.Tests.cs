@@ -361,7 +361,7 @@ public class Button_Test
         MockDrawable click = new(new(), Vector2.One, expClicked);
         MockDrawable focus = new(new(), Vector2.One, expFocus);
         MockDrawable unfocus = new(new(), Vector2.One, expUnfocus);
-        Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, () => {});
+        Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, () => { });
         b.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(Vector2.One, Vector2.One));
         disable.Validate();
         click.Validate();
@@ -375,8 +375,8 @@ internal class FakeKeyboardTracker : IControlTracker
     internal ControlState? ControlState { get; set; } = null;
     internal string? StateName { get; set; } = null;
 
-    public FrozenDictionary<string, ControlState> States => FrozenDictionary.Create<string, ControlState>(ControlState.HasValue && StateName != null 
-        ? [new(StateName, ControlState.Value)] 
+    public FrozenDictionary<string, ControlState> States => FrozenDictionary.Create<string, ControlState>(ControlState.HasValue && StateName != null
+        ? [new(StateName, ControlState.Value)]
         : []);
     public bool IsDead => false;
     public void Create(Scene scene, FrameTime time) { }
@@ -386,9 +386,15 @@ internal class FakeKeyboardTracker : IControlTracker
 
 internal class FakeFont(Vector2 textSize) : IFont
 {
+    internal readonly List<string> lastMeasured = [];
+
     public Drawable CreateDrawable(string text) => new MockDrawable(textSize);
 
-    public Vector2 MeasureText(string text) => textSize;
+    public Vector2 MeasureText(string text)
+    {
+        lastMeasured.Add(text);
+        return textSize;
+    }
 }
 
 [TestFixture]
@@ -400,7 +406,7 @@ public class TextInput_Test
         keyboard.StateName = charToType;
         input.Tick(scene, new(new()));
     }
-    
+
     [TestCase("", "right", 0, 0, TestName = "Empty_NoMove")]
     [TestCase("foo", "left", 0, 0, TestName = "LeftAt0,0_NoMove")]
     [TestCase("foo", "right", 1, 0, TestName = "RightAt0,0_1,0")]
@@ -411,15 +417,18 @@ public class TextInput_Test
     {
         FakeKeyboardTracker keyboard = new();
         FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
-        // TODO: need to be able to mock a SpriteFont...
-        TextInput input = new(new FakeFont(new()), new(1, 2), "", Color.White, 0);
+        FakeFont font = new(new());
+        TextInput input = new(font, new(1, 2), "", Color.White, 0);
         foreach (char c in buffer.ToCharArray())
             TypeInto(keyboard, scene, input, c.ToString());
         foreach (string s in directions.Split(','))
             TypeInto(keyboard, scene, input, s);
-        // TODO: Need to test cursor X and Y against expectations
+        input.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        Assert.AreEqual(2, font.lastMeasured.Count);
+        Assert.AreEqual(expCursorX, font.lastMeasured[0].Length);
+        Assert.AreEqual(expCursorY, font.lastMeasured[1].Count(c => c == '\n') + font.lastMeasured[1].Length > 0 ? 1 : 0);
     }
-    
+
     [TestCase("", TestName = "Tick_Chars_EmptySanityCheck")]
     [TestCase("abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n1234567890\n!@#$%^&*()\\|[]{};:'\",.<>/?`~-=_+", TestName = "Tick_Chars_TypeInto")]
     public void Tick_Chars_TypeIntoBuffer(string buffer)
@@ -431,6 +440,6 @@ public class TextInput_Test
             TypeInto(keyboard, scene, input, c.ToString());
         Assert.AreEqual(buffer, input.Buffer);
     }
-    
+
     // TODO: need cases for end, home, back, delete
 }

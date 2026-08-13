@@ -239,19 +239,21 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
     private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
     private bool drawCursor = false;
 
-    protected override Drawable[] ToDraw {
-        get {
+    protected override Drawable[] ToDraw
+    {
+        get
+        {
             List<Drawable> toDraw = [];
             if (Buffer.Length > 0)
                 toDraw.Add(MakeDrawable(Buffer));
             else if (textHint.Length > 0)
                 toDraw.Add(MakeDrawable(textHint));
-            
+
             if (drawCursor)
                 toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
-                    font.MeasureText(Lines[cursor.Y]).X, 
-                    font.MeasureText(string.Join("\n", Lines[..(cursor.Y - 1)])).Y))); 
-            return [..toDraw];
+                    font.MeasureText(Lines[cursor.Y][..cursor.X]).X,
+                    font.MeasureText(string.Join("\n", Lines[..cursor.Y])).Y)));
+            return [.. toDraw];
         }
     }
 
