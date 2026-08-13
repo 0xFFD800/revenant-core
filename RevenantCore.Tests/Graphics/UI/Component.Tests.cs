@@ -412,7 +412,8 @@ public class TextInput_Test
     [TestCase("foo", "right", 1, 0, TestName = "RightAt0,0_1,0")]
     [TestCase("foo", "up", 0, 0, TestName = "UpAt0,0_NoMove")]
     [TestCase("foo\nbar", "down", 0, 1, TestName = "DownAt0,0_0,1")]
-    // TODO: Need cases which fix cursor
+    [TestCase("lorem ipsum dolor amet\nbar", "right,right,right,right,right,right,down", 3, 1, TestName = "Down_FixCursor")]
+    [TestCase("bar\nlorem ipsum dolor amet", "down,right,right,right,right,right,right,up", 3, 0, TestName = "Up_FixCursor")]
     public void ArrowKeys_MoveCursor(string buffer, string directions, int expCursorX, int expCursorY)
     {
         FakeKeyboardTracker keyboard = new();
