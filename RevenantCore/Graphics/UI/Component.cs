@@ -268,28 +268,43 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
         foreach (string key in scene.GetPressedKeys(this))
         {
             string line = Lines[cursor.Y];
-            if (key == KeyboardTracker.Directions.Left && cursor.X > 0)
-                cursor.X--;
-            else if (key == KeyboardTracker.Directions.Up && cursor.Y > 0)
+            if (key == KeyboardTracker.Directions.Left)
             {
-                cursor.Y--;
-                FixCursor();
+                if (cursor.X > 0)
+                    cursor.X--;
             }
-            else if (key == KeyboardTracker.Directions.Right && cursor.X < line.Length - 1)
-                cursor.X++;
+            else if (key == KeyboardTracker.Directions.Up)
+            {
+                if (cursor.Y > 0)
+                {
+                    cursor.Y--;
+                    FixCursor();
+                }
+            }
+            else if (key == KeyboardTracker.Directions.Right)
+            {
+                if (cursor.X < line.Length - 1)
+                    cursor.X++;
+            }
             else if (key == KeyboardTracker.Directions.Down && cursor.Y < Lines.Length - 1)
             {
                 cursor.Y++;
                 FixCursor();
             }
             else if (key == KeyboardTracker.End)
-                cursor.X = line.Length - 1;
+                cursor.X = line.Length;
             else if (key == KeyboardTracker.Home)
                 cursor.X = 0;
             else if (key == KeyboardTracker.Back)
-                Buffer = Buffer.Remove(Math.Max(0, BufferIndex - 1), 1);
+            {
+                if (cursor.X > 0)
+                {
+                    Buffer = Buffer.Remove(Math.Max(0, BufferIndex - 1), 1);
+                    cursor.X--;
+                }
+            }
             else if (key == KeyboardTracker.Delete)
-                Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 2), 1);
+                Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 1), 1);
             else
                 Buffer += key;
         }

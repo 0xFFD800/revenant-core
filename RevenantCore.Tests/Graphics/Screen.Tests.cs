@@ -47,7 +47,12 @@ internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDra
 
     internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : this(referenceType, size, expDrawn, m => m.drawn = true) { }
     internal MockDrawable(Vector2 size) : this(new(), size, false) { }
+    internal MockDrawable(Vector2 size, string text) : this(new(), size, false)
+    {
+        Text = text;
+    }
 
+    internal string? Text { get; private set; }
     internal ISpriteBuffer? Buffer { get; private set; } = null;
     internal Vector2Spec ReferenceType => referenceType;
 

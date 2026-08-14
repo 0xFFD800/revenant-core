@@ -13,12 +13,14 @@ namespace RevenantCore.Tests.Graphics.UI;
 
 file class FakeScreen : IScreen
 {
+    public Drawable? lastDrawn = null;
     public int currDrawOrder = 0;
     public Matrix? matrix = null;
 
     public void Draw(Drawable drawable)
     {
         drawable.Draw(new MockSpriteBuffer(null, false));
+        lastDrawn = drawable;
     }
 
     public void Pop()
@@ -388,7 +390,7 @@ internal class FakeFont(Vector2 textSize) : IFont
 {
     internal readonly List<string> lastMeasured = [];
 
-    public Drawable CreateDrawable(string text) => new MockDrawable(textSize);
+    public Drawable CreateDrawable(string text) => new MockDrawable(textSize, text);
 
     public Vector2 MeasureText(string text)
     {
@@ -400,21 +402,32 @@ internal class FakeFont(Vector2 textSize) : IFont
 [TestFixture]
 public class TextInput_Test
 {
-    private static void TypeInto(FakeKeyboardTracker keyboard, Scene scene, TextInput input, string charToType)
+    private static void TypeInto(FakeKeyboardTracker keyboard, Scene scene, TextInput input, string charToType, FrameTime time)
     {
         keyboard.ControlState = new(ControlPositions.Press, 0);
         keyboard.StateName = charToType;
-        input.Tick(scene, new(new()));
+        input.Tick(scene, time);
     }
 
-    [TestCase("", "right", 0, 0, TestName = "Empty_NoMove")]
-    [TestCase("foo", "left", 0, 0, TestName = "LeftAt0,0_NoMove")]
-    [TestCase("foo", "right", 1, 0, TestName = "RightAt0,0_1,0")]
-    [TestCase("foo", "up", 0, 0, TestName = "UpAt0,0_NoMove")]
-    [TestCase("foo\nbar", "down", 0, 1, TestName = "DownAt0,0_0,1")]
-    [TestCase("lorem ipsum dolor amet\nbar", "right,right,right,right,right,right,down", 3, 1, TestName = "Down_FixCursor")]
-    [TestCase("bar\nlorem ipsum dolor amet", "down,right,right,right,right,right,right,up", 3, 0, TestName = "Up_FixCursor")]
-    public void ArrowKeys_MoveCursor(string buffer, string directions, int expCursorX, int expCursorY)
+    private static void TypeInto(FakeKeyboardTracker keyboard, Scene scene, TextInput input, string charToType)
+    {
+        TypeInto(keyboard, scene, input, charToType, new(new()));
+    }
+
+    [TestCase("", "right", 0, 0, null, TestName = "Empty_NoMove")]
+    [TestCase("foo", "left", 0, 0, null, TestName = "LeftAt0,0_NoMove")]
+    [TestCase("foo", "end,left", 2, 0, null, TestName = "LeftAt3,0_2,0")]
+    [TestCase("foo", "right", 1, 0, null, TestName = "RightAt0,0_1,0")]
+    [TestCase("foo", "up", 0, 0, null, TestName = "UpAt0,0_NoMove")]
+    [TestCase("foo\nbar", "down", 0, 1, null, TestName = "DownAt0,0_0,1")]
+    [TestCase("lorem ipsum dolor amet\nbar", "right,right,right,right,right,right,down", 3, 1, null, TestName = "Down_FixCursor")]
+    [TestCase("bar\nlorem ipsum dolor amet", "down,right,right,right,right,right,right,up", 3, 0, null, TestName = "Up_FixCursor")]
+    [TestCase("foo", "end", 3, 0, null, TestName = "EndAt0,0_EndOfLine")]
+    [TestCase("foo", "end,home", 0, 0, null, TestName = "HomeAt3,0_StartOfLine")]
+    [TestCase("baz", "back", 0, 0, "baz", TestName = "BackAt0,0_NoRemove")]
+    [TestCase("baz", "right,right,back", 1, 0, "bz", TestName = "BackAt2,0_RemoveChar")]
+    [TestCase("baz", "right,right,delete", 2, 0, "ba", TestName = "DeleteAt2,0_RemoveChar")]
+    public void ArrowKeys_MoveCursor(string buffer, string directions, int expCursorX, int expCursorY, string? expBuffer)
     {
         FakeKeyboardTracker keyboard = new();
         FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
@@ -428,6 +441,8 @@ public class TextInput_Test
         Assert.AreEqual(2, font.lastMeasured.Count);
         Assert.AreEqual(expCursorX, font.lastMeasured[0].Length);
         Assert.AreEqual(expCursorY, font.lastMeasured[1].Count(c => c == '\n') + font.lastMeasured[1].Length > 0 ? 1 : 0);
+        if (expBuffer != null)
+            Assert.AreEqual(expBuffer, input.Buffer);
     }
 
     [TestCase("", TestName = "Tick_Chars_EmptySanityCheck")]
@@ -442,5 +457,18 @@ public class TextInput_Test
         Assert.AreEqual(buffer, input.Buffer);
     }
 
-    // TODO: need cases for end, home, back, delete
+    [TestCase("buffer", "hint", "buffer", TestName = "FullBuffer_DrawBuffer")]
+    [TestCase("", "hint", "hint", TestName = "EmptyBuffer_DrawHint")]
+    [TestCase("", "", null, TestName = "EmptyBuffer_EmptyHint_DrawNone")]
+    public void Draw(string buffer, string hint, string? expLastDrawnText)
+    {
+        FakeKeyboardTracker keyboard = new();
+        FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), keyboard, new(), "default");
+        TextInput input = new(new FakeFont(new()), new(1, 2), hint, Color.White, 0);
+        foreach (char c in buffer.ToCharArray())
+            TypeInto(keyboard, scene, input, c.ToString(), new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10))));
+        FakeScreen screen = new();
+        input.Draw(new(screen, 0, DrawLayer.UI), new(new(), new()));
+        Assert.AreEqual(expLastDrawnText, ((MockDrawable?)screen.lastDrawn)?.Text);
+    }
 }
