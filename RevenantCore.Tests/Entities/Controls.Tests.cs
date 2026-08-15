@@ -1,5 +1,7 @@
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using NUnit.Framework.Internal.Execution;
 using RevenantCore.Entities;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
@@ -54,7 +56,7 @@ public class ControlTracker_Test
     {
         ControlTracker tracker = new();
         FakeInputs inputs = new();
-        Scene scene = new(new(new FakeCore(inputs, [new FakeImpl()]), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
+        Scene scene = new(new(new FakeCore(inputs, [new FakeImpl()]), new([])), tracker, new KeyboardTracker(), new(), "default");
         ControlBindSpec binding = new();
         switch (inputType) 
         {
@@ -80,6 +82,41 @@ public class ControlTracker_Test
         ControlState state = tracker.States["test"];
         Assert.AreEqual(expState, state.Position);
         Assert.AreEqual(expMillis, state.Millis);
+    }
+}
+
+[TestFixture]
+public class KeyboardTracker_Test
+{
+    private class FakeInputs : IInputs
+    {
+        internal string? Key { get; set; }
+        internal bool CapsLock { get; set; } = false;
+        internal bool Shift { get; set; } = false;
+        private Keys? KeyBase => Key != null ? Enum.Parse<Keys>(Key) : null;
+        public KeyboardState Keyboard => new(KeyBase.HasValue ? (Shift ? [KeyBase.Value, Keys.LeftShift] : [KeyBase.Value]) : [], CapsLock, false);
+        public MouseState Mouse => new();
+        public GamePadState GamePad(PlayerIndex player) => new();
+    }
+
+    [TestCase(false, "A", false, false, "a", ControlPositions.Press, 0, TestName = "LowercaseA")]
+    public void CalcStates(bool prevKey, string key, bool capsLock, bool shift, string expText, ControlPositions expState, double expMillis)
+    {
+        KeyboardTracker tracker = new();
+        FakeInputs inputs = new();
+        Scene scene = new(new(new FakeCore(inputs, []), new([])), new ControlTracker(), tracker, new(), "default");
+        if (prevKey)
+            inputs.Key = key;
+        tracker.Create(scene, new(new()));
+        inputs.Key = key;
+        inputs.CapsLock = capsLock;
+        inputs.Shift = shift;
+        tracker.Tick(scene, new(new(new(), new(0, 0, 0, 0, 10))));
+        Assert.AreEqual(1, tracker.States.Count);
+        KeyValuePair<string, ControlState> state = tracker.States.First();
+        Assert.AreEqual(expText, state.Key);
+        Assert.AreEqual(expState, state.Value.Position);
+        Assert.AreEqual(expMillis, state.Value.Millis);
     }
 }
 
