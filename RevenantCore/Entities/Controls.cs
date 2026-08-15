@@ -197,7 +197,7 @@ public class KeyboardTracker : ControlTracker, IControlTracker
             Keys.Enter => "\n",
             Keys.OemBackslash => shift ? "|" : "\\",
             Keys.OemCloseBrackets => shift ? "}" : "]",
-            Keys.OemComma => shift ? ">" : ",",
+            Keys.OemComma => shift ? "<" : ",",
             Keys.OemMinus => shift ? "_" : "-",
             Keys.OemOpenBrackets => shift ? "{" : "[",
             Keys.OemPeriod => shift ? ">" : ".",
