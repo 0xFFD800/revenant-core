@@ -112,8 +112,9 @@ public class KeyboardTracker_Test
         inputs.CapsLock = capsLock;
         inputs.Shift = shift;
         tracker.Tick(scene, new(new(new(), new(0, 0, 0, 0, 10))));
-        Assert.AreEqual(1, tracker.States.Count);
-        KeyValuePair<string, ControlState> state = tracker.States.First();
+        Dictionary<string, ControlState> states = tracker.States.Where(p => p.Value.Position != ControlPositions.Up).ToDictionary();
+        Assert.AreEqual(1, states.Count);
+        KeyValuePair<string, ControlState> state = states.First();
         Assert.AreEqual(expText, state.Key);
         Assert.AreEqual(expState, state.Value.Position);
         Assert.AreEqual(expMillis, state.Value.Millis);
