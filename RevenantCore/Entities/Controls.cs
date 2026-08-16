@@ -236,7 +236,7 @@ public class KeyboardTracker : ControlTracker, IControlTracker
 /// <summary>
 /// An object which can capture controls from the current scene to handle them exclusively.
 /// </summary>
-public interface IControllable
+public interface IControllable : IMortal
 {
     /// <summary>
     /// Whether the provided controllable object is part of this chain of controllables or not.
