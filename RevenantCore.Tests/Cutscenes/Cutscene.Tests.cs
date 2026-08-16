@@ -157,6 +157,15 @@ public class Cutscene_Test
     {
         new MockCutscene(Universe, new(failedFilter ? new() { HasAll = ["INCOMPLETE"] } : new(), complete, 0, expDead, false, null, false, false)).Validate();
     }
+
+    [Test]
+    public void Matches_IsSame()
+    {
+        MockCutscene one = new(new(new FakeCore(), new([])));
+        MockCutscene two = new(new(new FakeCore(), new([])));
+        Assert.IsTrue(one.Matches(one));
+        Assert.IsFalse(one.Matches(two));
+    }
 }
 
 [TestFixture]
@@ -244,6 +253,22 @@ public class SequentialBlock_Test
         block.Glean(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
+    }
+
+    [Test]
+    public void Matches_IsSameOrActiveChild()
+    {
+        MockCutsceneSpec[] children = [
+            new(new()),
+            new(new())
+        ];
+        Universe universe = new(new FakeCore(), new([]));
+        Cutscene c = new SequentialBlockSpec() { Children = children }.Create(universe);
+        Assert.IsFalse(c.Matches(children[1].Cutscene));
+        Assert.IsTrue(c.Matches(children[0].Cutscene));
+        Assert.IsTrue(c.Matches(c));
+        Cutscene empty = new SequentialBlockSpec() { Children = [] }.Create(universe);
+        Assert.IsFalse(empty.Matches(children[0].Cutscene));
     }
 }
 
@@ -346,6 +371,25 @@ public class ConcurrentBlock_Test
         block.Glean(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
+    }
+
+    [Test]
+    public void Matches_IsSameOrActiveChild()
+    {
+        MockCutsceneSpec[] children = [
+            new(new()),
+            new(new())
+        ];
+        Universe universe = new(new FakeCore(), new([]));
+        Cutscene c = new ConcurrentBlockSpec() { Children = children }.Create(universe);
+        c.Create(new FakeScene(), new(new()));
+        Assert.IsTrue(c.Matches(children[1].Cutscene));
+        Assert.IsTrue(c.Matches(children[0].Cutscene));
+        Assert.IsTrue(c.Matches(c));
+        Cutscene empty = new ConcurrentBlockSpec() { Children = [] }.Create(universe);
+        empty.Create(new FakeScene(), new(new()));
+        Assert.IsFalse(empty.Matches(children[0].Cutscene));
+        Assert.IsFalse(c.Matches(empty));
     }
 }
 
