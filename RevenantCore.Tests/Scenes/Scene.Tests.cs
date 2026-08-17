@@ -234,12 +234,14 @@ public class Scene_Test
         }
     }
 
-    private class MockControlTracker(bool expCreated, bool expGleaned, bool expTick) : IControlTracker
+    private class MockControlTracker(ControlPositions pos, double millis, bool expCreated, bool expGleaned, bool expTick) : IControlTracker
     {
         private bool created = false, gleaned = false, ticked = false;
 
+        internal MockControlTracker(bool expCreated, bool expGleaned, bool expTicked) : this(ControlPositions.Down, 10, expCreated, expGleaned, expTicked) { }
+
         public FrozenDictionary<string, ControlState> States => new List<KeyValuePair<string, ControlState>>([
-            new KeyValuePair<string, ControlState>("foo", new(ControlPositions.Down, 10))]).ToFrozenDictionary();
+            new KeyValuePair<string, ControlState>("foo", new(pos, millis))]).ToFrozenDictionary();
 
         public bool IsDead => false;
 
@@ -265,6 +267,34 @@ public class Scene_Test
             Assert.AreEqual(expCreated, created);
             Assert.AreEqual(expGleaned, gleaned);
             Assert.AreEqual(expTick, ticked);
+        }
+    }
+
+    private class MockControllable(bool matches, bool expCreated, bool expGleaned) : IControllable, IMockMortal
+    {
+        private bool created = false, gleaned = false;
+
+        public bool IsDead { get; set; } = false;
+
+        public void Create(Scene scene, FrameTime time)
+        {
+            created = true;
+        }
+
+        public void Glean(Scene scene, FrameTime time)
+        {
+            gleaned = true;
+        }
+
+        public bool Matches(IControllable other)
+        {
+            return matches;
+        }
+
+        public void Validate()
+        {
+            Assert.AreEqual(expCreated, created);
+            Assert.AreEqual(expGleaned, gleaned);
         }
     }
 
@@ -561,7 +591,11 @@ public class Scene_Test
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [
             new MockCollideable("foo", Vector3.Zero, Vector3.UnitX, Vector3.Zero, Vector3.One, new() { Mass = 1 }, true, true, Vector3.Zero, Vector3.UnitX),
-            new MockTickable(true, false, true)
+            new MockTickable(true, false, true),
+            new MockControllable(false, true, true)
+            {
+                IsDead = true
+            }
         ]);
     }
 
@@ -616,12 +650,41 @@ public class Scene_Test
     [TestCase(true, TestName = "TryGetMoveable_Present_TrueOut")]
     public void TryGetMoveable(bool present)
     {
-        IMoveable? moveable;
         FakeScene scene = new();
         if (present)
             scene.Add(new MockCollideable("foo", false, false), scene, new(new()));
-        Assert.AreEqual(present, scene.TryGetMoveable("foo", out moveable));
+        Assert.AreEqual(present, scene.TryGetMoveable("foo", out IMoveable? moveable));
         Assert.AreEqual(present, moveable != null);
+    }
+
+    [TestCase(false, false, false, ControlPositions.Down, TestName = "IsCapturing_NotCaptured_True")]
+    [TestCase(true, false, true, ControlPositions.Down, TestName = "IsCapturing_CapturingMatches_True")]
+    [TestCase(true, false, false, ControlPositions.Up, TestName = "IsCapturing_NoMatch_False")]
+    [TestCase(true, true, false, ControlPositions.Up, TestName = "IsCapturing_NullMatch_False")]
+    public void IsCapturing(bool hasCapture, bool matchIsNull, bool captureMatches, ControlPositions expPos)
+    {
+        FakeScene scene = new(new MockControlTracker(true, false, false));
+        MockControllable capturing = new(captureMatches, hasCapture, false);
+        if (hasCapture)
+            scene.Add(capturing, scene, new(new()));
+        MockControllable controllable = new(false, false, false);
+        ControlState c = scene.GetControlState(matchIsNull ? null : controllable, "foo");
+        Assert.AreEqual(expPos, c.Position);
+        capturing.Validate();
+        controllable.Validate();
+    }
+
+    [TestCase(false, ControlPositions.Press, 0, false, TestName = "GetPressedKeys_NoCapture_False")]
+    [TestCase(true, ControlPositions.Press, 0, true, TestName = "GetPressedKeys_Press_True")]
+    [TestCase(true, ControlPositions.Down, KeyboardTracker.RepeatMillis, false, TestName = "GetPressedKeys_DownShort_False")]
+    [TestCase(true, ControlPositions.Down, KeyboardTracker.RepeatMillis + 1, true, TestName = "GetPressedKeys_DownSustained_True")]
+    public void GetPressedKeys(bool capturing, ControlPositions pos, double millis, bool expHasKey)
+    {
+        FakeScene scene = new(new Universe(new FakeCore(), new([])), new ControlTracker(), new MockControlTracker(pos, millis, false, false, false), new(), "default");
+        if (!capturing)
+            scene.Add(new MockControllable(false, false, false), scene, new(new()));
+        string[] keys = scene.GetPressedKeys(null);
+        Assert.AreEqual(expHasKey, keys.Length > 0);
     }
 }
 

@@ -129,6 +129,18 @@ public class Container_Test
 {
     private class FakeControllable(bool matches) : IControllable
     {
+        public bool IsDead => throw new NotImplementedException();
+
+        public void Create(Scene scene, FrameTime time)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Glean(Scene scene, FrameTime time)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool Matches(IControllable other) => matches;
     }
 
