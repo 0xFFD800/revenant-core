@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
@@ -56,7 +55,7 @@ public class Animation_Test
             drawables.Add(new FakeDrawable());
         Animation animation = new([.. drawables], 100);
         FrameTime frameTime = new(new(new(0, 0, 0, 0, time), new()));
-        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime.Millis));
+        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime));
     }
 }
 
@@ -71,14 +70,14 @@ public class AnimationCollection_Test
     public void GetFrame_NotFoundNoDef_Error()
     {
         AnimationCollection collection = new(MakeDict([]), null);
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
     public void GetFrame_DefNotFound_Error()
     {
         AnimationCollection collection = new(MakeDict([]), "otherNotFound");
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
@@ -86,7 +85,7 @@ public class AnimationCollection_Test
     {
         FakeDrawable drawable = new();
         AnimationCollection collection = new(MakeDict([("default", drawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("notFound", 0));
+        Assert.AreSame(drawable, collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
@@ -95,6 +94,6 @@ public class AnimationCollection_Test
         FakeDrawable drawable = new();
         FakeDrawable defDrawable = new();
         AnimationCollection collection = new(MakeDict([("found", drawable), ("default", defDrawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("found", 0));
+        Assert.AreSame(drawable, collection.GetFrame("found", new(new())));
     }
 }

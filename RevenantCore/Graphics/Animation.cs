@@ -19,9 +19,9 @@ public class Animation(Drawable[] sprites, int millisPerFrame)
     /// This object does not track position or rotation information;
     /// those will have to be added by client code.
     /// </summary>
-    /// <param name="millis">The time in milliseconds of the frame currently being drawn.</param>
+    /// <param name="time">The time of the frame currently being drawn.</param>
     /// <returns>The animation frame to display for the provided frame time.</returns>
-    public Drawable GetFrame(double millis) => sprites[(int)Math.Floor(millis / millisPerFrame) % sprites.Length];
+    public Drawable GetFrame(FrameTime time) => sprites[(int)Math.Floor(time.Millis / millisPerFrame) % sprites.Length];
 }
 
 /// <summary>
@@ -38,10 +38,10 @@ public class AnimationCollection(FrozenDictionary<string, Animation> animations,
     /// <param name="time">The time to find the animation's current frame for.</param>
     /// <returns>The frame to be drawn for the given animation key and time.</returns>
     /// <exception cref="ArgumentException">Thrown if the given animation key does not exist and this collection does not have a default.</exception>
-    public Drawable GetFrame(string key, double millis) =>
+    public Drawable GetFrame(string key, FrameTime time) =>
         (animations.TryGetValue(key, out Animation? animation)
             || (defAnim != null && animations.TryGetValue(defAnim, out animation)))
-        ? animation.GetFrame(millis)
+        ? animation.GetFrame(time)
         : throw new ArgumentException("No animations were found for the requested key and no default was found", nameof(key));
 }
 
@@ -54,7 +54,8 @@ public interface IAnimationHook : IMortal
     /// Applies the animation hook to a drawable.
     /// </summary>
     /// <param name="drawable">The drawable object on which to apply this animation hook.</param>
-    public void Apply(Drawable drawable);
+    /// <param name="time">The time as of which to apply the animation hook.</param>
+    public void Apply(Drawable drawable, FrameTime time);
 }
 
 /// <summary>
@@ -64,14 +65,13 @@ public interface IAnimationHook : IMortal
 /// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
 public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 {
-    // TODO: None of these counters are correct. Need to replace them all with time trackers.
     private double counter = 0;
 
     public bool IsDead => counter >= lengthMillis;
 
-    public void Apply(Drawable drawable)
+    public void Apply(Drawable drawable, FrameTime time)
     {
-        float opacity = (float)(counter++ / lengthMillis);
+        float opacity = (float)((counter += time.MillisElapsed) / lengthMillis);
         drawable.SetOpacity(reverse ? 1 - opacity : opacity);
     }
 
@@ -95,9 +95,9 @@ public class MoveAnimation(double lengthMillis, Vector2 trip) : IAnimationHook
 
     public bool IsDead => counter >= lengthMillis;
 
-    public void Apply(Drawable drawable)
+    public void Apply(Drawable drawable, FrameTime time)
     {
-        float ratio = (float)(counter++ / lengthMillis);
+        float ratio = (float)((counter += time.MillisElapsed) / lengthMillis);
         drawable.Pos += trip * ratio;
     }
 
@@ -121,9 +121,9 @@ public class RotateAnimation(double lengthMillis, float radians) : IAnimationHoo
 
     public bool IsDead => counter >= lengthMillis;
 
-    public void Apply(Drawable drawable)
+    public void Apply(Drawable drawable, FrameTime time)
     {
-        double ratio = counter++ / lengthMillis;
+        double ratio = (counter += time.MillisElapsed) / lengthMillis;
         drawable.Rotation += (float)(ratio * radians);
     }
 

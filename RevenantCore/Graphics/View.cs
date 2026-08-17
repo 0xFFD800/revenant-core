@@ -42,12 +42,9 @@ public enum DrawLayer
 /// Contains the information about a specific run of the Draw loop for a particular <paramref name="Layer"/>.
 /// </summary>
 /// <param name="Screen">The <see cref="IScreen"/> for this run of the Draw loop.</param>
-/// <param name="Millis">
-/// The total number of milliseconds for which this game has been running. 
-/// Equal to <see cref="GameTime.TotalGameTime.TotalMilliseconds"/>.
-/// </param>
+/// <param name="Time">The time of the current frame being drawn.</param>
 /// <param name="Layer">The layer currently being drawn.</param>
-public record View(IScreen Screen, double Millis, DrawLayer Layer);
+public record View(IScreen Screen, FrameTime Time, DrawLayer Layer);
 
 /// <summary>
 /// Represents a camera viewing a scene, including size and position information.

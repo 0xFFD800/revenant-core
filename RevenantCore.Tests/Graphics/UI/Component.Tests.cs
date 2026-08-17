@@ -101,7 +101,7 @@ public class MockAnimation(int expAppliedCt, bool expCreate, bool expGlean) : IA
 
     public bool IsDead { get; set; } = false;
 
-    public void Apply(Drawable drawable)
+    public void Apply(Drawable drawable, FrameTime time)
     {
         appliedCt++;
     }
@@ -135,7 +135,7 @@ public class Container_Test
     [Test]
     public void EmptyDraw_SanityCheck()
     {
-        Assert.DoesNotThrow(() => new Container([]).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new())));
+        Assert.DoesNotThrow(() => new Container([]).Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new())));
     }
 
     [Test]
@@ -149,7 +149,7 @@ public class Container_Test
         Scene scene = new FakeScene();
         container.Create(scene, new(new()));
         container.Tick(scene, new(new()));
-        container.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        container.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         mock1.Validate();
         mock2.Validate();
     }
@@ -295,7 +295,7 @@ public class Label_Test
         l.Animate(hook, scene, new(new()));
         FrameTime time = new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10)));
         l.Tick(scene, time);
-        l.Draw(new(new FakeScreen(), 10, DrawLayer.UI), new(Vector2.One, Vector2.One));
+        l.Draw(new(new FakeScreen(), time, DrawLayer.UI), new(Vector2.One, Vector2.One));
         l.Glean(scene, time);
         hook.Validate();
     }
@@ -364,7 +364,7 @@ public class Button_Test
         MockDrawable focus = new(new(), Vector2.One, expFocus);
         MockDrawable unfocus = new(new(), Vector2.One, expUnfocus);
         Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, () => { });
-        b.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(Vector2.One, Vector2.One));
+        b.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(Vector2.One, Vector2.One));
         disable.Validate();
         click.Validate();
         focus.Validate();
@@ -437,7 +437,7 @@ public class TextInput_Test
             TypeInto(keyboard, scene, input, c.ToString());
         foreach (string s in directions.Split(','))
             TypeInto(keyboard, scene, input, s);
-        input.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        input.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         Assert.AreEqual(2, font.lastMeasured.Count);
         Assert.AreEqual(expCursorX, font.lastMeasured[0].Length);
         Assert.AreEqual(expCursorY, font.lastMeasured[1].Count(c => c == '\n') + font.lastMeasured[1].Length > 0 ? 1 : 0);
@@ -468,7 +468,7 @@ public class TextInput_Test
         foreach (char c in buffer.ToCharArray())
             TypeInto(keyboard, scene, input, c.ToString(), new(new(new(0, 0, 0, 0, 10), new(0, 0, 0, 0, 10))));
         FakeScreen screen = new();
-        input.Draw(new(screen, 0, DrawLayer.UI), new(new(), new()));
+        input.Draw(new(screen, new(new()), DrawLayer.UI), new(new(), new()));
         Assert.AreEqual(expLastDrawnText, ((MockDrawable?)screen.lastDrawn)?.Text);
     }
 }

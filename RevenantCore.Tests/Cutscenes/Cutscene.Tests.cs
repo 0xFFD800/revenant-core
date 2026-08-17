@@ -175,7 +175,7 @@ public class SequentialBlock_Test
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
         Assert.DoesNotThrow(() =>
         {
-            block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+            block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
             block.Tick(scene, time);
             block.Glean(scene, time);
         });
@@ -210,7 +210,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, 0, false, false),
             new(new(), false, 0, false, false, null, false, false)
         ];
-        new SequentialBlockSpec() { Children = children }.Create(Universe).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -263,7 +263,7 @@ public class ConcurrentBlock_Test
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
         Assert.DoesNotThrow(() =>
         {
-            block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+            block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
             block.Tick(scene, time);
             block.Glean(scene, time);
         });
@@ -308,7 +308,7 @@ public class ConcurrentBlock_Test
         ];
         Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
         block.Create(new FakeScene(), new(new()));
-        block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -388,7 +388,7 @@ public class InstantCutscene_Test
     public void Draw_Throw()
     {
         Assert.Throws<UnreachableException>(() =>
-            new MockInstantCutscene(Universe, false).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new())));
+            new MockInstantCutscene(Universe, false).Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new())));
     }
 
     [Test]

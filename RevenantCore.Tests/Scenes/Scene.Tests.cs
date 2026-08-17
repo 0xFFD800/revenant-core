@@ -275,7 +275,7 @@ public class Scene_Test
         scene.Tick(scene, new(new()));
         MockScreen screen = new();
         foreach (DrawLayer layer in Enum.GetValues<DrawLayer>())
-            scene.Draw(new(screen, 0, layer));
+            scene.Draw(new(screen, new(new()), layer));
         screen.Validate();
         foreach (MockVisible visible in visibles)
             visible.Validate();
