@@ -2,7 +2,9 @@ using System.Collections.Frozen;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
+using RevenantCore.Scenes;
 using RevenantCore.Util;
+using static RevenantCore.Tests.Scenes.Scene_Test;
 
 namespace RevenantCore.Tests.Graphics;
 
@@ -95,5 +97,28 @@ public class AnimationCollection_Test
         FakeDrawable defDrawable = new();
         AnimationCollection collection = new(MakeDict([("found", drawable), ("default", defDrawable)]), "default");
         Assert.AreSame(drawable, collection.GetFrame("found", new(new())));
+    }
+}
+
+[TestFixture]
+public class FadeAnimation_Test
+{
+    [TestCase(false, 0, 0, false, TestName = "Apply_Initial_Clear")]
+    [TestCase(true, 0, 255, false, TestName = "Apply_Reverse_Initial_Opaque")]
+    [TestCase(false, 50, 127, false, TestName = "Apply_Half_Half")]
+    [TestCase(true, 50, 127, false, TestName = "Apply_Reverse_Half_Half")]
+    [TestCase(false, 100, 255, true, TestName = "Apply_Final_Opaque")]
+    [TestCase(true, 100, 0, true, TestName = "Apply_Reverse_Final_Clear")]
+    public void Apply_SetOpacity(bool reverse, int millis, float expAlpha, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        FadeAnimation fade = new(100, reverse);
+        Scene scene = new FakeScene();
+        fade.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        fade.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, fade.IsDead);
+        fade.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expAlpha, drawable.Mask.A);
     }
 }
