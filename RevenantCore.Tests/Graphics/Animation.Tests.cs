@@ -126,20 +126,40 @@ public class FadeAnimation_Test
 [TestFixture]
 public class MoveAnimation_Test
 {
-    [TestCase(false, 0, 0, 0, false, TestName = "Apply_Initial_Initial")]
-    [TestCase(false, 50, 3, 4, false, TestName = "Apply_Half_Half")]
-    [TestCase(false, 100, 6, 8, true, TestName = "Apply_Final_Full")]
-    public void Apply_SetOpacity(bool reverse, int millis, float expX, float expY, bool expDead)
+    [TestCase(0, 0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(50, 3, 4, false, TestName = "Apply_Half_Half")]
+    [TestCase(100, 6, 8, true, TestName = "Apply_Final_Full")]
+    public void Apply_SetOpacity(int millis, float expX, float expY, bool expDead)
     {
         FakeDrawable drawable = new();
-        MoveAnimation fade = new(100, new(6, 8));
+        MoveAnimation move = new(100, new(6, 8));
         Scene scene = new FakeScene();
-        fade.Create(scene, new(new()));
+        move.Create(scene, new(new()));
         TimeSpan mTime = new(0, 0, 0, 0, millis);
-        fade.Apply(drawable, new(new(mTime, mTime)));
-        Assert.AreEqual(expDead, fade.IsDead);
-        fade.Glean(scene, new(new(mTime, mTime)));
+        move.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, move.IsDead);
+        move.Glean(scene, new(new(mTime, mTime)));
         Assert.AreEqual(expX, drawable.Pos.X);
         Assert.AreEqual(expY, drawable.Pos.Y);
+    }
+}
+
+[TestFixture]
+public class RotateAnimation_Test
+{
+    [TestCase(0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(50, 1, false, TestName = "Apply_Half_Half")]
+    [TestCase(100, 2, true, TestName = "Apply_Final_Full")]
+    public void Apply_SetOpacity(int millis, float expRotation, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        RotateAnimation rotate = new(100, 2);
+        Scene scene = new FakeScene();
+        rotate.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        rotate.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, rotate.IsDead);
+        rotate.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expRotation, drawable.Rotation);
     }
 }
