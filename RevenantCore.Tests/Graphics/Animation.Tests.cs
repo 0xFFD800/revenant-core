@@ -122,3 +122,24 @@ public class FadeAnimation_Test
         Assert.AreEqual(expAlpha, drawable.Mask.A);
     }
 }
+
+[TestFixture]
+public class MoveAnimation_Test
+{
+    [TestCase(false, 0, 0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(false, 50, 3, 4, false, TestName = "Apply_Half_Half")]
+    [TestCase(false, 100, 6, 8, true, TestName = "Apply_Final_Full")]
+    public void Apply_SetOpacity(bool reverse, int millis, float expX, float expY, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        MoveAnimation fade = new(100, new(6, 8));
+        Scene scene = new FakeScene();
+        fade.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        fade.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, fade.IsDead);
+        fade.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expX, drawable.Pos.X);
+        Assert.AreEqual(expY, drawable.Pos.Y);
+    }
+}
