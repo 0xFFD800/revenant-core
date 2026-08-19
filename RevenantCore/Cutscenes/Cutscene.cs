@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
@@ -13,7 +14,7 @@ namespace RevenantCore.Cutscenes;
 /// which map to automated changes in the game world.
 /// </summary>
 /// <param name="universe">The universe in which this cutscene will be triggered. Provides event information.</param>
-public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible, ITickable
+public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible, ITickable, IControllable
 {
     /// <summary>
     /// The filter which determines whether this cutscene will be triggered or not.
@@ -32,6 +33,8 @@ public abstract class Cutscene(Universe universe, CutsceneSpec spec) : IVisible,
     public abstract void Create(Scene scene, FrameTime time);
     public abstract void Draw(View view, Camera camera);
     public abstract void Tick(Scene scene, FrameTime time);
+
+    public virtual bool Matches(IControllable other) => other == this;
 
     public virtual void Glean(Scene scene, FrameTime time)
     {
@@ -79,6 +82,8 @@ internal class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cu
         complete = ActiveChild == null;
     }
 
+    public override bool Matches(IControllable other) => base.Matches(other) || (ActiveChild?.Matches(other) ?? false);
+
     public override void Create(Scene scene, FrameTime time)
     {
         index = 0;
@@ -121,6 +126,8 @@ internal class ConcurrentBlock(Universe universe, ConcurrentBlockSpec spec) : Cu
         activeChildren.Sort((c1, c2) => c1.Z.CompareTo(c2.Z));
         complete = activeChildren.Count == 0;
     }
+
+    public override bool Matches(IControllable other) => base.Matches(other) || activeChildren.Any(c => c.Matches(other));
 
     public override void Create(Scene scene, FrameTime time)
     {

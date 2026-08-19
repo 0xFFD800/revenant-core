@@ -71,6 +71,32 @@ public class ControlSpec
 }
 
 /// <summary>
+/// A spec which specifies 4-direction controls.
+/// </summary>
+public class DirectionControlSpec
+{
+    /// <summary>
+    /// The ID of a control which signifies "left".
+    /// </summary>
+    public string Left { get; set; } = "left";
+
+    /// <summary>
+    /// The ID of the control which signifies "right".
+    /// </summary>
+    public string Right { get; set; } = "right";
+
+    /// <summary>
+    /// The ID of the control which signifies "up".
+    /// </summary>
+    public string Up { get; set; } = "up";
+
+    /// <summary>
+    /// The ID of the control which signifies "down".
+    /// </summary>
+    public string Down { get; set; } = "down";
+}
+
+/// <summary>
 /// A finalized control registry. Contains all control mappings populated during the registry phase.
 /// </summary>
 /// <param name="registry">The finalized tag to type map.</param>

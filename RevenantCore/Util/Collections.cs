@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RevenantCore.Util;
@@ -75,7 +76,7 @@ public class OrderedDict<K, V> where K : notnull where V : notnull
     /// Sorts the values in each underlying list using the specified comparer.
     /// </summary>
     /// <param name="comparer">The comparer with which to sort elements of the underlying lists.</param>
-    public void Sort(IComparer<V> comparer)
+    public void Sort(Comparison<V> comparer)
     {
         foreach (List<V> values in dict.Values)
             values.Sort(comparer);

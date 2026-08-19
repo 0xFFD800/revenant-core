@@ -1,15 +1,16 @@
 using System.Collections.Frozen;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using RevenantCore.Graphics;
 using RevenantCore.Graphics.Spec;
+using RevenantCore.Scenes;
 using RevenantCore.Util;
+using static RevenantCore.Tests.Scenes.Scene_Test;
 
 namespace RevenantCore.Tests.Graphics;
 
 file class FakeDrawable : Drawable
 {
-    protected override Vector2 Size => throw new NotImplementedException();
+    public override Vector2 Size => throw new NotImplementedException();
 
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -56,7 +57,7 @@ public class Animation_Test
             drawables.Add(new FakeDrawable());
         Animation animation = new([.. drawables], 100);
         FrameTime frameTime = new(new(new(0, 0, 0, 0, time), new()));
-        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime.Millis));
+        Assert.AreSame(drawables[expFrame], animation.GetFrame(frameTime));
     }
 }
 
@@ -71,14 +72,14 @@ public class AnimationCollection_Test
     public void GetFrame_NotFoundNoDef_Error()
     {
         AnimationCollection collection = new(MakeDict([]), null);
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
     public void GetFrame_DefNotFound_Error()
     {
         AnimationCollection collection = new(MakeDict([]), "otherNotFound");
-        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", 0));
+        Assert.Throws<ArgumentException>(() => collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
@@ -86,7 +87,7 @@ public class AnimationCollection_Test
     {
         FakeDrawable drawable = new();
         AnimationCollection collection = new(MakeDict([("default", drawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("notFound", 0));
+        Assert.AreSame(drawable, collection.GetFrame("notFound", new(new())));
     }
 
     [Test]
@@ -95,6 +96,70 @@ public class AnimationCollection_Test
         FakeDrawable drawable = new();
         FakeDrawable defDrawable = new();
         AnimationCollection collection = new(MakeDict([("found", drawable), ("default", defDrawable)]), "default");
-        Assert.AreSame(drawable, collection.GetFrame("found", 0));
+        Assert.AreSame(drawable, collection.GetFrame("found", new(new())));
+    }
+}
+
+[TestFixture]
+public class FadeAnimation_Test
+{
+    [TestCase(false, 0, 0, false, TestName = "Apply_Initial_Clear")]
+    [TestCase(true, 0, 255, false, TestName = "Apply_Reverse_Initial_Opaque")]
+    [TestCase(false, 50, 127, false, TestName = "Apply_Half_Half")]
+    [TestCase(true, 50, 127, false, TestName = "Apply_Reverse_Half_Half")]
+    [TestCase(false, 100, 255, true, TestName = "Apply_Final_Opaque")]
+    [TestCase(true, 100, 0, true, TestName = "Apply_Reverse_Final_Clear")]
+    public void Apply_SetOpacity(bool reverse, int millis, float expAlpha, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        FadeAnimation fade = new(100, reverse);
+        Scene scene = new FakeScene();
+        fade.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        fade.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, fade.IsDead);
+        fade.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expAlpha, drawable.Mask.A);
+    }
+}
+
+[TestFixture]
+public class MoveAnimation_Test
+{
+    [TestCase(0, 0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(50, 3, 4, false, TestName = "Apply_Half_Half")]
+    [TestCase(100, 6, 8, true, TestName = "Apply_Final_Full")]
+    public void Apply_SetOpacity(int millis, float expX, float expY, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        MoveAnimation move = new(100, new(6, 8));
+        Scene scene = new FakeScene();
+        move.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        move.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, move.IsDead);
+        move.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expX, drawable.Pos.X);
+        Assert.AreEqual(expY, drawable.Pos.Y);
+    }
+}
+
+[TestFixture]
+public class RotateAnimation_Test
+{
+    [TestCase(0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(50, 1, false, TestName = "Apply_Half_Half")]
+    [TestCase(100, 2, true, TestName = "Apply_Final_Full")]
+    public void Apply_SetOpacity(int millis, float expRotation, bool expDead)
+    {
+        FakeDrawable drawable = new();
+        RotateAnimation rotate = new(100, 2);
+        Scene scene = new FakeScene();
+        rotate.Create(scene, new(new()));
+        TimeSpan mTime = new(0, 0, 0, 0, millis);
+        rotate.Apply(drawable, new(new(mTime, mTime)));
+        Assert.AreEqual(expDead, rotate.IsDead);
+        rotate.Glean(scene, new(new(mTime, mTime)));
+        Assert.AreEqual(expRotation, drawable.Rotation);
     }
 }

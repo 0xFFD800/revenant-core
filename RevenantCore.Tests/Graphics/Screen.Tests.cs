@@ -5,7 +5,7 @@ using RevenantCore.Scenes.Spec;
 
 namespace RevenantCore.Tests.Graphics;
 
-file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
+public class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
 {
     private bool drawing = false;
     private Matrix? actMatrix;
@@ -41,26 +41,36 @@ file class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffer
     }
 }
 
-file class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : Drawable
+internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn, Action<MockDrawable> setDrawn) : Drawable
 {
-    bool drawn = false;
+    private bool drawn = false;
+
+    internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : this(referenceType, size, expDrawn, m => m.drawn = true) { }
+    internal MockDrawable(Vector2 size) : this(new(), size, false) { }
+    internal MockDrawable(Vector2 size, string text) : this(new(), size, false)
+    {
+        Text = text;
+    }
+
+    internal string? Text { get; private set; }
     internal ISpriteBuffer? Buffer { get; private set; } = null;
     internal Vector2Spec ReferenceType => referenceType;
 
     public override void Draw(ISpriteBuffer buffer)
     {
-        drawn = true;
+        setDrawn(this);
         Buffer = buffer;
     }
 
-    protected override Vector2 Size => size;
+    public override Vector2 Size => size;
 
     public void Validate()
     {
         Assert.AreEqual(expDrawn, drawn);
     }
 
-    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn);
+    // set the drawn property of both this and the subobject to ensure we can test objects which will be copied.
+    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn, m => { drawn = true; m.drawn = true; });
 }
 
 [TestFixture]
@@ -172,7 +182,7 @@ public class Screen_Test
         screen.Pop();
         buffer.Validate();
     }
-    
+
     [Test(Description = "Multiple pushes with no corresponding pop should combine their matrices")]
     public void PushTwo_NoPop_Combine()
     {

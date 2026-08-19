@@ -2,6 +2,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
@@ -102,9 +103,9 @@ public class ControlTracker : IControlTracker
 {
     public bool IsDead => false;
 
-    public FrozenDictionary<string, ControlState> States { get; private set; } = FrozenDictionary<string, ControlState>.Empty;
+    public FrozenDictionary<string, ControlState> States { get; protected set; } = FrozenDictionary<string, ControlState>.Empty;
 
-    private void CalcStates(Universe universe, Core core, FrameTime time)
+    protected virtual void CalcStates(Universe universe, Core core, FrameTime time)
     {
         FrozenDictionary<string, ControlState> prevStates = States.ToFrozenDictionary();
         Dictionary<string, ControlState> currStates = [];
@@ -121,19 +122,22 @@ public class ControlTracker : IControlTracker
                     _ => throw new ArgumentException("Unsupported mouse button")
                 } == ButtonState.Pressed);
             ControlState prevState = prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0));
-            currStates.Add(id, prevState.Position switch
-            {
-                ControlPositions.Press or ControlPositions.Down => pressed
-                    ? new(ControlPositions.Down, prevState.Millis + time.MillisElapsed)
-                    : new(ControlPositions.Release, 0),
-                ControlPositions.Release or ControlPositions.Up => pressed
-                    ? new(ControlPositions.Press, 0)
-                    : new(ControlPositions.Up, prevState.Millis + time.MillisElapsed),
-                _ => throw new ArgumentException("Unsupported control position")
-            });
+            currStates.Add(id, GetCurrState(prevState, time, pressed));
         }
         States = currStates.ToFrozenDictionary();
     }
+
+    protected static ControlState GetCurrState(ControlState prevState, FrameTime time, bool pressed) =>
+        prevState.Position switch
+        {
+            ControlPositions.Press or ControlPositions.Down => pressed
+                ? new(ControlPositions.Down, prevState.Millis + time.MillisElapsed)
+                : new(ControlPositions.Release, 0),
+            ControlPositions.Release or ControlPositions.Up => pressed
+                ? new(ControlPositions.Press, 0)
+                : new(ControlPositions.Up, prevState.Millis + time.MillisElapsed),
+            _ => throw new ArgumentException("Unsupported control position")
+        };
 
     public void Create(Scene scene, FrameTime time)
     {
@@ -146,4 +150,99 @@ public class ControlTracker : IControlTracker
     {
         CalcStates(scene.Universe, scene.Universe.Core, time);
     }
+}
+
+/// <summary>
+/// A special control tracker which tracks the keyboard input as the expected string output.
+/// </summary>
+public class KeyboardTracker : ControlTracker, IControlTracker
+{
+    public const string Back = "back";
+    public const string Delete = "delete";
+    public const string Home = "home";
+    public const string End = "end";
+    public readonly static DirectionControlSpec Directions = new();
+
+    // This should probably be configurable in settings.
+    public const int RepeatMillis = 1500;
+
+    private static string? ShiftedNumKey(Keys key) => key switch
+    {
+        Keys.D0 => ")",
+        Keys.D1 => "!",
+        Keys.D2 => "@",
+        Keys.D3 => "#",
+        Keys.D4 => "$",
+        Keys.D5 => "%",
+        Keys.D6 => "^",
+        Keys.D7 => "&",
+        Keys.D8 => "*",
+        Keys.D9 => "(",
+        _ => throw new ArgumentException("Argument must be a number key (D0-D9)", nameof(key))
+    };
+
+    private static string? GetID(Keys key, bool shift, bool capsLock, bool numLock)
+    {
+        string name = Enum.GetName(key) ?? " ";
+        return key switch
+        {
+            (>= Keys.A) and (<= Keys.Z) => shift ^ capsLock ? name.ToUpper() : name.ToLower(),
+            (>= Keys.D0) and (<= Keys.D9) => shift ? ShiftedNumKey(key) : (key - Keys.D0).ToString(),
+            (>= Keys.NumPad0) and (<= Keys.NumPad9) => numLock ? (key - Keys.NumPad0).ToString() : null,
+            Keys.Space => " ",
+            Keys.Back => Back,
+            Keys.Delete => Delete,
+            Keys.Home => Home,
+            Keys.End => End,
+            Keys.Enter => "\n",
+            Keys.OemBackslash => shift ? "|" : "\\",
+            Keys.OemCloseBrackets => shift ? "}" : "]",
+            Keys.OemComma => shift ? "<" : ",",
+            Keys.OemMinus => shift ? "_" : "-",
+            Keys.OemOpenBrackets => shift ? "{" : "[",
+            Keys.OemPeriod => shift ? ">" : ".",
+            Keys.OemPlus => shift ? "+" : "=",
+            Keys.OemQuestion => shift ? "?" : "/",
+            Keys.OemQuotes => shift ? "\"" : "'",
+            Keys.OemSemicolon => shift ? ":" : ";",
+            Keys.OemTilde => shift ? "~" : "`",
+            Keys.Tab => "\t",
+            Keys.Right => Directions.Right,
+            Keys.Left => Directions.Left,
+            Keys.Up => Directions.Up,
+            Keys.Down => Directions.Down,
+            _ => null
+        };
+    }
+
+    protected override void CalcStates(Universe universe, Core core, FrameTime time)
+    {
+        FrozenDictionary<string, ControlState> prevStates = States.ToFrozenDictionary();
+        Dictionary<string, ControlState> currStates = [];
+        KeyboardState state = core.Inputs.Keyboard;
+        foreach (Keys key in Enum.GetValues<Keys>())
+        {
+            string? id = GetID(key, state.IsKeyDown(Keys.LeftShift) || state.IsKeyDown(Keys.RightShift), state.CapsLock, state.NumLock);
+            if (id == null) continue;
+
+            bool pressed = state.IsKeyDown(key);
+            ControlState prevState = prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0));
+            currStates.Add(id, GetCurrState(prevState, time, pressed));
+        }
+        States = currStates.ToFrozenDictionary();
+    }
+}
+
+/// <summary>
+/// An object which can capture controls from the current scene to handle them exclusively.
+/// </summary>
+public interface IControllable : IMortal
+{
+    /// <summary>
+    /// Whether the provided controllable object is part of this chain of controllables or not.
+    /// Used to determine whether this object is part of the control-capturing chain.
+    /// </summary>
+    /// <param name="other">The object to attempt to match to this chain.</param>
+    /// <returns>Whether the provided cutscene is part of this cutscene's active block.</returns>
+    bool Matches(IControllable other);
 }

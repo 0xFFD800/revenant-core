@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
+using RevenantCore.Entities;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
@@ -135,7 +136,7 @@ file class MockCutscene : Cutscene
         Assert.AreEqual(spec.ExpGlean, spec.gleaned, "gleaned did not match expectation");
     }
 }
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
 
 [TestFixture]
 public class Cutscene_Test
@@ -156,6 +157,15 @@ public class Cutscene_Test
     {
         new MockCutscene(Universe, new(failedFilter ? new() { HasAll = ["INCOMPLETE"] } : new(), complete, 0, expDead, false, null, false, false)).Validate();
     }
+
+    [Test]
+    public void Matches_IsSame()
+    {
+        MockCutscene one = new(new(new FakeCore(), new([])));
+        MockCutscene two = new(new(new FakeCore(), new([])));
+        Assert.IsTrue(one.Matches(one));
+        Assert.IsFalse(one.Matches(two));
+    }
 }
 
 [TestFixture]
@@ -174,7 +184,7 @@ public class SequentialBlock_Test
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
         Assert.DoesNotThrow(() =>
         {
-            block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+            block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
             block.Tick(scene, time);
             block.Glean(scene, time);
         });
@@ -209,7 +219,7 @@ public class SequentialBlock_Test
             new(new(), false, 0, false, false, 0, false, false),
             new(new(), false, 0, false, false, null, false, false)
         ];
-        new SequentialBlockSpec() { Children = children }.Create(Universe).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        new SequentialBlockSpec() { Children = children }.Create(Universe).Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -244,6 +254,22 @@ public class SequentialBlock_Test
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
+
+    [Test]
+    public void Matches_IsSameOrActiveChild()
+    {
+        MockCutsceneSpec[] children = [
+            new(new()),
+            new(new())
+        ];
+        Universe universe = new(new FakeCore(), new([]));
+        Cutscene c = new SequentialBlockSpec() { Children = children }.Create(universe);
+        Assert.IsFalse(c.Matches(children[1].Cutscene));
+        Assert.IsTrue(c.Matches(children[0].Cutscene));
+        Assert.IsTrue(c.Matches(c));
+        Cutscene empty = new SequentialBlockSpec() { Children = [] }.Create(universe);
+        Assert.IsFalse(empty.Matches(children[0].Cutscene));
+    }
 }
 
 [TestFixture]
@@ -262,7 +288,7 @@ public class ConcurrentBlock_Test
         Assert.IsTrue(block.IsDead, "Block should be dead on arrival if it has no active children");
         Assert.DoesNotThrow(() =>
         {
-            block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+            block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
             block.Tick(scene, time);
             block.Glean(scene, time);
         });
@@ -307,7 +333,7 @@ public class ConcurrentBlock_Test
         ];
         Cutscene block = new ConcurrentBlockSpec() { Children = children }.Create(Universe);
         block.Create(new FakeScene(), new(new()));
-        block.Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new()));
+        block.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
     }
@@ -345,6 +371,25 @@ public class ConcurrentBlock_Test
         block.Glean(new FakeScene(), new(new()));
         foreach (MockCutsceneSpec child in children)
             child.Cutscene.Validate();
+    }
+
+    [Test]
+    public void Matches_IsSameOrActiveChild()
+    {
+        MockCutsceneSpec[] children = [
+            new(new()),
+            new(new())
+        ];
+        Universe universe = new(new FakeCore(), new([]));
+        Cutscene c = new ConcurrentBlockSpec() { Children = children }.Create(universe);
+        c.Create(new FakeScene(), new(new()));
+        Assert.IsTrue(c.Matches(children[1].Cutscene));
+        Assert.IsTrue(c.Matches(children[0].Cutscene));
+        Assert.IsTrue(c.Matches(c));
+        Cutscene empty = new ConcurrentBlockSpec() { Children = [] }.Create(universe);
+        empty.Create(new FakeScene(), new(new()));
+        Assert.IsFalse(empty.Matches(children[0].Cutscene));
+        Assert.IsFalse(c.Matches(empty));
     }
 }
 
@@ -387,7 +432,7 @@ public class InstantCutscene_Test
     public void Draw_Throw()
     {
         Assert.Throws<UnreachableException>(() =>
-            new MockInstantCutscene(Universe, false).Draw(new(new FakeScreen(), 0, DrawLayer.UI), new(new(), new())));
+            new MockInstantCutscene(Universe, false).Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new())));
     }
 
     [Test]

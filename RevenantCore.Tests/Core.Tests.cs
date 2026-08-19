@@ -16,7 +16,7 @@ file class FakeDrawable(string path) : Drawable
 {
     internal string Path => path;
 
-    protected override Vector2 Size => throw new NotImplementedException();
+    public override Vector2 Size => throw new NotImplementedException();
 
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -33,9 +33,9 @@ file class FakeLoader : ILoader
 
 file class FakeInputs : IInputs
 {
-    public KeyboardState Keyboard => throw new NotImplementedException();
+    public KeyboardState Keyboard => new();
 
-    public MouseState Mouse => throw new NotImplementedException();
+    public MouseState Mouse => new();
 
     public GamePadState GamePad(PlayerIndex player)
     {
@@ -151,7 +151,7 @@ public class Core_Test
             z: 1
           - !fake {}
         """);
-        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(1, c.Z, "The cutscene should match its first child with a Z of 1.");
     }
@@ -167,7 +167,7 @@ public class Core_Test
           - !fake
             z: 2
         """);
-        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(2, c.Z, "The cutscene should match its childrens' maximum Z of 2.");
     }
@@ -189,7 +189,7 @@ public class Core_Test
           str: fake
           obj: '!concurrentBlock { children: [ !fake { z: 2 } ] }'
         """));
-        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default"), new(new()));
         Assert.IsFalse(c.IsDead, "The cutscene should have active children and therefore not be dead.");
         Assert.AreEqual(expZ, c.Z, "The cutscene did not match the expected Z value.");
     }
@@ -250,7 +250,7 @@ public class Core_Test
         !fake
         z: 1
         """);
-        c.Create(new(new(new FakeCore([]), new([])), new(), "default"), new(new()));
+        c.Create(new(new(new FakeCore([]), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default"), new(new()));
         Assert.IsInstanceOf<FakeCutscene>(c, "Cutscene type did not match expectation");
         Assert.AreEqual(1, c.Z, "The cutscene should have a Z of 1.");
     }
@@ -284,7 +284,8 @@ public class Core_Test
         defaultSprite: foo
         defaultAnimation: fooFirst
         """);
-        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, millis)).Path);
+        TimeSpan span = new(0, 0, 0, 0, millis);
+        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(span, span)))).Path);
     }
 
     [TestCase("foo", 0, 0, TestName = "foo at 0 millis")]
@@ -310,7 +311,8 @@ public class Core_Test
                 x: 90
         millisPerFrame: 100
         """);
-        Assert.AreEqual(expSourceX, c.GetFrame(key, millis).Source?.X);
+        TimeSpan span = new(0, 0, 0, 0, millis);
+        Assert.AreEqual(expSourceX, c.GetFrame(key, new(new(span, span))).Source?.X);
     }
 
     [Test]
@@ -333,7 +335,7 @@ public class Core_Test
             z: 1
           layer: scene
         """);
-        entity.Create(new(new(core, new([])), new(), "default"), new(new()));
+        entity.Create(new(new(core, new([])), new ControlTracker(), new KeyboardTracker(), new(), "default"), new(new()));
         Assert.IsInstanceOf<FakeAgent>(entity.Agent);
         Assert.AreEqual(1, entity.Material.Mass);
         Assert.AreEqual(Vector3.One, entity.CollisionBox.Max - entity.CollisionBox.Min);
@@ -344,7 +346,7 @@ public class Core_Test
     public void LoadEntity_FakeTracker()
     {
         Core core = new FakeCore([new FakeImpl()]);
-        Scene scene = new(new(core, new([])), new(), "default");
+        Scene scene = new(new(core, new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
         Entity entity = core.LoadEntity("""
           id: foo
           agent: !trackingAgent

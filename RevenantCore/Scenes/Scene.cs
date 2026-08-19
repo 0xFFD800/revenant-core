@@ -18,9 +18,10 @@ namespace RevenantCore.Scenes;
 /// </summary>
 /// <param name="universe">The universe in which this scene exists.</param>
 /// <param name="controlTracker">The control tracker for this scene, updated each tick.</param>
+/// <param name="keyboardTracker">The keyboard tracker for this scene, updated each tick.</param>
 /// <param name="spec">The spec containing data for this scene.</param>
 /// <param name="trigger">The trigger which this scene was created with.</param>
-public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec spec, string trigger) : Scythe
+public class Scene(Universe universe, IControlTracker controlTracker, IControlTracker keyboardTracker, SceneSpec spec, string trigger) : Scythe
 {
     /// <summary>
     /// All visible objects in this scene, organized by <see cref="IVisible.Layer"/>.
@@ -57,7 +58,11 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     /// </summary>
     private readonly CameraCollection cameras = new(spec.ViewportSize.Data, new(spec.Bounds.X, spec.Bounds.Y));
 
-    public Scene(Universe universe, SceneSpec spec, string trigger) : this(universe, new ControlTracker(), spec, trigger) { }
+    /// <summary>
+    /// The stack of active control capturers.
+    /// Children of a cutscene block or UI container are not added to this stack--only separate ones triggered by the active chain.
+    /// </summary>
+    private readonly Stack<IControllable> controlCapture = [];
 
     public override bool IsDead => false;
     public Universe Universe => universe;
@@ -93,13 +98,25 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
         walls[side].Suspended = suspended;
     }
 
+    private bool IsCapturing(IControllable? controllable) =>
+        !controlCapture.TryPeek(out IControllable? capturer) 
+            || (controllable != null && capturer.Matches(controllable));
+
     /// <summary>
     /// Gets the state of the specified control.
     /// </summary>
+    /// <param name="controllable">The item testing for the specified control.</param>
     /// <param name="control">The control to find the state of.</param>
     /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
-    public ControlState GetControlState(string control) =>
-        controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0));
+    public ControlState GetControlState(IControllable? controllable, string control) => IsCapturing(controllable) 
+        ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
+        : new(ControlPositions.Up, 0);
+    
+    public ControlState GetControlState(string control) => GetControlState(null, control);
+
+    public string[] GetPressedKeys(IControllable? controllable) => IsCapturing(controllable) 
+        ? [..keyboardTracker.States.Where(s => s.Value.Position == ControlPositions.Press || s.Value.Millis > KeyboardTracker.RepeatMillis).Select(s => s.Key)]
+        : [];
 
     /// <summary>
     /// Attempts to find a moveable object for a given ID within a scene.
@@ -140,7 +157,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
     {
         base.Tick(scene, time);
         Trace.Assert(scene == this);
-        visibles.Sort(Comparer<IVisible>.Create((x, y) => (int)(y.Z - x.Z)));
+        visibles.Sort((x, y) => Math.Sign(y.Z - x.Z));
         foreach (ITickable tickable in tickables)
             tickable.Tick(scene, time);
         DoPhysics(time.MillisElapsed);
@@ -158,6 +175,8 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             moveables.Add(moveable.ID, moveable);
         if (mortal is ICollideable collideable)
             collideables.Add(collideable);
+        if (mortal is IControllable controllable)
+            controlCapture.Push(controllable);
     }
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
@@ -168,8 +187,12 @@ public class Scene(Universe universe, IControlTracker controlTracker, SceneSpec 
             visibles.Remove(visible.Layer, visible);
         if (mortal is ITickable tickable)
             tickables.Remove(tickable);
+        if (mortal is IMoveable moveable)
+            moveables.Remove(moveable.ID);
         if (mortal is ICollideable collideable)
             collideables.Remove(collideable);
+        if (mortal is IControllable)
+            controlCapture.Pop();
     }
 }
 

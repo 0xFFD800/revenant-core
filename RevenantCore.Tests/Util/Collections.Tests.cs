@@ -116,7 +116,7 @@ public class OrderedDict_Test
         dict.Add(1, 3);
         dict.Add(1, 1);
 
-        dict.Sort(Comparer<int>.Create((x, y) => x - y));
+        dict.Sort((x, y) => x - y);
 
         int[] expValues0 = [1, 2];
         int[] expValues1 = [1, 2, 3];

@@ -41,7 +41,7 @@ public class Entity(EntitySpec spec, AnimationCollection animations) : ICollidea
 
     public virtual void Draw(View view, Camera camera)
     {
-        view.Screen.Draw(animations.GetFrame(Agent.Animation, view.Millis)
+        view.Screen.Draw(animations.GetFrame(Agent.Animation, view.Time)
             .SetBase(camera.Project(Position))
             .RotateAroundCenter());
     }

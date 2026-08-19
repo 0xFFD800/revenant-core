@@ -39,7 +39,7 @@ public class Entity_Test
     {
         public string FrameName => frameName;
 
-        protected override Vector2 Size => new(2, 4);
+        public override Vector2 Size => new(2, 4);
         public override void Draw(ISpriteBuffer buffer) { }
         protected override Drawable CopyData() => this;
     }
@@ -63,7 +63,8 @@ public class Entity_Test
     public void Draw_PosFrame()
     {
         MockScreen screen = new("bar", new(1, 92), new(1, 2));
-        View view = new(screen, 250, DrawLayer.Scene);
+        TimeSpan span = new(0, 0, 0, 0, 250);
+        View view = new(screen, new(new(span, span)), DrawLayer.Scene);
         Camera camera = new(new(100, 100), new(100, 100));
         Entity e = new(new(), new(FrozenDictionary.Create<string, Animation>([new("idle", new([new FakeDrawable("foo"), new FakeDrawable("bar")], 200))]), "idle"))
         {

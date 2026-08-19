@@ -11,7 +11,7 @@ namespace RevenantCore.Tests.Entities;
 
 file class FakeAnimationCollection() : AnimationCollection(new List<KeyValuePair<string, Animation>>().ToFrozenDictionary(), null);
 
-file class FakeScene() : Scene(new(new FakeCore(), new([])), new(), "default");
+file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");
 
 [TestFixture]
 public class NullAgent_Test
@@ -127,10 +127,10 @@ public class InputAgent_Test
     private class FakeControlTracker(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown) : IControlTracker
     {
         public FrozenDictionary<string, ControlState> States => new List<KeyValuePair<string, ControlState>>([
-            new("walkLeft", new(walkLeft, 0)),
-            new("walkRight", new(walkRight, 0)),
-            new("walkUp", new(walkUp, 0)),
-            new("walkDown", new(walkDown, 0))
+            new("left", new(walkLeft, 0)),
+            new("right", new(walkRight, 0)),
+            new("up", new(walkUp, 0)),
+            new("down", new(walkDown, 0))
         ]).ToFrozenDictionary();
 
         public bool IsDead => false;
@@ -168,7 +168,7 @@ public class InputAgent_Test
         {
             Velocity = Vector3.UnitX * vel
         };
-        Scene scene = new(new(new FakeCore(), new([])), new FakeControlTracker(walkLeft, walkRight, walkUp, walkDown), new(), "default");
+        Scene scene = new(new(new FakeCore(), new([])), new FakeControlTracker(walkLeft, walkRight, walkUp, walkDown), new KeyboardTracker(), new(), "default");
         FrameTime time = new(new());
         entity.Create(scene, time);
         entity.Tick(scene, time);

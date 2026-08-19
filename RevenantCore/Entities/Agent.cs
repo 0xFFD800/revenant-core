@@ -119,13 +119,13 @@ public class InputAgent(InputAgentSpec spec) : WalkAgent, IAgent
 
     public override void Apply(Entity entity, Scene scene, FrameTime time)
     {
-        if (IsPressed(scene, spec.Left))
+        if (IsPressed(scene, spec.Controls.Left))
             movement -= Vector3.UnitX * spec.Acceleration;
-        if (IsPressed(scene, spec.Right))
+        if (IsPressed(scene, spec.Controls.Right))
             movement += Vector3.UnitX * spec.Acceleration;
-        if (IsPressed(scene, spec.Up))
+        if (IsPressed(scene, spec.Controls.Up))
             movement -= Vector3.UnitZ * spec.Acceleration;
-        if (IsPressed(scene, spec.Down))
+        if (IsPressed(scene, spec.Controls.Down))
             movement += Vector3.UnitZ * spec.Acceleration;
         if ((entity.Velocity + movement).Length() < spec.TopSpeed)
             entity.Acceleration += movement;
