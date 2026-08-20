@@ -92,6 +92,8 @@ public enum WallSide { Floor, Near, Far, Left, Right }
 /// </summary>
 public enum InteractionType { Enter, Interact }
 
+public enum SubsequentBehavior { Loop, RepeatLast, RemoveInteraction }
+
 /// <summary>
 /// A YAML-serializable object which defines an area which may trigger a cutscene based on player behavior.
 /// </summary>
@@ -113,9 +115,14 @@ public class InteractionAreaSpec
     public Vector3Spec Bounds { get; set; } = new();
 
     /// <summary>
-    /// The cutscene to trigger when this interaction takes place.
+    /// The cutscenes to trigger when this interaction takes place, in order of their appearance in subsequent interactions.
     /// </summary>
-    public CutsceneSpec Cutscene { get; set; } = new SequentialBlockSpec();
+    public CutsceneSpec[] Cutscenes { get; set; } = [];
+
+    /// <summary>
+    /// Defines what happens when this interaction is triggered after its final cutscene is reached.
+    /// </summary>
+    public SubsequentBehavior SubsequentBehavior { get; set; } = SubsequentBehavior.RepeatLast;
 }
 
 /// <summary>
