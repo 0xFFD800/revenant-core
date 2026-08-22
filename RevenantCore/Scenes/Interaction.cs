@@ -8,10 +8,10 @@ using RevenantCore.Util;
 namespace RevenantCore.Scenes;
 
 /// <summary>
-/// In-game implementation of an interaction area which triggers immediately when entered by the player.
+/// In-game implementation of an interaction area which triggers based on player behavior.
 /// </summary>
 /// <param name="spec">The YAML-deserializable spec on which to base this zone's parameters.</param>
-public class LoadingZone(InteractionAreaSpec spec) : ITickable
+public class InteractionArea(InteractionAreaSpec spec) : ITickable
 {
     private Cutscene[] allCutscenes = [];
     private int index = 0;
@@ -31,7 +31,7 @@ public class LoadingZone(InteractionAreaSpec spec) : ITickable
 
     public void Tick(Scene scene, FrameTime time)
     {
-        if (allCutscenes.Length > 0 && ShouldTrigger(scene, time))
+        if (allCutscenes.Length > 0 && ShouldTrigger(scene))
         {
             if (index < allCutscenes.Length)
                 scene.Add(allCutscenes[index++], scene, time);
@@ -44,21 +44,8 @@ public class LoadingZone(InteractionAreaSpec spec) : ITickable
         }
     }
 
-    protected virtual bool ShouldTrigger(Scene scene, FrameTime time)
+    private bool ShouldTrigger(Scene scene)
     {
-        throw new NotImplementedException();
-    }
-}
-
-/// <summary>
-/// In-game implementation of an interaction area which requires player input before it triggers.
-/// </summary>
-/// <param name="spec">The YAML-deserializable spec on which to base this zone's parameters.</param>
-public class InteractionZone(InteractionAreaSpec spec) : LoadingZone(spec)
-{
-    protected override bool ShouldTrigger(Scene scene, FrameTime time)
-    {
-        throw new NotImplementedException();
-        //return base.ShouldTrigger(scene, time);
+        return scene.CollisionsWith(Bounds).Any(c => c.Interactions.Contains(spec.Type));
     }
 }

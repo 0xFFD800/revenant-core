@@ -92,6 +92,9 @@ public enum WallSide { Floor, Near, Far, Left, Right }
 /// </summary>
 public enum InteractionType { Enter, Interact }
 
+/// <summary>
+/// An enum representing possible behaviors at the end of an interaction area's lifecycle.
+/// </summary>
 public enum SubsequentBehavior { Loop, RepeatLast, RemoveInteraction }
 
 /// <summary>

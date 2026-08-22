@@ -151,6 +151,8 @@ public class Scene_Test
 
         public string ID => id;
 
+        public InteractionType[] Interactions => [];
+
         public void Create(Scene scene, FrameTime time)
         {
             created = true;

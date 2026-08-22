@@ -112,8 +112,18 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
         ? controlTracker.States.GetValueOrDefault(control, new(ControlPositions.Up, 0))
         : new(ControlPositions.Up, 0);
     
+    /// <summary>
+    /// Gets the state of the specified control.
+    /// </summary>
+    /// <param name="control">The control to find the state of.</param>
+    /// <returns>The state of the specified control, if it is tracked; otherwise, returns Up.</returns>
     public ControlState GetControlState(string control) => GetControlState(null, control);
 
+    /// <summary>
+    /// Gets the IDs of the keys currently pressed on the keyboard.
+    /// </summary>
+    /// <param name="controllable">The item testing for keypresses.</param>
+    /// <returns>The keys currently pressed on the keyboard, if the specified controllable has capture.</returns>
     public string[] GetPressedKeys(IControllable? controllable) => IsCapturing(controllable) 
         ? [..keyboardTracker.States.Where(s => s.Value.Position == ControlPositions.Press || s.Value.Millis > KeyboardTracker.RepeatMillis).Select(s => s.Key)]
         : [];
@@ -133,6 +143,9 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
             Add(wall, scene, time);
 
         Add(controlTracker, scene, time);
+
+        foreach (InteractionAreaSpec area in spec.Interactions)
+            Add(new InteractionArea(area), scene, time);
 
         if (spec.Triggers.TryGetValue(trigger, out CutsceneSpec? intro))
         {
@@ -194,6 +207,11 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
         if (mortal is IControllable)
             controlCapture.Pop();
     }
+
+    public ICollideable[] CollisionsWith(BoundingBox bounds)
+    {
+        return [..collideables.Where(c => c.CollisionBox.Intersects(bounds))];
+    }
 }
 
 /// <summary>
@@ -234,6 +252,8 @@ public class Wall(WallSide side, SceneSpec scene) : ICollideable
     public bool IsDead => false;
 
     public string ID => "wall" + Enum.GetName(side);
+
+    public InteractionType[] Interactions => [];
 
     public void Create(Scene scene, FrameTime time)
     {

@@ -34,6 +34,8 @@ public class Entity(EntitySpec spec, AnimationCollection animations) : ICollidea
 
     public string ID => spec.Id;
 
+    public InteractionType[] Interactions => Agent.Interactions;
+
     public void Create(Scene scene, FrameTime time)
     {
         Agent.Create(scene, time);

@@ -141,6 +141,7 @@ file class FakeCollideable(Vector3[] positions, Vector3[] velocities) : FakeMove
     public MaterialSpec Material => new();
     public Vector3 Velocity { get => velocities[index++]; set => throw new NotImplementedException(); }
     public Vector3 Acceleration { get => Vector3.Zero; set => throw new NotImplementedException(); }
+    public InteractionType[] Interactions => throw new NotImplementedException();
 }
 
 [TestFixture]

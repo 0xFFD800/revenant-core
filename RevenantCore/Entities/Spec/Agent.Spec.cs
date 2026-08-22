@@ -51,6 +51,11 @@ public class InputAgentSpec : AgentSpec
     public DirectionControlSpec Controls { get; set; } = new();
 
     /// <summary>
+    /// The control which causes this input agent to start interacting with interaction areas which require input.
+    /// </summary>
+    public string InteractControl { get; set; } = "interact";
+
+    /// <summary>
     /// The rate at which the agent should accelerate while moving.
     /// </summary>
     public float Acceleration { get; set; } = 0.0002F;
