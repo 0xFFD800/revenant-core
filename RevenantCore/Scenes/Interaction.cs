@@ -13,16 +13,19 @@ namespace RevenantCore.Scenes;
 /// <param name="spec">The YAML-deserializable spec on which to base this zone's parameters.</param>
 public class InteractionArea(InteractionAreaSpec spec) : ITickable
 {
+    private Vector3 basePos = spec.Base.Data, size = spec.Bounds.Data;
     private Cutscene[] allCutscenes = [];
     private int index = 0;
 
-    public BoundingBox Bounds => new(spec.BottomLeft.Data, spec.BottomLeft.Data + spec.Bounds.Data);
+    public BoundingBox Bounds => new(
+        basePos - new Vector3(size.X / 2, 0, size.Z / 2),
+        basePos + new Vector3(size.X / 2, size.Y, size.Z / 2));
 
     public bool IsDead { get; private set; } = false;
 
     public void Create(Scene scene, FrameTime time)
     {
-        allCutscenes = [..spec.Cutscenes.Select(c => c.Create(scene.Universe))];
+        allCutscenes = [.. spec.Cutscenes.Select(c => c.Create(scene.Universe))];
         index = 0;
         IsDead = allCutscenes.Length == 0;
     }

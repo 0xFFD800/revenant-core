@@ -7,7 +7,6 @@ using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
-using YamlDotNet.Core.Tokens;
 
 namespace RevenantCore.Tests.Scenes;
 
@@ -539,6 +538,7 @@ public class Scene_Test
         FakeScene scene = new(spec);
         scene.Create(scene, new(new()));
         RunTickLoop(scene, [new MockCollideable("foo", new(currPosX, 0, currPosZ), new(currVelX, 0, currVelZ), Vector3.Zero, Vector3.One, new() { MaterialAbsorption = collideableAbsorption, Mass = 1 }, false, false, new(expPosX, 0, expPosZ), new(expVelX, 0, expVelZ))]);
+        Assert.AreEqual(0, new Wall(WallSide.Floor, new()).Interactions.Length);
     }
 
     [Test]
@@ -687,6 +687,35 @@ public class Scene_Test
             scene.Add(new MockControllable(false, false, false), scene, new(new()));
         string[] keys = scene.GetPressedKeys(null);
         Assert.AreEqual(expHasKey, keys.Length > 0);
+    }
+
+    [Test]
+    public void InteractionArea_NoCollide()
+    {
+        Vector3Spec bounds = new()
+        {
+            X = 1,
+            Y = 1,
+            Z = 1
+        };
+        FakeScene scene = new(new SceneSpec() { Interactions = [ new() { Bounds = bounds, Base = bounds } ] });
+        InteractionArea a = new(new() { Bounds = bounds, Base = bounds });
+        scene.Create(scene, new(new()));
+        BoundingBox b = new(Vector3.One, Vector3.One * 2);
+        Assert.IsTrue(b.Intersects(a.Bounds));
+        Assert.AreEqual(0, scene.CollisionsWith(b).Length);
+    }
+
+    [Test]
+    public void CollisionsWith_OnlyIntersections()
+    {
+        FakeScene scene = new();
+        scene.Create(scene, new(new()));
+        scene.Add(new MockCollideable("foo", new(0.5F, 1, 0.5F), Vector3.Zero, Vector3.Zero, Vector3.One, new(), false, false, Vector3.Zero, Vector3.Zero), scene, new(new()));
+        scene.Add(new MockCollideable("bar", new(1.5F, 1, 0.5F), Vector3.Zero, Vector3.Zero, Vector3.One, new(), false, false, Vector3.Zero, Vector3.Zero), scene, new(new()));
+        scene.Add(new MockCollideable("baz", new(0.5F, 1, 1.5F), Vector3.Zero, Vector3.Zero, Vector3.One, new(), false, false, Vector3.Zero, Vector3.Zero), scene, new(new()));
+        BoundingBox b = new(new(0.5F, 1, 0.01F), new(1.5F, 2, 0.99F));
+        Assert.AreEqual(2, scene.CollisionsWith(b).Length);
     }
 }
 

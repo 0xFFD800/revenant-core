@@ -108,9 +108,9 @@ public class InteractionAreaSpec
     public InteractionType Type { get; set; } = InteractionType.Interact;
 
     /// <summary>
-    /// The bottom left of the interaction object within this scene.
+    /// The bottom center of the interaction object within this scene.
     /// </summary>
-    public Vector3Spec BottomLeft { get; set; } = new();
+    public Vector3Spec Base { get; set; } = new();
 
     /// <summary>
     /// The size of the interaction object within this scene.
