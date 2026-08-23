@@ -36,14 +36,16 @@ public class InteractionArea(InteractionAreaSpec spec) : ITickable
     {
         if (allCutscenes.Length > 0 && ShouldTrigger(scene))
         {
-            if (index < allCutscenes.Length)
-                scene.Add(allCutscenes[index++], scene, time);
-            else if (spec.SubsequentBehavior == SubsequentBehavior.Loop)
-                index = 0;
-            else if (spec.SubsequentBehavior == SubsequentBehavior.RepeatLast)
-                scene.Add(allCutscenes.Last(), scene, time);
-            else
-                IsDead = true;
+            scene.Add(allCutscenes[index++], scene, time);
+            if (index >= allCutscenes.Length)
+            {
+                if (spec.SubsequentBehavior == SubsequentBehavior.Loop)
+                    index = 0;
+                else if (spec.SubsequentBehavior == SubsequentBehavior.RepeatLast)
+                    index = allCutscenes.Length - 1;
+                else
+                    IsDead = true;
+            }
         }
     }
 
