@@ -88,6 +88,9 @@ file class FakeAgent : IAgent
 {
     public string Animation => "idle";
     public bool IsDead => false;
+
+    public InteractionType[] Interactions => [];
+
     public void Apply(Entity entity, Scene scene, FrameTime time) { }
     public void Create(Scene scene, FrameTime time) { }
     public void Glean(Scene scene, FrameTime time) { }

@@ -88,6 +88,47 @@ public class Vector2Spec
 public enum WallSide { Floor, Near, Far, Left, Right }
 
 /// <summary>
+/// An enum representing different ways a player could interact with a given interaction area.
+/// </summary>
+public enum InteractionType { Enter, Interact }
+
+/// <summary>
+/// An enum representing possible behaviors at the end of an interaction area's lifecycle.
+/// </summary>
+public enum SubsequentBehavior { Loop, RepeatLast, RemoveInteraction }
+
+/// <summary>
+/// A YAML-serializable object which defines an area which may trigger a cutscene based on player behavior.
+/// </summary>
+public class InteractionAreaSpec
+{
+    /// <summary>
+    /// The type of behavior which will trigger this interaction.
+    /// </summary>
+    public InteractionType Type { get; set; } = InteractionType.Interact;
+
+    /// <summary>
+    /// The bottom center of the interaction object within this scene.
+    /// </summary>
+    public Vector3Spec Base { get; set; } = new();
+
+    /// <summary>
+    /// The size of the interaction object within this scene.
+    /// </summary>
+    public Vector3Spec Bounds { get; set; } = new();
+
+    /// <summary>
+    /// The cutscenes to trigger when this interaction takes place, in order of their appearance in subsequent interactions.
+    /// </summary>
+    public CutsceneSpec[] Cutscenes { get; set; } = [];
+
+    /// <summary>
+    /// Defines what happens when this interaction is triggered after its final cutscene is reached.
+    /// </summary>
+    public SubsequentBehavior SubsequentBehavior { get; set; } = SubsequentBehavior.RepeatLast;
+}
+
+/// <summary>
 /// A YAML-serializable object which defines base data about a scene.
 /// </summary>
 public class SceneSpec
@@ -127,6 +168,11 @@ public class SceneSpec
     /// The cutscenes which can be triggered on entering this scene.
     /// </summary>
     public Dictionary<string, CutsceneSpec> Triggers { get; set; } = [];
+
+    /// <summary>
+    /// Interactions which can be triggered by player behavior in this scene.
+    /// </summary>
+    public InteractionAreaSpec[] Interactions { get; set; } = [];
 
     /// <summary>
     /// The gravitational acceleration in this scene, in px/ms^2.

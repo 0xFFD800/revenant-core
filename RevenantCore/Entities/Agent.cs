@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
+using RevenantCore.Scenes.Spec;
 using RevenantCore.Util;
 
 namespace RevenantCore.Entities;
@@ -25,6 +26,11 @@ public interface IAgent : IMortal
     /// <param name="scene">The scene in which behavior is being applied.</param>
     /// <param name="time">The FrameTime of the current frame.</param>
     void Apply(Entity entity, Scene scene, FrameTime time);
+
+    /// <summary>
+    /// The interaction types which this agent causes its entity to trigger.
+    /// </summary>
+    InteractionType[] Interactions { get; }
 }
 
 /// <summary>
@@ -35,6 +41,8 @@ public class NullAgent : IAgent
 {
     public virtual string Animation => "idle";
     public bool IsDead => false;
+
+    public InteractionType[] Interactions => [];
 
     public void Apply(Entity entity, Scene scene, FrameTime time) { }
 
@@ -69,6 +77,8 @@ public abstract class WalkAgent : IAgent
     }
 
     public abstract bool IsDead { get; }
+
+    public virtual InteractionType[] Interactions => [];
 
     public abstract void Apply(Entity entity, Scene scene, FrameTime time);
     public abstract void Create(Scene scene, FrameTime time);
@@ -112,7 +122,10 @@ public class TrackingAgent(Tracker<Vector3> tracker, float acceleration, float t
 /// <param name="spec">The spec which defines this agent's parameters.</param>
 public class InputAgent(InputAgentSpec spec) : WalkAgent, IAgent
 {
+    private bool interacting = false;
+
     public override bool IsDead => false;
+    public override InteractionType[] Interactions => interacting ? [InteractionType.Enter, InteractionType.Interact] : [InteractionType.Enter];
 
     private static bool IsPressed(Scene scene, string control) =>
         scene.GetControlState(control).Position is ControlPositions.Press or ControlPositions.Down;
@@ -129,6 +142,7 @@ public class InputAgent(InputAgentSpec spec) : WalkAgent, IAgent
             movement += Vector3.UnitZ * spec.Acceleration;
         if ((entity.Velocity + movement).Length() < spec.TopSpeed)
             entity.Acceleration += movement;
+        interacting = scene.GetControlState(spec.InteractControl).Position == ControlPositions.Press;
     }
 
     public override void Create(Scene scene, FrameTime time) { }

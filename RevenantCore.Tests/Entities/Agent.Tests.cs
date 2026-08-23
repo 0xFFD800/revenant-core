@@ -42,6 +42,13 @@ public class NullAgent_Test
         Assert.AreEqual(Vector3.Zero, entity.Acceleration);
         entity.Glean(scene, time);
     }
+
+    [Test]
+    public void Interactions_None()
+    {
+        InteractionType[] exp = [];
+        Assert.AreEqual(exp, new NullAgent().Interactions);
+    }
 }
 
 file class FakeTracker(Vector3 trackerTarget) : Tracker<Vector3>(10, 0)
@@ -86,6 +93,13 @@ public class WalkAgent_Test
         agent.Apply(new(new(), new FakeAnimationCollection()), new FakeScene(), new(new()));
         Assert.AreEqual(expAnim, agent.Animation);
     }
+
+    [Test]
+    public void Interactions_None()
+    {
+        InteractionType[] exp = [];
+        Assert.AreEqual(exp, new FakeWalkAgent(new()).Interactions);
+    }
 }
 
 [TestFixture]
@@ -124,13 +138,14 @@ public class TrackerAgent_Test
 [TestFixture]
 public class InputAgent_Test
 {
-    private class FakeControlTracker(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown) : IControlTracker
+    private class FakeControlTracker(ControlPositions walkLeft, ControlPositions walkRight, ControlPositions walkUp, ControlPositions walkDown, ControlPositions interact) : IControlTracker
     {
         public FrozenDictionary<string, ControlState> States => new List<KeyValuePair<string, ControlState>>([
             new("left", new(walkLeft, 0)),
             new("right", new(walkRight, 0)),
             new("up", new(walkUp, 0)),
-            new("down", new(walkDown, 0))
+            new("down", new(walkDown, 0)),
+            new("interact", new(interact, 0))
         ]).ToFrozenDictionary();
 
         public bool IsDead => false;
@@ -168,7 +183,7 @@ public class InputAgent_Test
         {
             Velocity = Vector3.UnitX * vel
         };
-        Scene scene = new(new(new FakeCore(), new([])), new FakeControlTracker(walkLeft, walkRight, walkUp, walkDown), new KeyboardTracker(), new(), "default");
+        Scene scene = new(new(new FakeCore(), new([])), new FakeControlTracker(walkLeft, walkRight, walkUp, walkDown, ControlPositions.Up), new KeyboardTracker(), new(), "default");
         FrameTime time = new(new());
         entity.Create(scene, time);
         entity.Tick(scene, time);
@@ -176,5 +191,23 @@ public class InputAgent_Test
         Assert.IsFalse(entity.Agent.IsDead);
         Assert.AreEqual(new Vector3(expX, 0, expZ), entity.Acceleration);
         entity.Glean(scene, time);
+    }
+
+    [TestCase(ControlPositions.Up, false, TestName = "Interactions_Up_OnlyEnter")]
+    [TestCase(ControlPositions.Down, false, TestName = "Interactions_Down_OnlyEnter")]
+    [TestCase(ControlPositions.Release, false, TestName = "Interactions_Release_OnlyEnter")]
+    [TestCase(ControlPositions.Press, true, TestName = "Interactions_Up_EnterAndInteract")]
+    public void Interactions_EnterPlus(ControlPositions interact, bool expInteract)
+    {
+        InteractionType[] expTypes = expInteract ? [InteractionType.Enter, InteractionType.Interact] : [InteractionType.Enter];
+        Entity entity = new(new()
+        {
+            Agent = new InputAgentSpec()
+        }, new FakeAnimationCollection());
+        Scene scene = new(new(new FakeCore(), new([])), new FakeControlTracker(ControlPositions.Up, ControlPositions.Up, ControlPositions.Up, ControlPositions.Up, interact), new KeyboardTracker(), new(), "default");
+        FrameTime time = new(new());
+        entity.Create(scene, time);
+        entity.Tick(scene, time);
+        Assert.AreEqual(expTypes, entity.Interactions);
     }
 }

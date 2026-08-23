@@ -136,6 +136,12 @@ public interface ICollideable : IMoveable
     /// Since there are 32 pixels per meter, 1 px/ms = 31.25 m/s.
     /// </summary>
     Vector3 Velocity { get; set; }
+
+    /// <summary>
+    /// The interactions which this object triggers when it collides with an interaction area.
+    /// These may vary frame-by-frame; for instance, a player may be pressing an interaction key one frame but not the next.
+    /// </summary>
+    InteractionType[] Interactions { get; }
 }
 
 /// <summary>
