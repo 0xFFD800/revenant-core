@@ -98,7 +98,12 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
         walls[side].Suspended = suspended;
     }
 
-    private bool IsCapturing(IControllable? controllable) =>
+    /// <summary>
+    /// Gets whether the given controllable object currently has control capture.
+    /// </summary>
+    /// <param name="controllable">The controllable to test for capture.</param>
+    /// <returns>Whether the given controllable can capture controls currently.</returns>
+    public bool IsCapturing(IControllable? controllable) =>
         !controlCapture.TryPeek(out IControllable? capturer) 
             || (controllable != null && capturer.Matches(controllable));
 
