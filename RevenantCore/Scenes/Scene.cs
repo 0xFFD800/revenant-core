@@ -208,10 +208,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
             controlCapture.Pop();
     }
 
-    public ICollideable[] CollisionsWith(BoundingBox bounds)
-    {
-        return [..collideables.Where(c => c.CollisionBox.Intersects(bounds))];
-    }
+    public ICollideable[] CollisionsWith(BoundingBox bounds) => [..collideables.Where(c => c.CollisionBox.Intersects(bounds))];
 }
 
 /// <summary>

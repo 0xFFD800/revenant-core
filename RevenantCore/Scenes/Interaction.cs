@@ -44,8 +44,5 @@ public class InteractionArea(InteractionAreaSpec spec) : ITickable
         }
     }
 
-    private bool ShouldTrigger(Scene scene)
-    {
-        return scene.CollisionsWith(Bounds).Any(c => c.Interactions.Contains(spec.Type));
-    }
+    private bool ShouldTrigger(Scene scene) => scene.CollisionsWith(Bounds).Any(c => c.Interactions.Contains(spec.Type));
 }
