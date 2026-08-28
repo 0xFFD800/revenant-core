@@ -1,0 +1,16 @@
+sprites:
+  foo: path/to/foo
+  bar: path/to/bar
+animations:
+  fooFirst:
+    - sprite: foo
+    - sprite: bar
+    - sprite: 
+    - sprite: path/to/other
+  barFirst:
+    - sprite: bar
+    - sprite: foo
+    - sprite: 
+millisPerFrame: 100
+defaultSprite: foo
+defaultAnimation: fooFirst

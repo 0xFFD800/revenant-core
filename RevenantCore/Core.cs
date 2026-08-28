@@ -119,6 +119,7 @@ public class Core
     private readonly CoreImpl coreImpl = new();
     private readonly ISpec cutsceneRegistry, agentRegistry, trackerRegistry;
     private readonly ILoader loader;
+    private readonly Dictionary<string, AnimationCollection> cachedAnimations = new();
 
     /// <summary>
     /// The finalized control registry as created by the implementation objects.
@@ -172,24 +173,30 @@ public class Core
     }
 
     /// <summary>
-    /// Loads an animation collection from spec.
+    /// Loads an animation collection from spec, unless it has already been loaded,
+    /// in which case it returns the existing collection.
     /// </summary>
-    /// <param name="yaml">The YAML to deserialize and load into a new animation collection.</param>
-    /// <returns>The animation collection created for the provided YAML.</returns>
-    public AnimationCollection LoadAnimationCollection(string yaml)
+    /// <param name="path">The path to the YAML file to deserialize and load into a new animation collection.</param>
+    /// <returns>The animation collection created for the provided YAML file.</returns>
+    public AnimationCollection LoadAnimationCollection(string path)
     {
+        if (cachedAnimations.TryGetValue(path, out AnimationCollection? result))
+            return result;
+        string yaml = File.ReadAllText(path);
         IDeserializer deserializer = Serializers.CreateDeserializer([]);
         AnimationCollectionSpec spec = deserializer.Deserialize<AnimationCollectionSpec>(yaml);
         Dictionary<string, Drawable> sprites = spec.Sprites
             .Select(s => new KeyValuePair<string, Drawable>(s.Key, loader.LoadSprite(s.Value)))
             .ToDictionary();
-        return new(spec.Animations.Select(a =>
+        result = new(spec.Animations.Select(a =>
             new KeyValuePair<string, Animation>(a.Key, new([..a.Value.Select(f =>
                 sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite,
                         loader.LoadSprite(f.Sprite ?? spec.DefaultSprite))
                     .ShallowCopy()
                     .SetSource(f.Source?.Data))], spec.MillisPerFrame)))
             .ToFrozenDictionary(), spec.DefaultAnimation);
+        cachedAnimations.Add(path, result);
+        return result;
     }
 
     /// <summary>
@@ -201,6 +208,21 @@ public class Core
     {
         IDeserializer deserializer = Serializers.CreateDeserializer([agentRegistry, trackerRegistry]);
         EntitySpec spec = deserializer.Deserialize<EntitySpec>(yaml);
-        return new Entity(spec, LoadAnimationCollection(File.ReadAllText(spec.Animations)));
+        return new Entity(spec, LoadAnimationCollection(spec.Animations));
+    }
+
+    /// <summary>
+    /// Loads a scene from spec.
+    /// </summary>
+    /// <param name="universe">The universe in which to create this scene.</param>
+    /// <param name="yaml">The YAML to deserialize and load into a new scene.</param>
+    /// <param name="trigger">The trigger which this scene should load to begin with.</param>
+    /// <returns>The scene instance created for the provided YAML.</returns>
+    public Scene LoadScene(Universe universe, string yaml, string? trigger)
+    {
+        Trace.Assert(universe.Core == this);
+        IDeserializer deserializer = Serializers.CreateDeserializer([cutsceneRegistry, agentRegistry, trackerRegistry]);
+        SceneSpec spec = deserializer.Deserialize<SceneSpec>(yaml);
+        return new Scene(universe, new ControlTracker(), new KeyboardTracker(), spec, trigger ?? "default");
     }
 }

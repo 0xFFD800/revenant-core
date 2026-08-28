@@ -67,6 +67,17 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
     public override bool IsDead => false;
     public Universe Universe => universe;
 
+    /// <summary>
+    /// The path to the YAML file containing spec for the scene to switch to at the end of this tick.
+    /// </summary>
+    public string? NextScene { get; set; } = null;
+
+    /// <summary>
+    /// The trigger to trigger the next scene with. If <code>NextScene</code> is defined, 
+    /// but <code>NextTrigger</code> is not, the next scene should be triggered with a default trigger.
+    /// </summary>
+    public string? NextTrigger { get; set; } = null;
+
     private void DoPhysics(double millis)
     {
         PhysicalObject[] objects = [.. collideables.Select(c => new PhysicalObject(c, millis))];

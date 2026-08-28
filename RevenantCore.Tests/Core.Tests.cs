@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -37,10 +38,7 @@ file class FakeInputs : IInputs
 
     public MouseState Mouse => new();
 
-    public GamePadState GamePad(PlayerIndex player)
-    {
-        throw new NotImplementedException();
-    }
+    public GamePadState GamePad(PlayerIndex player) => new();
 }
 
 public class FakeCore(IInputs inputs, IImpl[] impls) : Core(new FakeLoader(), inputs, impls)
@@ -269,26 +267,12 @@ public class Core_Test
     public void LoadAnimationCollection_Sprites(string key, int millis, string expPath)
     {
         Core core = new FakeCore([]);
-        AnimationCollection c = core.LoadAnimationCollection("""
-        sprites:
-          foo: path/to/foo
-          bar: path/to/bar
-        animations:
-          fooFirst:
-            - sprite: foo
-            - sprite: bar
-            - sprite: 
-            - sprite: path/to/other
-          barFirst:
-            - sprite: bar
-            - sprite: foo
-            - sprite: 
-        millisPerFrame: 100
-        defaultSprite: foo
-        defaultAnimation: fooFirst
-        """);
+        string path = "../../../TestAssets/AnimationCollections/Sprites.yml";
+        AnimationCollection c1 = core.LoadAnimationCollection(path);
         TimeSpan span = new(0, 0, 0, 0, millis);
-        Assert.AreEqual(expPath, ((FakeDrawable)c.GetFrame(key, new(new(span, span)))).Path);
+        Assert.AreEqual(expPath, ((FakeDrawable)c1.GetFrame(key, new(new(span, span)))).Path);
+        AnimationCollection c2 = core.LoadAnimationCollection(path);
+        Assert.AreSame(c1, c2);
     }
 
     [TestCase("foo", 0, 0, TestName = "foo at 0 millis")]
@@ -298,24 +282,12 @@ public class Core_Test
     public void LoadAnimationCollection_Source(string key, int millis, int? expSourceX)
     {
         Core core = new FakeCore([]);
-        AnimationCollection c = core.LoadAnimationCollection("""
-        sprites:
-          base: path/to/base
-        animations:
-          foo:
-            - source:
-                x: 0
-            - source:
-                x: 1
-          bar:
-            - source:
-                x: 100
-            - source:
-                x: 90
-        millisPerFrame: 100
-        """);
+        string path = "../../../TestAssets/AnimationCollections/Source.yml";
+        AnimationCollection c1 = core.LoadAnimationCollection(path);
         TimeSpan span = new(0, 0, 0, 0, millis);
-        Assert.AreEqual(expSourceX, c.GetFrame(key, new(new(span, span))).Source?.X);
+        Assert.AreEqual(expSourceX, c1.GetFrame(key, new(new(span, span))).Source?.X);
+        AnimationCollection c2 = core.LoadAnimationCollection(path);
+        Assert.AreSame(c1, c2);
     }
 
     [Test]
@@ -376,5 +348,59 @@ public class Core_Test
         Assert.AreEqual(1, entity.Material.Mass);
         Assert.AreEqual(Vector3.One, entity.CollisionBox.Max - entity.CollisionBox.Min);
         Assert.AreEqual(DrawLayer.Scene, entity.Layer);
+    }
+
+    [TestCase(null, true, TestName = "LoadScene_DefaultTrigger")]
+    [TestCase("foo", false, TestName = "LoadScene_NonDefaultTrigger")]
+    public void LoadScene(string? trigger, bool expHasCutscene)
+    {
+        Core core = new FakeCore([new FakeImpl()]);
+        Universe universe = new(core, new([]));
+        Scene scene = core.LoadScene(universe, """
+          bounds:
+            x: 1
+            y: 1
+            z: 1
+          viewportSize:
+            x: 2
+            y: 1
+          walls:
+            floor:
+              friction: 0.01
+            near:
+              friction: 0.02
+            far:
+              friction: 0.03
+            left:
+              friction: 0.04
+            right:
+              friction: 0.05
+          triggers:
+            default:
+              !fake
+              z: 1
+            unused:
+              !fake
+              z: 2
+          interactions:
+            - type: enter
+              base:
+                x: 1
+                y: 1
+                z: 1
+              bounds:
+                x: 1
+                y: 1
+                z: 1
+              cutscenes:
+                - !fake
+                  z: 3
+                - !fake
+                  z: 4
+              subsequentBehavior: removeInteraction
+          gravity: 0.01
+        """, trigger);
+        scene.Create(scene, new(new()));
+        Assert.AreEqual(expHasCutscene, !scene.IsCapturing(null));
     }
 }

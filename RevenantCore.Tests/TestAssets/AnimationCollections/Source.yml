@@ -1,0 +1,14 @@
+sprites:
+  base: path/to/base
+animations:
+  foo:
+    - source:
+        x: 0
+    - source:
+        x: 1
+  bar:
+    - source:
+        x: 100
+    - source:
+        x: 90
+millisPerFrame: 100

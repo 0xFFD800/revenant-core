@@ -18,7 +18,7 @@ public interface ISpriteBuffer
 }
 
 [ExcludeFromCodeCoverage]
-internal class SpriteBuffer(SpriteBatch batch) : ISpriteBuffer
+public class SpriteBuffer(SpriteBatch batch) : ISpriteBuffer
 {
     public void Begin(Matrix transform)
     {
@@ -94,7 +94,7 @@ public interface IScreen
     void Draw(Drawable drawable);
 }
 
-public class Screen(ISpriteBuffer buffer)
+public class Screen(ISpriteBuffer buffer) : IScreen
 {
     /// <summary>
     /// Whether the buffer is currently drawing.
@@ -277,7 +277,7 @@ public abstract class Drawable
 /// </summary>
 /// <param name="texture">The texture which this Sprite should be drawn as.</param>
 [ExcludeFromCodeCoverage]
-internal class Sprite(Texture2D texture) : Drawable
+public class Sprite(Texture2D texture) : Drawable
 {
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -295,7 +295,7 @@ internal class Sprite(Texture2D texture) : Drawable
 /// <param name="text">The text to be drawn.</param>
 /// <param name="font">The font which should be used to render <paramref name="text"/>.</param>
 [ExcludeFromCodeCoverage]
-internal class DrawableText(string text, SpriteFont font) : Drawable
+public class DrawableText(string text, SpriteFont font) : Drawable
 {
     public override void Draw(ISpriteBuffer buffer)
     {
