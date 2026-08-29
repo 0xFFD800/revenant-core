@@ -139,7 +139,7 @@ public class SceneSpec
     public Vector3Spec Bounds { get; set; } = new()
     {
         X = 320,
-        Y = 160,
+        Y = 180,
         Z = 80
     };
 
@@ -149,7 +149,7 @@ public class SceneSpec
     public Vector2Spec ViewportSize { get; set; } = new()
     {
         X = 320,
-        Y = 160
+        Y = 180
     };
 
     /// <summary>
