@@ -6,7 +6,6 @@ using System.Linq;
 using System;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Entities;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace RevenantCore.Graphics.UI;
 
@@ -36,20 +35,26 @@ public interface IComponent : IVisible, ITickable, IControllable
     /// </summary>
     /// <param name="hook">The hook with which to animate this component.</param>
     void Animate(IAnimationHook hook, Scene scene, FrameTime time);
+
+    /// <summary>
+    /// Waits for any animations to complete, then sets IsDead to true.
+    /// </summary>
+    void Close();
 }
 
 /// <summary>
 /// The base class for containers, which are components which manage other components.
 /// </summary>
-/// <param name="components"> The list of components which are part of this container.</param>
+/// <param name="initialComponents"> The list of components which are initially part of this container.</param>
 /// <param name="area">The area which bounds this container. Should contain all of its components' areas.</param>
 /// <param name="controls">The controls which will be used to change focus via the keyboard or gamepad.</param>
-public class Container(List<IComponent> components, Rectangle area, DirectionControlSpec controls) : Scythe, IComponent
+public class Container(List<IComponent> initialComponents, Rectangle area, DirectionControlSpec controls) : Scythe, IComponent
 {
-    private IComponent? prevMouseFocused = null, prevFocused = components.FindLast(c => c.HasFocus);
+    private readonly List<IComponent> components = [];
+    private IComponent? prevMouseFocused = null, prevFocused = initialComponents.FindLast(c => c.HasFocus);
 
-    public Container(List<IComponent> components)
-        : this(components, components.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)), new()) { }
+    public Container(List<IComponent> initialComponents)
+        : this(initialComponents, initialComponents.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)), new()) { }
 
     public Rectangle Area => area;
     public bool Enabled { get; set; } = true;
@@ -100,9 +105,16 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         return ret;
     }
 
+    public override void Add(IMortal mortal, Scene scene, FrameTime time)
+    {
+        base.Add(mortal, scene, time);
+        if (mortal is IComponent component)
+            components.Add(component);
+    }
+
     public override void Create(Scene scene, FrameTime time)
     {
-        foreach (IComponent c in components)
+        foreach (IComponent c in initialComponents)
             Add(c, scene, time);
     }
 
@@ -112,6 +124,13 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         foreach (IComponent c in components)
             c.Draw(view, camera);
         view.Screen.Pop();
+    }
+
+    protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
+    {
+        base.Reap(mortal, scene, time);
+        if (mortal is IComponent component)
+            components.Remove(component);
     }
 
     public override void Tick(Scene scene, FrameTime time)
@@ -134,6 +153,12 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
         foreach (IComponent component in components)
             component.Animate(hook, scene, time);
     }
+
+    public void Close()
+    {
+        foreach (IComponent component in components)
+            component.Close();
+    }
 }
 
 /// <summary>
@@ -144,12 +169,13 @@ public class Container(List<IComponent> components, Rectangle area, DirectionCon
 public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
 {
     private readonly List<IAnimationHook> hooks = [];
+    private bool closing = false;
 
     public Rectangle Area => toDraw.Aggregate(new Rectangle(toDraw.FirstOrDefault()?.Pos.ToPoint() ?? new(), new()),
         (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = true;
     public bool HasFocus { get; set; } = false;
-    public override bool IsDead => false;
+    public override bool IsDead => closing && hooks.Count == 0;
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => z;
 
@@ -167,7 +193,15 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
         Add(hook, scene, time);
     }
 
-    public override void Create(Scene scene, FrameTime time) { }
+    public void Close()
+    {
+        closing = true;
+    }
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        closing = false;
+    }
 
     public virtual void Draw(View view, Camera camera)
     {
@@ -187,6 +221,26 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
         base.Reap(mortal, scene, time);
         if (mortal is IAnimationHook hook)
             hooks.Remove(hook);
+    }
+}
+
+public class AnimatedLabel(AnimationCollection animations, string id, Vector2 center, float z) : Label([animations.GetFrame(id, new(new()))], z)
+{
+    private FrameTime frame = new(new());
+    protected override Drawable[] ToDraw => [animations.GetFrame(id, frame).ShallowCopy().SetCenter(center)];
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        base.Create(scene, time);
+        frame = new(new());
+    }
+
+    public override void Draw(View view, Camera camera)
+    {
+        // The animation collection will base the frame off the total game time, but we want
+        // the amount of time since this component was created.
+        frame = new(new(frame.GameTime.TotalGameTime + view.Time.GameTime.ElapsedGameTime, new()));
+        base.Draw(view, camera);
     }
 }
 

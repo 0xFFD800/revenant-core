@@ -34,9 +34,9 @@ file class FakeScreen : IScreen
     }
 }
 
-public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, float z, bool isDead, bool expAnimate, bool expCreate, int? expDrawOrder, bool expMatched, bool expGlean, bool expTick, Matrix? expTranslation, bool expHasFocus) : IComponent
+public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, float z, bool isDead, bool expAnimate, bool expCreate, int? expDrawOrder, bool expMatched, bool expGlean, bool expTick, Matrix? expTranslation, bool expHasFocus, bool expClosed) : IComponent
 {
-    private bool animated = false, created = false, gleaned = false, matched = false, ticked = false;
+    private bool animated = false, created = false, gleaned = false, matched = false, ticked = false, closed = false;
     private int? drawOrder = null;
     private Matrix? translation = null;
 
@@ -51,6 +51,11 @@ public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
     public void Animate(IAnimationHook hook, Scene scene, FrameTime time)
     {
         animated = true;
+    }
+
+    public void Close()
+    {
+        closed = true;
     }
 
     public void Create(Scene scene, FrameTime time)
@@ -91,6 +96,7 @@ public class MockComponent(Rectangle area, bool initEnabled, bool initHasFocus, 
         Assert.AreEqual(expTick, ticked);
         Assert.AreEqual(expTranslation, translation);
         Assert.AreEqual(expHasFocus, HasFocus);
+        Assert.AreEqual(expClosed, closed);
     }
 }
 
@@ -155,8 +161,8 @@ public class Container_Test
     {
         Vector3 pos = new(4, 6, 0);
         Matrix matrix = Matrix.CreateTranslation(pos);
-        MockComponent mock1 = new(new(0, 1, 4, 2), true, false, 1, false, false, true, 1, false, false, true, matrix, false);
-        MockComponent mock2 = new(new(7, 0, 2, 4), true, false, 2, false, false, true, 0, false, false, true, matrix, false);
+        MockComponent mock1 = new(new(0, 1, 4, 2), true, false, 1, false, false, true, 1, false, false, true, matrix, false, false);
+        MockComponent mock2 = new(new(7, 0, 2, 4), true, false, 2, false, false, true, 0, false, false, true, matrix, false, false);
         Container container = new([mock1, mock2], new(4, 6, 4, 4), new());
         Scene scene = new FakeScene();
         container.Create(scene, new(new()));
@@ -178,8 +184,8 @@ public class Container_Test
     [TestCase("left", false, 3, false, true, TestName = "Tick_MouseOver_FocusChange")]
     public void Tick_FocusChange(string input, bool pressed, int mouseX, bool expLeftFocus, bool expRightFocus)
     {
-        MockComponent mock1 = new(new(1, 1, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, expLeftFocus);
-        MockComponent mock2 = new(new(3, 1, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, expRightFocus);
+        MockComponent mock1 = new(new(1, 1, 1, 1), true, true, 1, false, false, true, null, false, false, true, null, expLeftFocus, false);
+        MockComponent mock2 = new(new(3, 1, 1, 1), true, false, 2, false, false, true, null, false, false, true, null, expRightFocus, false);
         Container container = new([mock1, mock2])
         {
             HasFocus = true
@@ -216,8 +222,9 @@ public class Container_Test
     [Test]
     public void Matches_Subobj_True()
     {
-        IComponent component = new MockComponent(new(), false, false, 0, false, false, false, null, false, false, false, null, false);
+        IComponent component = new MockComponent(new(), false, false, 0, false, false, false, null, false, false, false, null, false, false);
         Container c = new([component]);
+        c.Create(new FakeScene(), new(new()));
         Assert.IsTrue(c.Matches(component));
     }
 
@@ -230,8 +237,8 @@ public class Container_Test
     [Test]
     public void Animate_ApplyToSubobjs()
     {
-        MockComponent mock1 = new(new(), true, false, 0, false, true, true, null, false, false, false, null, false);
-        MockComponent mock2 = new(new(), true, false, 0, false, true, true, null, false, false, false, null, false);
+        MockComponent mock1 = new(new(), true, false, 0, false, true, true, null, false, false, false, null, false, false);
+        MockComponent mock2 = new(new(), true, false, 0, false, true, true, null, false, false, false, null, false, false);
         Container c = new([mock1, mock2]);
         Scene scene = new FakeScene();
         c.Create(scene, new(new()));
@@ -252,21 +259,41 @@ public class Container_Test
         Assert.IsTrue(new Container([]).IsDead);
     }
 
-    [TestCase(false, TestName = "IsDead_OneLiving_False")]
-    [TestCase(true, TestName = "IsDead_AllDead_True")]
-    public void IsDead_AllDead(bool secondDead)
+    [TestCase(false, false, TestName = "IsDead_OneLiving_False")]
+    [TestCase(false, true, TestName = "IsDead_AllDead_True")]
+    [TestCase(true, false, TestName = "Tick_OneLiving_NotDead")]
+    [TestCase(true, true, TestName = "Tick_AllDead_Dead")]
+    public void IsDead_AllDead(bool tickFirst, bool secondDead)
     {
-        Container c = new([new MockComponent(new(), false, false, 0, true, false, false, null, false, false, false, null, false),
-            new MockComponent(new(), false, false, 0, secondDead, false, false, null, false, false, false, null, false)]);
+        Container c = new([new MockComponent(new(), false, false, 0, true, false, false, null, false, false, false, null, false, false),
+            new MockComponent(new(), false, false, 0, secondDead, false, false, null, false, false, false, null, false, false)]);
+        Scene scene = new FakeScene();
+        c.Create(scene, new(new()));
+        if (tickFirst)
+            c.Tick(scene, new(new()));
         Assert.AreEqual(secondDead, c.IsDead);
     }
 
     [Test]
     public void Z_MaxZ()
     {
-        Container c = new([new MockComponent(new(), false, false, 1, false, false, false, null, false, false, false, null, false),
-            new MockComponent(new(), false, false, 2, false, false, false, null, false, false, false, null, false)]);
+        Container c = new([new MockComponent(new(), false, false, 1, false, false, false, null, false, false, false, null, false, false),
+            new MockComponent(new(), false, false, 2, false, false, false, null, false, false, false, null, false, false)]);
+        c.Create(new FakeScene(), new(new()));
         Assert.AreEqual(2, c.Z);
+    }
+
+    [Test]
+    public void Close_CloseSubObjs()
+    {
+        MockComponent mock1 = new(new(), true, false, 0, false, false, true, null, false, false, false, null, false, true);
+        MockComponent mock2 = new(new(), true, false, 0, false, false, true, null, false, false, false, null, false, true);
+        Container c = new([mock1, mock2]);
+        Scene scene = new FakeScene();
+        c.Create(scene, new(new()));
+        c.Close();
+        mock1.Validate();
+        mock2.Validate();
     }
 }
 
@@ -319,6 +346,45 @@ public class Label_Test
         Label l2 = new([], 0);
         Assert.IsFalse(l1.Matches(l2));
         Assert.IsTrue(l1.Matches(l1));
+    }
+
+    [TestCase(false, TestName = "Close_HasAnimation_Wait")]
+    [TestCase(true, TestName = "Close_NoAnimation_Dead")]
+    public void Close_WaitForAnimation(bool hasAnimation)
+    {
+        Label l = new([], 0);
+        Scene scene = new FakeScene();
+        l.Create(scene, new(new()));
+        if (hasAnimation)
+            l.Animate(new MockAnimation(1, true, false), scene, new(new()));
+        l.Close();
+        Assert.AreEqual(l.IsDead, !hasAnimation);
+    }
+}
+
+[TestFixture]
+public class AnimatedLabel_Test
+{
+    [TestCase(0, 0, 1, TestName = "Draw_StartOfGame_FirstFrame")]
+    [TestCase(100, 100, 1, TestName = "Draw_StartOfAnim_FirstFrame")]
+    [TestCase(0, 100, 2, TestName = "Draw_HalfwayFromGameStart_SecondFrame")]
+    [TestCase(100, 200, 2, TestName = "Draw_HalfwayFromAnimStart_SecondFrame")]
+    public void Draw_DrawCurrFrame(int startMillis, int currMillis, int expFrame)
+    {
+        Vector2 pos = Vector2.One / 2;
+        Vector2 defPos = Vector2.Zero;
+        MockDrawable frame1 = new(new(), Vector2.One, expFrame == 1, expFrame == 1 ? pos : defPos);
+        MockDrawable frame2 = new(new(), Vector2.One, expFrame == 2, expFrame == 2 ? pos : defPos);
+        KeyValuePair<string, Animation>[] anims = [new KeyValuePair<string, Animation>("foo", new([frame1, frame2], 100))];
+        AnimationCollection c = new(anims.ToFrozenDictionary(), "foo");
+        AnimatedLabel l = new(c, "foo", Vector2.One, 0);
+        Scene scene = new FakeScene();
+        TimeSpan start = new(0, 0, 0, 0, startMillis);
+        TimeSpan curr = new(0, 0, 0, 0, currMillis);
+        l.Create(scene, new(new(start, start)));
+        l.Draw(new(new FakeScreen(), new(new(curr, curr - start)), DrawLayer.UI), new(new(), new()));
+        frame1.Validate();
+        frame2.Validate();
     }
 }
 

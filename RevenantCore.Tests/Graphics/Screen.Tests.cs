@@ -41,11 +41,13 @@ public class MockSpriteBuffer(Matrix? expMatrix, bool expDrawing) : ISpriteBuffe
     }
 }
 
-internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn, Action<MockDrawable> setDrawn) : Drawable
+internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn, Action<MockDrawable> setDrawn, Vector2? expPos) : Drawable
 {
+    private MockDrawable? copied;
     private bool drawn = false;
 
-    internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : this(referenceType, size, expDrawn, m => m.drawn = true) { }
+    internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn, Vector2? expPos) : this(referenceType, size, expDrawn, m => m.drawn = true, expPos) { }
+    internal MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDrawn) : this(referenceType, size, expDrawn, null) { }
     internal MockDrawable(Vector2 size) : this(new(), size, false) { }
     internal MockDrawable(Vector2 size, string text) : this(new(), size, false)
     {
@@ -67,10 +69,12 @@ internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDra
     public void Validate()
     {
         Assert.AreEqual(expDrawn, drawn);
+        if (expPos.HasValue)
+            Assert.AreEqual(expPos, copied?.Pos ?? Pos);
     }
 
     // set the drawn property of both this and the subobject to ensure we can test objects which will be copied.
-    protected override Drawable CopyData() => new MockDrawable(referenceType, size, expDrawn, m => { drawn = true; m.drawn = true; });
+    protected override Drawable CopyData() => copied = new(referenceType, size, expDrawn, m => { drawn = true; m.drawn = true; }, expPos);
 }
 
 [TestFixture]
