@@ -10,10 +10,8 @@ namespace RevenantCore.Tests.Scenes;
 
 file class FakeLoader() : ILoader
 {
-    public Drawable LoadSprite(string path)
-    {
-        throw new NotImplementedException();
-    }
+    public Drawable LoadSprite(string path) => throw new NotImplementedException();
+    public IFont LoadFont(string path) => throw new NotImplementedException();
 }
 
 file class FakeScene() : Scene(new(new FakeCore(), new([])), new ControlTracker(), new KeyboardTracker(), new(), "default");

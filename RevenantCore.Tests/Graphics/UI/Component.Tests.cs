@@ -464,9 +464,13 @@ internal class FakeKeyboardTracker : IControlTracker
     public void Tick(Scene scene, FrameTime time) { }
 }
 
-internal class FakeFont(Vector2 textSize) : IFont
+internal class FakeFont(string path, Vector2 textSize) : IFont
 {
     internal readonly List<string> lastMeasured = [];
+
+    internal string Path => path;
+
+    internal FakeFont(Vector2 textSize) : this("foo", textSize) { }
 
     public Drawable CreateDrawable(string text) => new MockDrawable(textSize, text);
 

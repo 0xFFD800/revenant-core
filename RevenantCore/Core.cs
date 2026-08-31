@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,9 +61,16 @@ public interface ILoader
     /// <summary>
     /// Loads a sprite XNB file into memory as a drawable object.
     /// </summary>
-    /// <param name="path">The path of the file to load (relative to the base directory, without a file extension).</param>
+    /// <param name="path">The path of the file to load (relative to the Content directory, without a file extension).</param>
     /// <returns>The sprite loaded for the provided path.</returns>
     Drawable LoadSprite(string path);
+
+    /// <summary>
+    /// Loads a spritefont XNB file into memory as an IFont object.
+    /// </summary>
+    /// <param name="path">The path of the spritefont file to load (relative to the Content directory, without a file extension).</param>
+    /// <returns>The font loaded for the provided path.</returns>
+    IFont LoadFont(string path);
 }
 
 /// <summary>
@@ -119,7 +127,8 @@ public class Core
     private readonly CoreImpl coreImpl = new();
     private readonly ISpec cutsceneRegistry, agentRegistry, trackerRegistry;
     private readonly ILoader loader;
-    private readonly Dictionary<string, AnimationCollection> cachedAnimations = new();
+    private readonly Dictionary<string, AnimationCollection> cachedAnimations = [];
+    private readonly Dictionary<string, IFont> cachedFonts = [];
 
     /// <summary>
     /// The finalized control registry as created by the implementation objects.
@@ -209,6 +218,20 @@ public class Core
         IDeserializer deserializer = Serializers.CreateDeserializer([agentRegistry, trackerRegistry]);
         EntitySpec spec = deserializer.Deserialize<EntitySpec>(yaml);
         return new Entity(spec, LoadAnimationCollection(spec.Animations));
+    }
+
+    /// <summary>
+    /// Loads a font from file, unless it has already been loaded, in which case it loads the existing font.
+    /// </summary>
+    /// <param name="font">The path to load the font for.</param>
+    /// <returns>The font with the specified path.</returns>
+    public IFont LoadFont(string font) 
+    {
+        if (cachedFonts.TryGetValue(font, out IFont? result))
+            return result;
+        result = loader.LoadFont(font);
+        cachedFonts.Add(font, result);
+        return result;
     }
 
     /// <summary>

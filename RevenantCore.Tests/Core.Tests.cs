@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
@@ -9,6 +7,7 @@ using RevenantCore.Entities.Spec;
 using RevenantCore.Graphics;
 using RevenantCore.Scenes;
 using RevenantCore.Scenes.Spec;
+using RevenantCore.Tests.Graphics.UI;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests;
@@ -30,6 +29,7 @@ file class FakeDrawable(string path) : Drawable
 file class FakeLoader : ILoader
 {
     public Drawable LoadSprite(string path) => new FakeDrawable(path);
+    public IFont LoadFont(string path) => new FakeFont(path, Vector2.Zero);
 }
 
 file class FakeInputs : IInputs
@@ -291,6 +291,17 @@ public class Core_Test
     }
 
     [Test]
+    public void LoadFont_Cache()
+    {
+        Core core = new FakeCore([]);
+        string path = "fonts/foo";
+        IFont f1 = core.LoadFont(path);
+        Assert.AreEqual(path, ((FakeFont)f1).Path);
+        IFont f2 = core.LoadFont(path);
+        Assert.AreSame(f1, f2);
+    }
+
+    [Test]
     public void LoadEntity_FakeAgent()
     {
         Core core = new FakeCore([new FakeImpl()]);
@@ -344,7 +355,7 @@ public class Core_Test
         entity.Create(scene, new(new()));
         entity.Tick(scene, new(new()));
         Assert.IsInstanceOf<TrackingAgent>(entity.Agent);
-        Assert.AreEqual(Vector3.UnitX, entity.Acceleration);    
+        Assert.AreEqual(Vector3.UnitX, entity.Acceleration);
         Assert.AreEqual(1, entity.Material.Mass);
         Assert.AreEqual(Vector3.One, entity.CollisionBox.Max - entity.CollisionBox.Min);
         Assert.AreEqual(DrawLayer.Scene, entity.Layer);
