@@ -23,6 +23,35 @@ file class FakeDrawable : Drawable
     }
 }
 
+file class MockAnimation(bool isDead, bool expCreated, bool expGleaned, bool expApplied) : IAnimationHook
+{
+    private bool created = false, gleaned = false, applied = false;
+
+    public bool IsDead => isDead;
+
+    public void Apply(Drawable drawable, FrameTime time)
+    {
+        applied = true;
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        created = true;
+    }
+
+    public void Glean(Scene scene, FrameTime time)
+    {
+        gleaned = true;
+    }
+
+    internal void Validate()
+    {
+        Assert.AreEqual(expCreated, created);
+        Assert.AreEqual(expGleaned, gleaned);
+        Assert.AreEqual(expApplied, applied);
+    }
+}
+
 [TestFixture]
 public class RectangleSpec_Test
 {
@@ -126,13 +155,16 @@ public class FadeAnimation_Test
 [TestFixture]
 public class MoveAnimation_Test
 {
-    [TestCase(0, 0, 0, false, TestName = "Apply_Initial_Initial")]
-    [TestCase(50, 3, 4, false, TestName = "Apply_Half_Half")]
-    [TestCase(100, 6, 8, true, TestName = "Apply_Final_Full")]
-    public void Apply_SetOpacity(int millis, float expX, float expY, bool expDead)
+    [TestCase(0, false, 0, 0, false, TestName = "Apply_Initial_Initial")]
+    [TestCase(50, false, 3, 4, false, TestName = "Apply_Half_Half")]
+    [TestCase(100, false, 6, 8, true, TestName = "Apply_Final_Full")]
+    [TestCase(0, true, 6, 8, false, TestName = "ApplyReverse_Final_Initial")]
+    [TestCase(50, true, 3, 4, false, TestName = "ApplyReverse_Half_Half")]
+    [TestCase(100, true, 0, 0, true, TestName = "ApplyReverse_Initial_Full")]
+    public void Apply_SetOpacity(int millis, bool reverse, float expX, float expY, bool expDead)
     {
         FakeDrawable drawable = new();
-        MoveAnimation move = new(100, new(6, 8));
+        MoveAnimation move = new(100, new(6, 8), reverse);
         Scene scene = new FakeScene();
         move.Create(scene, new(new()));
         TimeSpan mTime = new(0, 0, 0, 0, millis);
@@ -161,5 +193,70 @@ public class RotateAnimation_Test
         Assert.AreEqual(expDead, rotate.IsDead);
         rotate.Glean(scene, new(new(mTime, mTime)));
         Assert.AreEqual(expRotation, drawable.Rotation);
+    }
+}
+
+[TestFixture]
+public class AnimationLoop_Test
+{
+    [TestCase(false, TestName = "Create_OneLiving_AdvanceToLiving")]
+    [TestCase(true, TestName = "Create_NoneLiving_Dead")]
+    public void Create_TryAdvance(bool secondDead)
+    {
+        MockAnimation[] animations = [
+            new(true, true, true, false), 
+            new(secondDead, true, secondDead, false), 
+            new(true, secondDead, secondDead, false)];
+        AnimationLoop loop = new(animations);
+        loop.Create(new FakeScene(), new(new()));
+        foreach (MockAnimation animation in animations)
+            animation.Validate();
+        Assert.AreEqual(secondDead, loop.IsDead);
+    }
+
+    [Test]
+    public void Glean_GleanCurrent()
+    {
+        MockAnimation[] animations = [new(false, false, true, false), new(false, false, false, false)];
+        AnimationLoop loop = new(animations);
+        loop.Glean(new FakeScene(), new(new()));
+        foreach (MockAnimation animation in animations)
+            animation.Validate();
+    }
+
+    [Test]
+    public void Apply_Living_Apply()
+    {
+        MockAnimation[] animations = [new(false, true, false, true), new(false, false, false, false)];
+        AnimationLoop loop = new(animations);
+        loop.Create(new FakeScene(), new(new()));
+        loop.Apply(new FakeDrawable(), new(new()));
+        foreach (MockAnimation animation in animations)
+            animation.Validate();
+        Assert.IsFalse(loop.IsDead);
+    }
+
+    [Test]
+    public void Apply_OneDead_Advance()
+    {
+        MockAnimation[] animations = [new(true, true, true, false), new(false, true, false, true)];
+        AnimationLoop loop = new(animations);
+        loop.Create(new FakeScene(), new(new()));
+        loop.Apply(new FakeDrawable(), new(new()));
+        foreach (MockAnimation animation in animations)
+            animation.Validate();
+        Assert.IsFalse(loop.IsDead);
+    }
+ 
+    [Test]
+    public void Apply_AllDead_Die()
+    {
+        MockAnimation[] animations = [new(true, true, true, false), new(true, true, true, false)];
+        AnimationLoop loop = new(animations);
+        loop.Create(new FakeScene(), new(new()));
+        loop.Apply(new FakeDrawable(), new(new()));
+        foreach (MockAnimation animation in animations)
+            animation.Validate();
+        Assert.IsTrue(loop.IsDead);
     }
 }

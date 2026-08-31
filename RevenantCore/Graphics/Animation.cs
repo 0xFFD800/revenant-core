@@ -1,8 +1,9 @@
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Frozen;
-using System.Numerics;
 using RevenantCore.Scenes;
 using RevenantCore.Util;
+using System.Linq;
 
 namespace RevenantCore.Graphics;
 
@@ -89,7 +90,7 @@ public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 /// </summary>
 /// <param name="lengthMillis">The length, in milliseconds, of the movement animation.</param>
 /// <param name="trip">The line from the drawable's current positions which the animation should trace</param>
-public class MoveAnimation(double lengthMillis, Vector2 trip) : IAnimationHook
+public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IAnimationHook
 {
     private double counter = 0;
 
@@ -98,7 +99,7 @@ public class MoveAnimation(double lengthMillis, Vector2 trip) : IAnimationHook
     public void Apply(Drawable drawable, FrameTime time)
     {
         float ratio = (float)((counter += time.MillisElapsed) / lengthMillis);
-        drawable.Pos += trip * ratio;
+        drawable.Pos += trip * (reverse ? 1 - ratio : ratio);
     }
 
     public void Create(Scene scene, FrameTime time)
@@ -133,4 +134,52 @@ public class RotateAnimation(double lengthMillis, float radians) : IAnimationHoo
     }
 
     public void Glean(Scene scene, FrameTime time) { }
+}
+
+/// <summary>
+/// Repeatedly loops the provided animations until the parent object is removed or all animations become permanently inactive.
+/// </summary>
+/// <param name="animations">The animations to cycle through.</param>
+public class AnimationLoop(IAnimationHook[] animations) : IAnimationHook
+{
+    private int index = 0;
+    private Scene? scene;
+
+    public bool IsDead => animations.All(a => a.IsDead);
+
+    /// <summary>
+    /// Attempts to find the next animation which is not permanently inactive.
+    /// </summary>
+    private bool TryAdvance(FrameTime time)
+    {
+        int startIndex = index;
+        while (scene != null && animations[index].IsDead)
+        {
+            animations[index].Glean(scene, time);
+            animations[index = (index + 1) % animations.Length].Create(scene, time);
+            // If we have gone over the whole loop and none are active, this loop has completed.
+            if (index == startIndex && animations[index].IsDead)
+                return false;
+        }
+
+        return true;
+    }
+
+    public void Apply(Drawable drawable, FrameTime time)
+    {
+        if (TryAdvance(time))
+            animations[index].Apply(drawable, time);
+    }
+
+    public void Create(Scene scene, FrameTime time)
+    {
+        this.scene = scene;
+        animations[index = 0].Create(scene, time);
+        TryAdvance(time);
+    }
+
+    public void Glean(Scene scene, FrameTime time)
+    {
+        animations[index].Glean(scene, time);
+    }
 }

@@ -62,7 +62,7 @@ public interface IFont
 }
 
 [ExcludeFromCodeCoverage]
-internal class Font(SpriteFont font) : IFont
+public class Font(SpriteFont font) : IFont
 {
     public Drawable CreateDrawable(string text) => new DrawableText(text, font);
     public Vector2 MeasureText(string text) => font.MeasureString(text);
