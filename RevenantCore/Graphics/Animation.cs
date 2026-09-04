@@ -66,22 +66,27 @@ public interface IAnimationHook : IMortal
 /// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
 public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 {
-    private double counter = 0;
+    private double startMillis = 0;
 
-    public bool IsDead => counter >= lengthMillis;
+    public bool IsDead { get; set; } = false;
 
     public void Apply(Drawable drawable, FrameTime time)
     {
-        float opacity = (float)((counter += time.MillisElapsed) / lengthMillis);
+        float opacity = (float)((time.Millis - startMillis) / lengthMillis);
         drawable.SetOpacity(reverse ? 1 - opacity : opacity);
+
+        IsDead = time.Millis > startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
-        counter = 0;
+        startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time) { }
+    public void Glean(Scene scene, FrameTime time)
+    {
+        IsDead = false;
+    }
 }
 
 /// <summary>
@@ -92,22 +97,27 @@ public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 /// <param name="trip">The line from the drawable's current positions which the animation should trace</param>
 public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IAnimationHook
 {
-    private double counter = 0;
+    private double startMillis = 0;
 
-    public bool IsDead => counter >= lengthMillis;
+    public bool IsDead { get; set; } = false;
 
     public void Apply(Drawable drawable, FrameTime time)
     {
-        float ratio = (float)((counter += time.MillisElapsed) / lengthMillis);
+        float ratio = (float)((time.Millis - startMillis) / lengthMillis);
         drawable.Pos += trip * (reverse ? 1 - ratio : ratio);
+
+        IsDead = time.Millis >= startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
-        counter = 0;
+        startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time) { }
+    public void Glean(Scene scene, FrameTime time)
+    {
+        IsDead = false;
+    }
 }
 
 /// <summary>
@@ -118,22 +128,27 @@ public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IA
 /// <param name="radians">The angle which the animation should trace out.</param>
 public class RotateAnimation(double lengthMillis, float radians) : IAnimationHook
 {
-    private double counter = 0;
+    private double startMillis = 0;
 
-    public bool IsDead => counter >= lengthMillis;
+    public bool IsDead { get; set; } = false;
 
     public void Apply(Drawable drawable, FrameTime time)
     {
-        double ratio = (counter += time.MillisElapsed) / lengthMillis;
+        double ratio = (time.Millis - startMillis) / lengthMillis;
         drawable.Rotation += (float)(ratio * radians);
+
+        IsDead = time.Millis >= startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
-        counter = 0;
+        startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time) { }
+    public void Glean(Scene scene, FrameTime time)
+    {
+        IsDead = false;
+    }
 }
 
 /// <summary>

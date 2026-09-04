@@ -210,7 +210,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
             Drawable copy = drawable.ShallowCopy();
             foreach (IAnimationHook hook in hooks)
                 hook.Apply(copy, view.Time);
-            view.Screen.Draw(drawable);
+            view.Screen.Draw(copy);
         }
     }
 
