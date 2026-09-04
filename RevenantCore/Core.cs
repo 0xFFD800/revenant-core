@@ -199,8 +199,8 @@ public class Core
             .ToDictionary();
         result = new(spec.Animations.Select(a =>
             new KeyValuePair<string, Animation>(a.Key, new([..a.Value.Select(f =>
-                sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite,
-                        loader.LoadSprite(f.Sprite ?? spec.DefaultSprite))
+                sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite)
+                        ?? loader.LoadSprite(f.Sprite ?? spec.DefaultSprite)
                     .ShallowCopy()
                     .SetSource(f.Source?.Data))], spec.MillisPerFrame)))
             .ToFrozenDictionary(), spec.DefaultAnimation);
