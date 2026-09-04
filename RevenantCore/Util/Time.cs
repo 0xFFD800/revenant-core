@@ -8,6 +8,8 @@ namespace RevenantCore.Util;
 /// <param name="GameTime">The time record to base all this record's values off.</param>
 public record FrameTime(GameTime GameTime)
 {
+    public FrameTime() : this(new GameTime()) { }
+
     /// <summary>
     /// The total number of milliseconds which have elapsed since the game began running.
     /// </summary>
