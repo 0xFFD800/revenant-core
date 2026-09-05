@@ -80,13 +80,11 @@ public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 
     public void Create(Scene scene, FrameTime time)
     {
+        IsDead = false;
         startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time)
-    {
-        IsDead = false;
-    }
+    public void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
@@ -106,18 +104,16 @@ public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IA
         float ratio = (float)((time.Millis - startMillis) / lengthMillis);
         drawable.Pos += trip * (reverse ? 1 - ratio : ratio);
 
-        IsDead = time.Millis >= startMillis + lengthMillis;
+        IsDead = time.Millis > startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
+        IsDead = false;
         startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time)
-    {
-        IsDead = false;
-    }
+    public void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
@@ -137,18 +133,16 @@ public class RotateAnimation(double lengthMillis, float radians) : IAnimationHoo
         double ratio = (time.Millis - startMillis) / lengthMillis;
         drawable.Rotation += (float)(ratio * radians);
 
-        IsDead = time.Millis >= startMillis + lengthMillis;
+        IsDead = time.Millis > startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)
     {
+        IsDead = false;
         startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time)
-    {
-        IsDead = false;
-    }
+    public void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
