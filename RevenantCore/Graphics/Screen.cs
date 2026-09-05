@@ -148,7 +148,7 @@ public abstract class Drawable
     /// <summary>
     /// Draws this object to the buffer.
     /// </summary>
-    /// <param name="buffer"></param>
+    /// <param name="buffer">The buffer to draw this object to.</param>
     public abstract void Draw(ISpriteBuffer buffer);
 
     /// <summary>

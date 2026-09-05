@@ -10,6 +10,7 @@ using RevenantCore.Util;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Cutscenes;
 using RevenantCore.Entities;
+using Microsoft.Xna.Framework.Input;
 
 namespace RevenantCore.Scenes;
 
@@ -141,7 +142,9 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
     /// <param name="controllable">The item testing for keypresses.</param>
     /// <returns>The keys currently pressed on the keyboard, if the specified controllable has capture.</returns>
     public string[] GetPressedKeys(IControllable? controllable) => IsCapturing(controllable) 
-        ? [..keyboardTracker.States.Where(s => s.Value.Position == ControlPositions.Press || s.Value.Millis > KeyboardTracker.RepeatMillis).Select(s => s.Key)]
+        ? [..keyboardTracker.States.Where(s => s.Value.Position == ControlPositions.Press 
+                || (s.Value.Position == ControlPositions.Down && s.Value.Millis > KeyboardTracker.RepeatMillis))
+            .Select(s => s.Key)]
         : [];
 
     /// <summary>
@@ -159,6 +162,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
             Add(wall, scene, time);
 
         Add(controlTracker, scene, time);
+        Add(keyboardTracker, scene, time);
 
         foreach (InteractionAreaSpec area in spec.Interactions)
             Add(new InteractionArea(area), scene, time);
