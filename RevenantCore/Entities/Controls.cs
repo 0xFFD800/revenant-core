@@ -226,8 +226,11 @@ public class KeyboardTracker : ControlTracker, IControlTracker
             if (id == null) continue;
 
             bool pressed = state.IsKeyDown(key);
-            ControlState prevState = prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0));
-            currStates.Add(id, GetCurrState(prevState, time, pressed));
+            ControlState currState = GetCurrState(prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0)), time, pressed);
+            if (currStates.Remove(id, out ControlState existing))
+                currStates.Add(id, currState.Position.In(ControlPositions.Down, ControlPositions.Press) ? currState : existing);
+            else
+                currStates.Add(id, currState);
         }
         States = currStates.ToFrozenDictionary();
     }
