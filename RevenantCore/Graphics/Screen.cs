@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -189,6 +190,12 @@ public abstract class Drawable
     /// </summary>
     public SpriteEffects Effects { get; set; } = SpriteEffects.None;
 
+    /// <summary>
+    /// The data array of pixel colors within this drawable.
+    /// Currently only supported for sprites.
+    /// </summary>
+    public abstract Color[] Data { get; }
+
     private Vector2 Base => new(Size.X / 2, Size.Y);
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
 
@@ -258,6 +265,13 @@ public abstract class Drawable
 
     public Drawable AddEffects(SpriteEffects effects) => SetEffects(Effects | effects);
 
+    /// <summary>
+    /// Overlays this onto another drawable, only drawing the pixels which intersect with the base drawable.
+    /// Currently only supported for sprites.
+    /// </summary>
+    /// <param name="drawable">The base drawable onto which this is being overlaid.</param>
+    public abstract Drawable OverlayOnto(Drawable drawable);
+
     protected abstract Drawable CopyData();
 
     /// <summary>
@@ -277,16 +291,51 @@ public abstract class Drawable
 /// </summary>
 /// <param name="texture">The texture which this Sprite should be drawn as.</param>
 [ExcludeFromCodeCoverage]
-public class Sprite(Texture2D texture) : Drawable
+public class Sprite : Drawable
 {
-    public override void Draw(ISpriteBuffer buffer)
+    private readonly Texture2D original, toDraw;
+
+    public Sprite(Texture2D texture)
     {
-        buffer.Draw(texture, Pos, Source, Mask, Rotation, Origin, Effects);
+        original = texture;
+        toDraw = new(texture.GraphicsDevice, original.Width, original.Height);
+        Color[] data = new Color[texture.Width * texture.Height];
+        original.GetData(data);
+        toDraw.SetData(data);
     }
 
-    public override Vector2 Size => new(texture.Width, texture.Height);
+    public override void Draw(ISpriteBuffer buffer)
+    {
+        buffer.Draw(toDraw, Pos, Source, Mask, Rotation, Origin, Effects);
+    }
 
-    protected override Drawable CopyData() => new Sprite(texture);
+    public override Vector2 Size => new(toDraw.Width, toDraw.Height);
+
+    public override Color[] Data
+    {
+        get
+        {
+            Color[] data = new Color[original.Width * original.Height];
+            original.GetData(data);
+            return data;
+        }
+    }
+
+    protected override Drawable CopyData() => new Sprite(toDraw);
+
+    public override Drawable OverlayOnto(Drawable drawable)
+    {
+        Point relativePos = (Pos - drawable.Pos).ToPoint();
+        Color[] data = Data, otherData = drawable.Data;
+        for (int x = 0; x < toDraw.Width; x++)
+            for (int y = 0; y < toDraw.Height; y++)
+                if (x + relativePos.X >= 0 && x + relativePos.X < drawable.Size.X && y + relativePos.Y >= 0 && y + relativePos.Y < drawable.Size.Y)
+                    data[x + (y * toDraw.Width)] *= otherData[x + relativePos.X + ((y + relativePos.Y) * (int)drawable.Size.X)].A;
+                else
+                    data[x + (y * toDraw.Width)] *= 0;
+        toDraw.SetData(data);
+        return this;
+    }
 }
 
 /// <summary>
@@ -304,5 +353,9 @@ public class DrawableText(string text, SpriteFont font) : Drawable
 
     public override Vector2 Size => font.MeasureString(text);
 
+    public override Color[] Data => [];
+
     protected override Drawable CopyData() => new DrawableText(text, font);
+
+    public override Drawable OverlayOnto(Drawable drawable) => this;
 }

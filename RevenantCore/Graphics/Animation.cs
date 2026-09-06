@@ -60,21 +60,19 @@ public interface IAnimationHook : IMortal
 }
 
 /// <summary>
-/// An animation which fades in opacity from clear to opaque or vice versa.
+/// A base class for animations which should only last for a certain period of time.
 /// </summary>
-/// <param name="lengthMillis">The length, in milliseconds, of the fade animation.</param>
-/// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
-public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
+/// <param name="lengthMillis">The amount of time for which this animation should last.</param>
+public class TimedAnimation(double lengthMillis) : IAnimationHook
 {
     private double startMillis = 0;
 
     public bool IsDead { get; set; } = false;
 
-    public void Apply(Drawable drawable, FrameTime time)
-    {
-        float opacity = (float)((time.Millis - startMillis) / lengthMillis);
-        drawable.SetOpacity(reverse ? 1 - opacity : opacity);
+    protected double GetRatio(double millis) => (millis - startMillis) / lengthMillis;
 
+    public virtual void Apply(Drawable drawable, FrameTime time)
+    {
         IsDead = time.Millis > startMillis + lengthMillis;
     }
 
@@ -88,32 +86,32 @@ public class FadeAnimation(double lengthMillis, bool reverse) : IAnimationHook
 }
 
 /// <summary>
+/// An animation which fades in opacity from clear to opaque or vice versa.
+/// </summary>
+/// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
+public class FadeAnimation(double lengthMillis, bool reverse) : TimedAnimation(lengthMillis), IAnimationHook
+{    
+    public override void Apply(Drawable drawable, FrameTime time)
+    {
+        float opacity = (float)GetRatio(time.Millis);
+        drawable.SetOpacity(reverse ? 1 - opacity : opacity);
+        base.Apply(drawable, time);
+    }
+}
+
+/// <summary>
 /// An animation which moves along a straight line.
 /// Note that this animation assumes the drawable being animated is a copy rather than the original.
 /// </summary>
-/// <param name="lengthMillis">The length, in milliseconds, of the movement animation.</param>
 /// <param name="trip">The line from the drawable's current positions which the animation should trace</param>
-public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IAnimationHook
+public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : TimedAnimation(lengthMillis), IAnimationHook
 {
-    private double startMillis = 0;
-
-    public bool IsDead { get; set; } = false;
-
-    public void Apply(Drawable drawable, FrameTime time)
+    public override void Apply(Drawable drawable, FrameTime time)
     {
-        float ratio = (float)((time.Millis - startMillis) / lengthMillis);
+        float ratio = (float)GetRatio(time.Millis);
         drawable.Pos += trip * (reverse ? 1 - ratio : ratio);
-
-        IsDead = time.Millis > startMillis + lengthMillis;
+        base.Apply(drawable, time);
     }
-
-    public void Create(Scene scene, FrameTime time)
-    {
-        IsDead = false;
-        startMillis = time.Millis;
-    }
-
-    public void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
@@ -122,27 +120,27 @@ public class MoveAnimation(double lengthMillis, Vector2 trip, bool reverse) : IA
 /// </summary>
 /// <param name="lengthMillis">The length, in milliseconds, of the movement animation.</param>
 /// <param name="radians">The angle which the animation should trace out.</param>
-public class RotateAnimation(double lengthMillis, float radians) : IAnimationHook
+public class RotateAnimation(double lengthMillis, float radians) : TimedAnimation(lengthMillis), IAnimationHook
 {
-    private double startMillis = 0;
-
-    public bool IsDead { get; set; } = false;
-
-    public void Apply(Drawable drawable, FrameTime time)
+    public override void Apply(Drawable drawable, FrameTime time)
     {
-        double ratio = (time.Millis - startMillis) / lengthMillis;
-        drawable.Rotation += (float)(ratio * radians);
-
-        IsDead = time.Millis > startMillis + lengthMillis;
+        drawable.Rotation += (float)(GetRatio(time.Millis) * radians);
+        base.Apply(drawable, time);
     }
+}
 
-    public void Create(Scene scene, FrameTime time)
+/// <summary>
+/// An animation which overlays drawables to which it is applied onto other drawables.
+/// </summary>
+/// <param name="lengthMillis">The amount of time the overlay should be active.</param>
+/// <param name="overlayBase">The drawable on which to overlay applied subjects.</param>
+public class OverlayAnimation(double lengthMillis, Drawable overlayBase) : TimedAnimation(lengthMillis), IAnimationHook
+{
+    public override void Apply(Drawable drawable, FrameTime time)
     {
-        IsDead = false;
-        startMillis = time.Millis;
+        drawable.OverlayOnto(overlayBase);
+        base.Apply(drawable, time);
     }
-
-    public void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
