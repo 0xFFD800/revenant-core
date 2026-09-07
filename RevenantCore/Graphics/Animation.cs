@@ -90,7 +90,7 @@ public class TimedAnimation(double lengthMillis) : IAnimationHook
 /// </summary>
 /// <param name="reverse">If false, fade from clear to opaque; otherwise, fade in the other direction.</param>
 public class FadeAnimation(double lengthMillis, bool reverse) : TimedAnimation(lengthMillis), IAnimationHook
-{    
+{
     public override void Apply(Drawable drawable, FrameTime time)
     {
         float opacity = (float)GetRatio(time.Millis);
@@ -152,7 +152,7 @@ public class AnimationLoop(IAnimationHook[] animations) : IAnimationHook
     private int index = 0;
     private Scene? scene;
 
-    public bool IsDead => animations.All(a => a.IsDead);
+    public bool IsDead { get; private set; } = false;
 
     /// <summary>
     /// Attempts to find the next animation which is not permanently inactive.
@@ -165,8 +165,8 @@ public class AnimationLoop(IAnimationHook[] animations) : IAnimationHook
             animations[index].Glean(scene, time);
             animations[index = (index + 1) % animations.Length].Create(scene, time);
             // If we have gone over the whole loop and none are active, this loop has completed.
-            if (index == startIndex && animations[index].IsDead)
-                return false;
+            IsDead = index == startIndex && animations[index].IsDead;
+            if (IsDead) return false;
         }
 
         return true;
@@ -180,6 +180,7 @@ public class AnimationLoop(IAnimationHook[] animations) : IAnimationHook
 
     public void Create(Scene scene, FrameTime time)
     {
+        IsDead = false;
         this.scene = scene;
         animations[index = 0].Create(scene, time);
         TryAdvance(time);
