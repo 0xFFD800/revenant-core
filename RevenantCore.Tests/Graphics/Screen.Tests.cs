@@ -76,7 +76,10 @@ internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDra
     }
 
     // set the drawn property of both this and the subobject to ensure we can test objects which will be copied.
-    protected override Drawable CopyData() => copied = new(referenceType, size, expDrawn, m => { setDrawn(m); m.drawn = true; }, expPos);
+    protected override Drawable CopyData() => copied = new(referenceType, size, expDrawn, m => { setDrawn(this); m.drawn = true; }, expPos)
+    {
+        Text = Text
+    };
 
     public override Drawable OverlayOnto(Drawable drawable)
     {

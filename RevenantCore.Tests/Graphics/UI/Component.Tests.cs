@@ -431,7 +431,8 @@ public class Button_Test
     }
 
     [TestCase(false, true, true, true, true, false, false, false, TestName = "Draw_Disabled")]
-    [TestCase(true, false, true, false, false, true, false, false, TestName = "Draw_Clicked")]
+    [TestCase(true, true, true, false, false, true, false, false, TestName = "Draw_Clicked")]
+    [TestCase(true, false, true, false, false, false, false, true, TestName = "Draw_ClickedNoFocus")]
     [TestCase(true, false, true, true, false, false, false, true, TestName = "Draw_Released")]
     [TestCase(true, true, false, false, false, false, true, false, TestName = "Draw_Focused")]
     [TestCase(true, false, false, false, false, false, false, true, TestName = "Draw_Unfocused")]
