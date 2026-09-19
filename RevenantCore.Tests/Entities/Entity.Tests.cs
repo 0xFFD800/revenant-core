@@ -40,7 +40,16 @@ public class Entity_Test
         public string FrameName => frameName;
 
         public override Vector2 Size => new(2, 4);
+
+        public override Color[] Data => throw new NotImplementedException();
+
         public override void Draw(ISpriteBuffer buffer) { }
+
+        public override Drawable OverlayOnto(Drawable drawable)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override Drawable CopyData() => this;
     }
 

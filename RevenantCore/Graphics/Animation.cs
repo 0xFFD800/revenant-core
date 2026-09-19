@@ -73,7 +73,7 @@ public class TimedAnimation(double lengthMillis) : IAnimationHook
 
     public virtual void Apply(Drawable drawable, FrameTime time)
     {
-        IsDead = time.Millis > startMillis + lengthMillis;
+        IsDead = time.Millis >= startMillis + lengthMillis;
     }
 
     public void Create(Scene scene, FrameTime time)

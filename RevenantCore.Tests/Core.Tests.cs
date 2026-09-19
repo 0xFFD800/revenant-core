@@ -18,12 +18,19 @@ file class FakeDrawable(string path) : Drawable
 
     public override Vector2 Size => throw new NotImplementedException();
 
+    public override Color[] Data => throw new NotImplementedException();
+
     public override void Draw(ISpriteBuffer buffer)
     {
         throw new NotImplementedException();
     }
 
     protected override Drawable CopyData() => new FakeDrawable(path);
+
+    public override Drawable OverlayOnto(Drawable drawable)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 file class FakeLoader : ILoader

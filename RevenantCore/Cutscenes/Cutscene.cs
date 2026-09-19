@@ -87,7 +87,8 @@ internal class SequentialBlock(Universe universe, SequentialBlockSpec spec) : Cu
     public override void Create(Scene scene, FrameTime time)
     {
         index = 0;
-        ActiveChild?.Create(scene, time);
+        if (!ActiveChild?.IsDead ?? false)
+            ActiveChild?.Create(scene, time);
         Advance(scene, time);
     }
 

@@ -12,7 +12,14 @@ file class FakeDrawable : Drawable
 {
     public override Vector2 Size => throw new NotImplementedException();
 
+    public override Color[] Data => throw new NotImplementedException();
+
     public override void Draw(ISpriteBuffer buffer)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Drawable OverlayOnto(Drawable drawable)
     {
         throw new NotImplementedException();
     }

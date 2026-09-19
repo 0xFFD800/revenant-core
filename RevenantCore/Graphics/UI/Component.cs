@@ -77,7 +77,7 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
         // Select targets based on CanSwitchTo
         IComponent[] targets = [.. components.Where(c => c.Enabled && canSwitchTo(prevFocused.Area, c.Area))];
         // Sort targets by ascending distance
-        targets.Sort((c1, c2) => Math.Sign(distance(prevFocused.Area, c2.Area) - distance(prevFocused.Area, c1.Area)));
+        targets.Sort((c1, c2) => Math.Sign(distance(prevFocused.Area, c1.Area) - distance(prevFocused.Area, c2.Area)));
         // Select closest target, if there are any
         IComponent? target = targets.FirstOrDefault();
         if (target != null)
@@ -109,7 +109,11 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
     {
         base.Add(mortal, scene, time);
         if (mortal is IComponent component)
+        {
             components.Add(component);
+            if (prevFocused == null && component.HasFocus)
+                prevFocused = component;
+        }
     }
 
     public override void Create(Scene scene, FrameTime time)
@@ -271,7 +275,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
     {
         base.Tick(scene, time);
         ControlPositions position = scene.GetControlState(this, click).Position;
-        isClicked = position is ControlPositions.Press or ControlPositions.Down;
+        isClicked = Enabled && HasFocus && position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
             onClick();
     }
