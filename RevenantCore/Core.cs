@@ -102,14 +102,9 @@ public interface IInputs
 public interface IImageCreator
 {
     /// <summary>
-    /// The width of the resulting image, in pixels.
+    /// The 2-dimensional size of the resulting image, in pixels.
     /// </summary>
-    int Width { get; }
-
-    /// <summary>
-    /// The height of the resulting image, in pixels.
-    /// </summary>
-    int Height { get; }
+    Point Size { get; }
 
     /// <summary>
     /// Defines the data for a specific pixel of the resulting image.
@@ -139,10 +134,10 @@ public class Graphics(GraphicsDevice graphics) : IGraphics
 {
     public Drawable CreateImage(IImageCreator creator)
     {
-        Texture2D texture = new(graphics, creator.Width, creator.Height);
-        Color[] data = new Color[creator.Width * creator.Height];
-        for (int x = 0; x < creator.Width; x++)
-            for (int y = 0; y < creator.Height; y++)
+        Texture2D texture = new(graphics, creator.Size.X, creator.Size.Y);
+        Color[] data = new Color[creator.Size.X * creator.Size.Y];
+        for (int x = 0; x < creator.Size.X; x++)
+            for (int y = 0; y < creator.Size.Y; y++)
                 data[x * y] = creator.GetPixel(x, y);
         texture.SetData(data);
         return texture;
