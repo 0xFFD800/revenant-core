@@ -10,7 +10,6 @@ using RevenantCore.Util;
 using RevenantCore.Cutscenes.Spec;
 using RevenantCore.Cutscenes;
 using RevenantCore.Entities;
-using Microsoft.Xna.Framework.Input;
 
 namespace RevenantCore.Scenes;
 
