@@ -97,6 +97,59 @@ public interface IInputs
 }
 
 /// <summary>
+/// An object which defines the data to be used to create an image at runtime.
+/// </summary>
+public interface IImageCreator
+{
+    /// <summary>
+    /// The width of the resulting image, in pixels.
+    /// </summary>
+    int Width { get; }
+
+    /// <summary>
+    /// The height of the resulting image, in pixels.
+    /// </summary>
+    int Height { get; }
+
+    /// <summary>
+    /// Defines the data for a specific pixel of the resulting image.
+    /// </summary>
+    /// <param name="x">The x-coordinate being queried for data.</param>
+    /// <param name="y">The y-coordinate being queried for data.</param>
+    /// <returns>The color of the pixel at the provided X and Y coordinates.</returns>
+    Color GetPixel(int x, int y);    
+}
+
+/// <summary>
+/// A wrapper for the GraphicsDevice object. Used to create images at runtime.
+/// </summary>
+public interface IGraphics
+{
+    /// <summary>
+    /// Creates a new image from an object defining the pixel data to be used.
+    /// </summary>
+    Drawable CreateImage(IImageCreator creator);
+}
+
+/// <summary>
+/// Creates a new graphics wrapper from the GraphicsDevice API object.
+/// </summary>
+[ExcludeFromCodeCoverage]
+public class Graphics(GraphicsDevice graphics) : IGraphics
+{
+    public Drawable CreateImage(IImageCreator creator)
+    {
+        Texture2D texture = new(graphics, creator.Width, creator.Height);
+        Color[] data = new Color[creator.Width * creator.Height];
+        for (int x = 0; x < creator.Width; x++)
+            for (int y = 0; y < creator.Height; y++)
+                data[x * y] = creator.GetPixel(x, y);
+        texture.SetData(data);
+        return texture;
+    }
+}
+
+/// <summary>
 /// The core implementation object, which registers the core behavior.
 /// </summary>
 internal class CoreImpl : IImpl
@@ -136,13 +189,19 @@ public class Core
     public ControlRegistry Controls { get; }
 
     /// <summary>
+    /// A wrapper object representing the graphics API.
+    /// </summary>
+    public IGraphics Graphics { get; }
+
+    /// <summary>
     /// A view into the external inputs into this application.
     /// </summary>
     public IInputs Inputs { get; }
 
-    public Core(ILoader loader, IInputs inputs, IImpl[] impls)
+    public Core(ILoader loader, IGraphics graphics, IInputs inputs, IImpl[] impls)
     {
         this.loader = loader;
+        Graphics = graphics;
         Inputs = inputs;
 
         IImpl[] allImpls = [.. impls.Prepend(coreImpl)];
