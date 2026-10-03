@@ -2,9 +2,11 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Cutscenes;
 using RevenantCore.Cutscenes.Spec;
@@ -130,7 +132,7 @@ public interface IGraphics
 /// Creates a new graphics wrapper from the GraphicsDevice API object.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class Graphics(GraphicsDevice graphics) : IGraphics
+public class GraphicsWrapper(GraphicsDevice graphics) : IGraphics
 {
     public Drawable CreateImage(IImageCreator creator)
     {
@@ -140,7 +142,7 @@ public class Graphics(GraphicsDevice graphics) : IGraphics
             for (int y = 0; y < creator.Size.Y; y++)
                 data[x * y] = creator.GetPixel(x, y);
         texture.SetData(data);
-        return texture;
+        return new Sprite(texture);
     }
 }
 

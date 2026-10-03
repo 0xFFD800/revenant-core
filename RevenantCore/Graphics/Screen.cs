@@ -251,6 +251,12 @@ public abstract class Drawable
         return this;
     }
 
+    public Drawable ApplyMask(Color mask)
+    {
+        Mask *= mask;
+        return this;
+    }
+
     /// <summary>
     /// Sets the opacity of this drawable to be the provided value.
     /// </summary>
