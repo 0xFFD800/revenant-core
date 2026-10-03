@@ -5,6 +5,11 @@ namespace RevenantCore.Util;
 
 public static class NumericsExtension
 {
+    extension(Vector2 vec)
+    {
+        public float Angle() => (float)Math.Atan2(vec.Y, vec.X);
+    }
+
     extension(Vector3 vec)
     {
         public Vector3 Abs() => new(Math.Abs(vec.X), Math.Abs(vec.Y), Math.Abs(vec.Z));

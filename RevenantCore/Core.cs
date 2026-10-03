@@ -140,7 +140,7 @@ public class GraphicsWrapper(GraphicsDevice graphics) : IGraphics
         Color[] data = new Color[creator.Size.X * creator.Size.Y];
         for (int x = 0; x < creator.Size.X; x++)
             for (int y = 0; y < creator.Size.Y; y++)
-                data[x * y] = creator.GetPixel(x, y);
+                data[x + y * creator.Size.X] = creator.GetPixel(x, y);
         texture.SetData(data);
         return new Sprite(texture);
     }
