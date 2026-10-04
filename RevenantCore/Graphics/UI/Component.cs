@@ -265,7 +265,7 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
 /// <param name="click">The control which triggers this button's action.</param>
 /// <param name="onClick">The action taken when this control is interacted with.</param>
 /// <param name="z">The Z-value of this control, identifying where in the draw order it should be drawn.</param>
-public class Button(ButtonDrawables toDraw, string click, Action onClick, float z) : Label(toDraw.Unfocused, z), IComponent
+public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTime> onClick, float z) : Label(toDraw.Unfocused, z), IComponent
 {
     private bool isClicked = false;
 
@@ -277,7 +277,7 @@ public class Button(ButtonDrawables toDraw, string click, Action onClick, float 
         ControlPositions position = scene.GetControlState(this, click).Position;
         isClicked = Enabled && HasFocus && position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
-            onClick();
+            onClick(scene, time);
     }
 }
 
