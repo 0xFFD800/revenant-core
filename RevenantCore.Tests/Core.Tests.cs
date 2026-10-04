@@ -48,7 +48,12 @@ file class FakeInputs : IInputs
     public GamePadState GamePad(PlayerIndex player) => new();
 }
 
-public class FakeCore(IInputs inputs, IImpl[] impls) : Core(new FakeLoader(), inputs, impls)
+file class FakeGraphics : IGraphics
+{
+    public Drawable CreateImage(IImageCreator creator) => new FakeDrawable("");
+}
+
+public class FakeCore(IInputs inputs, IImpl[] impls) : Core(new FakeLoader(), new FakeGraphics(), inputs, impls)
 {
     public FakeCore(IImpl[] impls) : this(new FakeInputs(), impls) { }
     public FakeCore() : this([]) { }

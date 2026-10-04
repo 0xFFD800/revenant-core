@@ -391,7 +391,7 @@ public class AnimatedLabel_Test
 [TestFixture]
 public class Button_Test
 {
-    private static Button SetUp(ButtonDrawables d, bool enabled, bool focused, bool clicked, bool released, Action onClick)
+    private static Button SetUp(ButtonDrawables d, bool enabled, bool focused, bool clicked, bool released, Action<Scene, FrameTime> onClick)
     {
         Button b = new(d, "click", onClick, 0)
         {
@@ -426,7 +426,7 @@ public class Button_Test
     public void OnClick_Test(bool enabled, bool focused, bool released, bool expClick)
     {
         bool clicked = false;
-        SetUp(new(), enabled, focused, true, released, () => clicked = true);
+        SetUp(new(), enabled, focused, true, released, (s, t) => clicked = true);
         Assert.AreEqual(expClick, clicked);
     }
 
@@ -442,7 +442,7 @@ public class Button_Test
         MockDrawable click = new(new(), Vector2.One, expClicked);
         MockDrawable focus = new(new(), Vector2.One, expFocus);
         MockDrawable unfocus = new(new(), Vector2.One, expUnfocus);
-        Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, () => { });
+        Button b = SetUp(new([unfocus], [disable], [focus], [click]), enabled, focused, clicked, released, (s, t) => { });
         b.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(Vector2.One, Vector2.One));
         disable.Validate();
         click.Validate();
