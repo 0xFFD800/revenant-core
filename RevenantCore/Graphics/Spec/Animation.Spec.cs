@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using RevenantCore.Scenes.Spec;
 
 namespace RevenantCore.Graphics.Spec;
 
@@ -34,6 +35,9 @@ public class RectangleSpec
     public Rectangle Data => new(X, Y, W, H);
 }
 
+/// <summary>
+/// A YAML-serializable spec representing a single frame of an animation.
+/// </summary>
 public class FrameSpec
 {
     /// <summary>
@@ -49,6 +53,12 @@ public class FrameSpec
     /// This allows multiple frames to point to different areas of the same image.
     /// </summary>
     public RectangleSpec? Source { get; set; }
+
+    /// <summary>
+    /// The offset of this sprite when it is drawn.
+    /// This allows multiple layers to be drawn without having to take up the same area in the base image.
+    /// </summary>
+    public Vector2Spec Offset { get; set; } = new();
 }
 
 /// <summary>

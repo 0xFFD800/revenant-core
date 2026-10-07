@@ -164,6 +164,12 @@ public abstract class Drawable
     public Vector2 Pos { get; set; } = Vector2.Zero;
 
     /// <summary>
+    /// The offset from the top left corner where it should start being drawn.
+    /// Use this to avoid changes to the base and center overriding earlier position offsets.
+    /// </summary>
+    public Vector2 Offset { get; set; } = Vector2.Zero;
+
+    /// <summary>
     /// The angle at which to rotate the sprite, in radians.
     /// </summary>
     public float Rotation { get; set; } = 0;
@@ -198,10 +204,17 @@ public abstract class Drawable
 
     private Vector2 Base => new(Size.X / 2, Size.Y);
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
+    internal Vector2 DrawPos => Pos + Offset;
 
     public Drawable SetPos(Vector2 pos)
     {
         Pos = pos;
+        return this;
+    }
+
+    public Drawable SetOffset(Vector2 offset)
+    {
+        Offset = offset;
         return this;
     }
 
@@ -287,6 +300,7 @@ public abstract class Drawable
     /// <returns></returns>
     public Drawable ShallowCopy() => CopyData()
         .SetPos(Pos)
+        .SetOffset(Offset)
         .SetRotation(Rotation)
         .SetSource(Source)
         .SetMask(Mask);
@@ -312,7 +326,7 @@ public class Sprite : Drawable
 
     public override void Draw(ISpriteBuffer buffer)
     {
-        buffer.Draw(toDraw, Pos, Source, Mask, Rotation, Origin, Effects);
+        buffer.Draw(toDraw, DrawPos, Source, Mask, Rotation, Origin, Effects);
     }
 
     public override Vector2 Size => new(toDraw.Width, toDraw.Height);
@@ -331,7 +345,7 @@ public class Sprite : Drawable
 
     public override Drawable OverlayOnto(Drawable drawable)
     {
-        Point relativePos = (Pos - drawable.Pos).ToPoint();
+        Point relativePos = (DrawPos - drawable.DrawPos).ToPoint();
         Color[] data = Data, otherData = drawable.Data;
         for (int x = 0; x < toDraw.Width; x++)
             for (int y = 0; y < toDraw.Height; y++)
@@ -354,7 +368,7 @@ public class DrawableText(string text, SpriteFont font) : Drawable
 {
     public override void Draw(ISpriteBuffer buffer)
     {
-        buffer.DrawString(font, text, Pos, Mask, Rotation, Origin, Effects);
+        buffer.DrawString(font, text, DrawPos, Mask, Rotation, Origin, Effects);
     }
 
     public override Vector2 Size => font.MeasureString(text);

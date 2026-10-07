@@ -258,7 +258,8 @@ public class Core
                 (sprites.GetValueOrDefault(f.Sprite ?? spec.DefaultSprite)
                         ?? loader.LoadSprite(f.Sprite ?? spec.DefaultSprite))
                     .ShallowCopy()
-                    .SetSource(f.Source?.Data))], spec.MillisPerFrame)))
+                    .SetSource(f.Source?.Data)
+                    .SetOffset(f.Offset.Data))], spec.MillisPerFrame)))
             .ToFrozenDictionary(), spec.DefaultAnimation);
         cachedAnimations.Add(path, result);
         return result;
