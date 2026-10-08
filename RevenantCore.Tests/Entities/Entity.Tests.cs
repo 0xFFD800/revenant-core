@@ -43,6 +43,11 @@ public class Entity_Test
 
         public override Color[] Data => throw new NotImplementedException();
 
+        public override Drawable ClearOverlay()
+        {
+            throw new NotImplementedException();
+        }
+
         public override void Draw(ISpriteBuffer buffer) { }
 
         public override Drawable OverlayOnto(Drawable drawable)

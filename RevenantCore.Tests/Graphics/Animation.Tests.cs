@@ -10,6 +10,9 @@ namespace RevenantCore.Tests.Graphics;
 
 file class FakeDrawable : Drawable
 {
+    public bool overlayCleared = false;
+    public Drawable? overlaid = null;
+
     public override Vector2 Size => throw new NotImplementedException();
 
     public override Color[] Data => throw new NotImplementedException();
@@ -21,7 +24,14 @@ file class FakeDrawable : Drawable
 
     public override Drawable OverlayOnto(Drawable drawable)
     {
-        throw new NotImplementedException();
+        overlaid = drawable;
+        return this;
+    }
+
+    public override Drawable ClearOverlay()
+    {
+        overlayCleared = true;
+        return this;
     }
 
     protected override Drawable CopyData()
@@ -200,6 +210,21 @@ public class RotateAnimation_Test
         Assert.AreEqual(expDead, rotate.IsDead);
         rotate.Glean(scene, new(new(mTime, mTime)));
         Assert.AreEqual(expRotation, drawable.Rotation);
+    }
+}
+
+[TestFixture]
+public class OverlayAnimation_Test
+{
+    [Test]
+    public void Apply_OverlayOnto()
+    {
+        FakeDrawable drawable = new(), baseDrawable = new();
+        OverlayAnimation overlay = new(100, baseDrawable);
+        overlay.Apply(drawable, new());
+        Assert.AreSame(baseDrawable, drawable.overlaid);
+        overlay.Glean(new FakeScene(), new());
+        Assert.IsTrue(drawable.overlayCleared);
     }
 }
 

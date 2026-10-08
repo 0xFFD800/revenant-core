@@ -85,6 +85,11 @@ internal class MockDrawable(Vector2Spec referenceType, Vector2 size, bool expDra
     {
         throw new NotImplementedException();
     }
+
+    public override Drawable ClearOverlay()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 [TestFixture]
@@ -127,6 +132,7 @@ public class Drawable_Test
     {
         Drawable drawable = new MockDrawable(new(), new(1, 1), false)
             .SetPos(new(1, 1))
+            .SetOffset(new(2, -1))
             .SetRotation(1)
             .SetOrigin(new(1, 1))
             .SetMask(Color.Black)
@@ -134,6 +140,7 @@ public class Drawable_Test
             .SetEffects(SpriteEffects.FlipHorizontally)
             .AddEffects(SpriteEffects.FlipVertically);
         Assert.AreEqual(new Vector2(1, 1), drawable.Pos);
+        Assert.AreEqual(new Vector2(3, 0), drawable.DrawPos);
         Assert.AreEqual(1, drawable.Rotation);
         Assert.AreEqual(new Vector2(1, 1), drawable.Origin);
         Assert.AreEqual(null, drawable.Source);
@@ -157,6 +164,14 @@ public class Drawable_Test
         Assert.AreEqual(original.Pos, copy.Pos, "Copy.Pos should have the same value as original.Pos");
         Assert.AreNotSame(original.Source, copy.Source, "Copy.Source should not be the same object as original.Source");
         Assert.AreEqual(original.Source, copy.Source, "Copy.Source should have the same value as original.Source");
+    }
+
+    [Test]
+    public void ApplyMask_Multiply()
+    {
+        MockDrawable drawable = (MockDrawable)new MockDrawable(Vector2.One).SetMask(Color.White * 0.5F);
+        drawable.ApplyMask(Color.Black * 0.5F);
+        Assert.AreEqual(Color.Black * 0.25F, drawable.Mask);
     }
 }
 

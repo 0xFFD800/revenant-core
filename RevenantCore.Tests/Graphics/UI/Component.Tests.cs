@@ -290,10 +290,21 @@ public class Container_Test
         MockComponent mock2 = new(new(), true, false, 0, false, false, true, null, false, false, false, null, false, true);
         Container c = new([mock1, mock2]);
         Scene scene = new FakeScene();
-        c.Create(scene, new(new()));
+        c.Create(scene, new());
         c.Close();
         mock1.Validate();
         mock2.Validate();
+    }
+
+    [Test]
+    public void Add_FocusNew()
+    {
+        MockComponent mock = new(new(), true, true, 0, false, false, true, null, false, false, false, null, true, false);
+        Container c = new([]);
+        Scene scene = new FakeScene();
+        c.Create(scene, new());
+        c.Add(mock, scene, new());
+        mock.Validate();
     }
 }
 
@@ -313,9 +324,9 @@ public class Label_Test
     public void ConstsAndFields()
     {
         Label l = new([], 0);
-        Assert.IsTrue(l.Enabled);
-        l.Enabled = false;
         Assert.IsFalse(l.Enabled);
+        l.Enabled = true;
+        Assert.IsTrue(l.Enabled);
         Assert.IsFalse(l.HasFocus);
         l.HasFocus = true;
         Assert.IsTrue(l.HasFocus);
@@ -520,7 +531,7 @@ public class TextInput_Test
             TypeInto(keyboard, scene, input, c.ToString());
         foreach (string s in directions.Split(','))
             TypeInto(keyboard, scene, input, s);
-        input.Draw(new(new FakeScreen(), new(new()), DrawLayer.UI), new(new(), new()));
+        input.Draw(new(new FakeScreen(), new(), DrawLayer.UI), new(new(), new()));
         Assert.AreEqual(2, font.lastMeasured.Count);
         Assert.AreEqual(expCursorX, font.lastMeasured[0].Length);
         Assert.AreEqual(expCursorY, font.lastMeasured[1].Count(c => c == '\n') + font.lastMeasured[1].Length > 0 ? 1 : 0);

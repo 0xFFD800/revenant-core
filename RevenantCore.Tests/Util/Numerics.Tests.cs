@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using RevenantCore.Entities;
 using RevenantCore.Util;
 
 namespace RevenantCore.Tests.Util;
@@ -6,6 +7,16 @@ namespace RevenantCore.Tests.Util;
 [TestFixture]
 public class NumericsExtension_Test
 {
+    [TestCase(0, 0, 0)]
+    [TestCase(1, 0, 0)]
+    [TestCase(-1, 0, float.Pi)]
+    [TestCase(0, 1, float.Pi / 2)]
+    [TestCase(0, -1, -float.Pi / 2)]
+    public void VecAngle(float x, float y, float expTheta)
+    {
+        Assert.AreEqual(expTheta, new Vector2(x, y).Angle());
+    }
+
     [TestCase(0, 0, 0, 0, 0, 0, TestName = "Abs (All Zero)")]
     [TestCase(-1, -2, -3, 1, 2, 3, TestName = "Abs (All Negative)")]
     [TestCase(1, 2, 3, 1, 2, 3, TestName = "Abs (All Positive)")]
@@ -43,5 +54,17 @@ public class NumericsExtension_Test
         BoundingBox b = new(min, min + new Vector3(size, size, size));
         Vector3 expMin = new(expX, expY, expZ);
         Assert.AreEqual(expMin, (b + new Vector3(x, y, z)).Min);
+    }
+
+    [Test]
+    public void In_Present_True()
+    {
+        Assert.AreEqual(true, ControlPositions.Down.In(ControlPositions.Down, ControlPositions.Up));
+    }
+
+    [Test]
+    public void In_Absent_False()
+    {
+        Assert.AreEqual(false, ControlPositions.Down.In(ControlPositions.Release, ControlPositions.Up));
     }
 }

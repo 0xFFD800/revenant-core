@@ -204,7 +204,7 @@ public abstract class Drawable
 
     private Vector2 Base => new(Size.X / 2, Size.Y);
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
-    internal Vector2 DrawPos => Pos + Offset;
+    public Vector2 DrawPos => Pos + Offset;
 
     public Drawable SetPos(Vector2 pos)
     {
@@ -291,6 +291,11 @@ public abstract class Drawable
     /// <param name="drawable">The base drawable onto which this is being overlaid.</param>
     public abstract Drawable OverlayOnto(Drawable drawable);
 
+    /// <summary>
+    /// Clears the overlay, restoring the original drawn data.
+    /// </summary>
+    public abstract Drawable ClearOverlay();
+
     protected abstract Drawable CopyData();
 
     /// <summary>
@@ -341,8 +346,6 @@ public class Sprite : Drawable
         }
     }
 
-    protected override Drawable CopyData() => new Sprite(toDraw);
-
     public override Drawable OverlayOnto(Drawable drawable)
     {
         Point relativePos = (DrawPos - drawable.DrawPos).ToPoint();
@@ -356,6 +359,16 @@ public class Sprite : Drawable
         toDraw.SetData(data);
         return this;
     }
+
+    public override Drawable ClearOverlay()
+    {
+        Color[] data = new Color[original.Width * original.Height];
+        original.GetData(data);
+        toDraw.SetData(data);
+        return this;
+    }
+
+    protected override Drawable CopyData() => new Sprite(toDraw);
 }
 
 /// <summary>
@@ -375,7 +388,9 @@ public class DrawableText(string text, SpriteFont font) : Drawable
 
     public override Color[] Data => [];
 
-    protected override Drawable CopyData() => new DrawableText(text, font);
-
     public override Drawable OverlayOnto(Drawable drawable) => this;
+
+    public override Drawable ClearOverlay() => this;
+
+    protected override Drawable CopyData() => new DrawableText(text, font);
 }

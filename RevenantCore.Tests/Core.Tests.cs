@@ -31,6 +31,11 @@ file class FakeDrawable(string path) : Drawable
     {
         throw new NotImplementedException();
     }
+
+    public override Drawable ClearOverlay()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 file class FakeLoader : ILoader

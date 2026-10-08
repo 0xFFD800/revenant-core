@@ -89,10 +89,10 @@ public class KeyboardTracker_Test
 {
     private class FakeInputs : IInputs
     {
-        internal Keys? Key { get; set; }
+        internal HashSet<Keys> Key { get; set; } = [];
         internal bool CapsLock { get; set; } = false;
-        internal bool Shift { get; set; } = false;
-        public KeyboardState Keyboard => new(Key.HasValue ? (Shift ? [Key.Value, Keys.LeftShift] : [Key.Value]) : [], CapsLock, false);
+        internal bool NumLock { get; set; } = false;
+        public KeyboardState Keyboard => new([..Key], CapsLock, NumLock);
         public MouseState Mouse => new();
         public GamePadState GamePad(PlayerIndex player) => new();
     }
@@ -149,11 +149,12 @@ public class KeyboardTracker_Test
         FakeInputs inputs = new();
         Scene scene = new(new(new FakeCore(inputs, []), new([])), new ControlTracker(), tracker, new(), "default");
         if (prevKey)
-            inputs.Key = key;
+            inputs.Key.Add(key);
         tracker.Create(scene, new(new()));
-        inputs.Key = key;
+        inputs.Key.Add(key);
         inputs.CapsLock = capsLock;
-        inputs.Shift = shift;
+        if (shift)
+            inputs.Key.Add(Keys.LeftShift);
         tracker.Tick(scene, new(new(new(), new(0, 0, 0, 0, 10))));
         Dictionary<string, ControlState> states = tracker.States.Where(p => p.Value.Position != ControlPositions.Up).ToDictionary();
         Assert.AreEqual(1, states.Count);
@@ -161,6 +162,26 @@ public class KeyboardTracker_Test
         Assert.AreEqual(expText, state.Key);
         Assert.AreEqual(expState, state.Value.Position);
         Assert.AreEqual(expMillis, state.Value.Millis);
+    }
+
+    [TestCase(false, false, ControlPositions.Up, TestName = "CalcStates_Dup_BothUp")]
+    [TestCase(true, false, ControlPositions.Press, TestName = "CalcStates_Dup_FirstPress")]
+    [TestCase(false, true, ControlPositions.Press, TestName = "CalcStates_Dup_SecondPress")]
+    [TestCase(true, true, ControlPositions.Press, TestName = "CalcStates_Dup_BothPress")]
+    public void CalcStates_Dup_PrioritizePress(bool state1, bool state2, ControlPositions expState)
+    {
+        KeyboardTracker tracker = new();
+        FakeInputs inputs = new()
+        {
+            NumLock = true
+        };
+        if (state1)
+            inputs.Key.Add(Keys.D1);
+        if (state2)
+            inputs.Key.Add(Keys.NumPad1);
+        Scene scene = new(new(new FakeCore(inputs, []), new([])), new ControlTracker(), tracker, new(), "default");
+        tracker.Create(scene, new());
+        Assert.AreEqual(expState, tracker.States["1"].Position);
     }
 }
 

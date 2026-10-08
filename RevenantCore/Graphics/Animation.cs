@@ -82,7 +82,7 @@ public class TimedAnimation(double lengthMillis) : IAnimationHook
         startMillis = time.Millis;
     }
 
-    public void Glean(Scene scene, FrameTime time) { }
+    public virtual void Glean(Scene scene, FrameTime time) { }
 }
 
 /// <summary>
@@ -136,10 +136,19 @@ public class RotateAnimation(double lengthMillis, float radians) : TimedAnimatio
 /// <param name="overlayBase">The drawable on which to overlay applied subjects.</param>
 public class OverlayAnimation(double lengthMillis, Drawable overlayBase) : TimedAnimation(lengthMillis), IAnimationHook
 {
+    private Drawable? drawable;
+
     public override void Apply(Drawable drawable, FrameTime time)
     {
+        this.drawable = drawable;
         drawable.OverlayOnto(overlayBase);
         base.Apply(drawable, time);
+    }
+
+    public override void Glean(Scene scene, FrameTime time)
+    {
+        drawable?.ClearOverlay();
+        base.Glean(scene, time);
     }
 }
 
