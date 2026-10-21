@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -292,6 +291,13 @@ public abstract class Drawable
     public abstract Drawable OverlayOnto(Drawable drawable);
 
     /// <summary>
+    /// Merges this image onto layer, treating the parameter as the bottom layer.
+    /// </summary>
+    /// <param name="layer">The layer to treat as the bottom layer.</param>
+    /// <returns>A merged image, with the pixels of this image merged on top of the one provided.</returns>
+    public abstract Drawable MergeDown(Drawable layer);
+
+    /// <summary>
     /// Clears the overlay, restoring the original drawn data.
     /// </summary>
     public abstract Drawable ClearOverlay();
@@ -340,22 +346,34 @@ public class Sprite : Drawable
     {
         get
         {
-            Color[] data = new Color[original.Width * original.Height];
-            original.GetData(data);
+            Color[] data = new Color[toDraw.Width * toDraw.Height];
+            toDraw.GetData(data);
             return data;
         }
     }
 
-    public override Drawable OverlayOnto(Drawable drawable)
+    public override Drawable OverlayOnto(Drawable drawable) => MergeWith(drawable, (p, op) => p * op.A, p => p * 0);
+
+    public override Drawable MergeDown(Drawable layer)
     {
-        Point relativePos = (DrawPos - drawable.DrawPos).ToPoint();
-        Color[] data = Data, otherData = drawable.Data;
+        // First, apply the masks since we can't mask the separate portions separately.
+        for (int i = 0; i < Data.Length; i++) Data[i] = Color.Lerp(Data[i], Mask, 0.5F);
+        Mask = Color.White;
+        for (int i = 0; i < layer.Data.Length; i++) layer.Data[i] = Color.Lerp(layer.Data[i], layer.Mask, 0.5F);
+        layer.Mask = Color.White;
+        return MergeWith(layer, (p, op) => Color.Lerp(op, p, p.A), p => p);
+    }
+
+    private Sprite MergeWith(Drawable other, Func<Color, Color, Color> mergePixel, Func<Color, Color> noMatch)
+    {
+        Point relativePos = (DrawPos - other.DrawPos).ToPoint();
+        Color[] data = Data, otherData = other.Data;
         for (int x = 0; x < toDraw.Width; x++)
             for (int y = 0; y < toDraw.Height; y++)
-                if (x + relativePos.X >= 0 && x + relativePos.X < drawable.Size.X && y + relativePos.Y >= 0 && y + relativePos.Y < drawable.Size.Y)
-                    data[x + (y * toDraw.Width)] *= otherData[x + relativePos.X + ((y + relativePos.Y) * (int)drawable.Size.X)].A;
+                if (x + relativePos.X >= 0 && x + relativePos.X < other.Size.X && y + relativePos.Y >= 0 && y + relativePos.Y < other.Size.Y)
+                    data[x + (y * toDraw.Width)] = mergePixel(data[x + (y * toDraw.Width)], otherData[x + relativePos.X + ((y + relativePos.Y) * (int)other.Size.X)]);
                 else
-                    data[x + (y * toDraw.Width)] *= 0;
+                    data[x + (y * toDraw.Width)] = noMatch(data[x + (y * toDraw.Width)]);
         toDraw.SetData(data);
         return this;
     }
@@ -389,6 +407,8 @@ public class DrawableText(string text, SpriteFont font) : Drawable
     public override Color[] Data => [];
 
     public override Drawable OverlayOnto(Drawable drawable) => this;
+
+    public override Drawable MergeDown(Drawable layer) => this;
 
     public override Drawable ClearOverlay() => this;
 
