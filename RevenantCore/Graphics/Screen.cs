@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -199,7 +200,7 @@ public abstract class Drawable
     /// The data array of pixel colors within this drawable.
     /// Currently only supported for sprites.
     /// </summary>
-    public abstract Color[] Data { get; }
+    public abstract Color[] Data { get; set; }
 
     private Vector2 Base => new(Size.X / 2, Size.Y);
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
@@ -350,6 +351,7 @@ public class Sprite : Drawable
             toDraw.GetData(data);
             return data;
         }
+        set { toDraw.SetData(value); }
     }
 
     public override Drawable OverlayOnto(Drawable drawable) => MergeWith(drawable, (p, op) => p * op.A, p => p * 0);
@@ -357,9 +359,9 @@ public class Sprite : Drawable
     public override Drawable MergeDown(Drawable layer)
     {
         // First, apply the masks since we can't mask the separate portions separately.
-        for (int i = 0; i < Data.Length; i++) Data[i] = Color.Lerp(Data[i], Mask, 0.5F);
+        Data = [..Data.Select(d => d * Mask/*Color.Lerp(d, Mask, 0.5F)*/)];
+        layer.Data = [..layer.Data.Select(d => d * layer.Mask/*Color.Lerp(d, layer.Mask, 0.5F)*/)];
         Mask = Color.White;
-        for (int i = 0; i < layer.Data.Length; i++) layer.Data[i] = Color.Lerp(layer.Data[i], layer.Mask, 0.5F);
         layer.Mask = Color.White;
         return MergeWith(layer, (p, op) => Color.Lerp(op, p, p.A), p => p);
     }
@@ -404,7 +406,7 @@ public class DrawableText(string text, SpriteFont font) : Drawable
 
     public override Vector2 Size => font.MeasureString(text);
 
-    public override Color[] Data => [];
+    public override Color[] Data { get => []; set { } }
 
     public override Drawable OverlayOnto(Drawable drawable) => this;
 
