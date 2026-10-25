@@ -263,9 +263,8 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
 /// </summary>
 /// <param name="toDraw">A record containing the drawable components of this button.</param>
 /// <param name="click">The control which triggers this button's action.</param>
-/// <param name="onClick">The action taken when this control is interacted with.</param>
 /// <param name="z">The Z-value of this control, identifying where in the draw order it should be drawn.</param>
-public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTime> onClick, float z) : Label(toDraw.Unfocused, z), IComponent
+public abstract class BaseButton(ButtonDrawables toDraw, string click, float z) : Label(toDraw.Unfocused, z), IComponent
 {
     private bool isClicked = false;
 
@@ -277,7 +276,21 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
         ControlPositions position = scene.GetControlState(this, click).Position;
         isClicked = Enabled && HasFocus && position is ControlPositions.Press or ControlPositions.Down;
         if (Enabled && HasFocus && position == ControlPositions.Release)
-            onClick(scene, time);
+            OnClick(scene, time);
+    }
+
+    protected abstract void OnClick(Scene scene, FrameTime time);
+}
+
+/// <summary>
+/// Convenience class for buttons which take an action which may be passed as a parameter
+/// </summary>
+/// <param name="onClick">The action taken when this control is interacted with.</param>
+public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTime> onClick, float z) : BaseButton(toDraw, click, z), IComponent
+{
+    protected override void OnClick(Scene scene, FrameTime time)
+    {
+        onClick(scene, time);
     }
 }
 
@@ -374,5 +387,60 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
     {
         int length = Lines[cursor.Y].Length;
         cursor.X = Math.Min(cursor.X, length);
+    }
+}
+
+/// <summary>
+/// A group of buttons of which at most one may be selected at a time.
+/// </summary>
+/// <param name="deselected">The drawables to show when the button is not selected.</param>
+/// <param name="selected">The drawables to show when the button is selected.</param>
+/// <param name="options">The drawables which constitute options to the radio button list.</param>
+/// <param name="pos">The position of the top left of this radio button group.</param>
+/// <param name="click">The "click" control for this group.</param>
+/// <param name="z">The z-value at which the whole group should be displayed.</param>
+public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Point pos, string click, float z) : Container([])
+{
+    private readonly ButtonDrawables deselected = deselected;
+    private readonly Drawable[] selected = selected;
+    private readonly string click = click;
+    private readonly float z = z;
+    private RadioButton[]? buttons;
+
+    /// <summary>
+    /// The index of the selected button, if any.
+    /// </summary>
+    public int? SelIndex => buttons?.Index().First(b => b.Item.sel).Index;
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        base.Create(scene, time);
+        int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
+        buttons = [..options.Select(o => new RadioButton(this, o, pos + new Point(0, height)))];
+        foreach (RadioButton b in buttons)
+            Add(b, scene, time);
+    }
+
+    private void DeselectAll()
+    {
+        foreach(RadioButton b in buttons ?? [])
+            b.sel = false;
+    }
+
+    private class RadioButton(RadioButtonGroup g, Drawable o, Point p) 
+        : BaseButton(new(Process(g.deselected.Unfocused, o, p), Process(g.deselected.Disabled, o, p), Process(g.deselected.Focused, o, p), Process(g.deselected.Clicked, o, p)), g.click, g.z)
+    {
+        private readonly Drawable[] selected = Process(g.selected, o, p);
+        internal bool sel = false;
+
+        protected override Drawable[] ToDraw => sel ? selected : base.ToDraw;
+
+        protected override void OnClick(Scene scene, FrameTime time)
+        {
+            g.DeselectAll();
+            sel = true;
+        }
+
+        private static Drawable[] Process(Drawable[] drawables, Drawable option, Point pos) => [..drawables.Append(option).Select(d => d.SetPos(pos.ToVector2()))];
     }
 }

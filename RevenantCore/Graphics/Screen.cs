@@ -206,6 +206,8 @@ public abstract class Drawable
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
     public Vector2 DrawPos => Pos + Offset;
 
+    public Rectangle Area => new(DrawPos.ToPoint(), Size.ToPoint());
+
     public Drawable SetPos(Vector2 pos)
     {
         Pos = pos;
