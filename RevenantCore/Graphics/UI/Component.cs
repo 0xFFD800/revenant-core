@@ -297,18 +297,20 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
 /// <summary>
 /// A space for the user to input some text.
 /// </summary>
+/// <param name="background">The background on which the text being input is drawn.</param>
 /// <param name="font">The font in which to draw the text.</param>
 /// <param name="pos">The position on screen at which the text should be drawn.</param>
+/// <param name="interact">The control which, when this input is focused, marks it as active.</param>
 /// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
 /// <param name="textColor">The color in which to draw the text.</param>
 /// <param name="z">The z-value at which this component should be drawn.</param>
-public class TextInput(IFont font, Point pos, string textHint, Color textColor, float z) : Label([font.CreateDrawable("")], z), IComponent
+public class TextInput(ButtonDrawables background, IFont font, Point pos, string interact, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
 {
     public string Buffer { get; private set; } = "";
     private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
     private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
-    private bool drawCursor = false;
+    private bool active = false, drawCursor = false;
 
     protected override Drawable[] ToDraw
     {
@@ -320,11 +322,11 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
             else if (textHint.Length > 0)
                 toDraw.Add(MakeDrawable(textHint));
 
-            if (drawCursor)
+            if (drawCursor && active)
                 toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
                     font.MeasureText(Lines[cursor.Y][..cursor.X]).X,
                     font.MeasureText(string.Join("\n", Lines[..cursor.Y])).Y)));
-            return [.. toDraw];
+            return [..base.ToDraw.Concat(toDraw)];
         }
     }
 
@@ -335,6 +337,8 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
     public override void Tick(Scene scene, FrameTime time)
     {
         base.Tick(scene, time);
+
+        active &= HasFocus;
 
         foreach (string key in scene.GetPressedKeys(this))
         {
@@ -357,10 +361,13 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
                 if (cursor.X < line.Length - 1)
                     cursor.X++;
             }
-            else if (key == KeyboardTracker.Directions.Down && cursor.Y < Lines.Length - 1)
+            else if (key == KeyboardTracker.Directions.Down)
             {
-                cursor.Y++;
-                FixCursor();
+                if (cursor.Y < Lines.Length - 1)
+                {
+                    cursor.Y++;
+                    FixCursor();
+                }
             }
             else if (key == KeyboardTracker.End)
                 cursor.X = line.Length;
@@ -380,13 +387,18 @@ public class TextInput(IFont font, Point pos, string textHint, Color textColor, 
                 Buffer += key;
         }
 
-        drawCursor = time.Millis / 1000 % 2 == 0;
+        drawCursor = (int)time.Millis / 1000 % 2 == 0;
     }
 
     private void FixCursor()
     {
         int length = Lines[cursor.Y].Length;
         cursor.X = Math.Min(cursor.X, length);
+    }
+
+    protected override void OnClick(Scene scene, FrameTime time)
+    {
+        active = true;
     }
 }
 

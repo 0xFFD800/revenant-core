@@ -64,7 +64,7 @@ public class Scene(Universe universe, IControlTracker controlTracker, IControlTr
     /// </summary>
     private readonly Stack<IControllable> controlCapture = [];
 
-    public override bool IsDead => false;
+    public override bool IsDead => NextScene != null;
     public Universe Universe => universe;
 
     /// <summary>
