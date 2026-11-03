@@ -31,6 +31,11 @@ public interface IComponent : IVisible, ITickable, IControllable
     bool Enabled { get; set; }
 
     /// <summary>
+    /// Indicates the component is currently active, and focus should not be shifted away from it.
+    /// </summary>
+    bool Active { get; }
+
+    /// <summary>
     /// Adds an animation hook to this component to alter the display of its drawables.
     /// </summary>
     /// <param name="hook">The hook with which to animate this component.</param>
@@ -59,6 +64,7 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
     public Rectangle Area => area;
     public bool Enabled { get; set; } = true;
     public bool HasFocus { get; set; } = false;
+    public bool Active => false;
     public override bool IsDead => components.Count == 0 || components.All(c => c.IsDead);
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => components.Max(c => c.Z);
@@ -85,9 +91,9 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
         return target != null;
     }
 
-
     private bool TryUpdateFocus(Scene scene)
     {
+        if (prevFocused?.Active ?? false) return false;
         if (TryFocusKeyboardSel(scene, controls.Left, (prev, target) => prev.X > target.X + target.Width, (prev, target) => prev.X - (target.X + target.Width))
          || TryFocusKeyboardSel(scene, controls.Right, (prev, target) => prev.X + prev.Width < target.X, (prev, target) => target.X - (prev.X + prev.Width))
          || TryFocusKeyboardSel(scene, controls.Up, (prev, target) => prev.Y > target.Y + target.Height, (prev, target) => prev.Y - (target.Y + target.Height))
@@ -179,6 +185,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
         (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = false;
     public bool HasFocus { get; set; } = false;
+    public virtual bool Active => false;
     public override bool IsDead => closing && hooks.Count == 0;
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => z;
@@ -268,6 +275,7 @@ public abstract class BaseButton(ButtonDrawables toDraw, string click, float z) 
 {
     private bool isClicked = false;
 
+    protected ButtonDrawables Drawables => toDraw;
     protected override Drawable[] ToDraw => !Enabled ? toDraw.Disabled : isClicked ? toDraw.Clicked : HasFocus ? toDraw.Focused : toDraw.Unfocused;
 
     public override void Tick(Scene scene, FrameTime time)
@@ -301,12 +309,14 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
 /// <param name="font">The font in which to draw the text.</param>
 /// <param name="pos">The position on screen at which the text should be drawn.</param>
 /// <param name="interact">The control which, when this input is focused, marks it as active.</param>
+/// <param name="cancel">The control which, when this input is active, marks it as inactive.</param>
 /// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
 /// <param name="textColor">The color in which to draw the text.</param>
 /// <param name="z">The z-value at which this component should be drawn.</param>
-public class TextInput(ButtonDrawables background, IFont font, Point pos, string interact, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
+public class TextInput(ButtonDrawables background, IFont font, Point pos, string interact, string cancel, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
 {
     public string Buffer { get; private set; } = "";
+    public override bool Active => active;
     private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
     private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
@@ -316,7 +326,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, string
     {
         get
         {
-            List<Drawable> toDraw = [];
+            List<Drawable> toDraw = [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
             if (Buffer.Length > 0)
                 toDraw.Add(MakeDrawable(Buffer));
             else if (textHint.Length > 0)
@@ -326,7 +336,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, string
                 toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
                     font.MeasureText(Lines[cursor.Y][..cursor.X]).X,
                     font.MeasureText(string.Join("\n", Lines[..cursor.Y])).Y)));
-            return [..base.ToDraw.Concat(toDraw)];
+            return [.. toDraw];
         }
     }
 
@@ -338,62 +348,68 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, string
     {
         base.Tick(scene, time);
 
-        active &= HasFocus;
+        if (active &= HasFocus && scene.GetControlState(this, cancel).Position != ControlPositions.Press)
+            foreach (string key in scene.GetPressedKeys(this))
+            {
+                string line = Lines[cursor.Y];
+                if (key == KeyboardTracker.Directions.Left)
+                {
+                    if (cursor.X > 0)
+                        cursor.X--;
+                }
+                else if (key == KeyboardTracker.Directions.Up)
+                {
+                    if (cursor.Y > 0)
+                        cursor.Y--;
+                }
+                else if (key == KeyboardTracker.Directions.Right)
+                {
+                    if (cursor.X < line.Length - 1)
+                        cursor.X++;
+                }
+                else if (key == KeyboardTracker.Directions.Down)
+                {
+                    if (cursor.Y < Lines.Length - 1)
+                        cursor.Y++;
+                }
+                else if (key == KeyboardTracker.End)
+                    cursor.X = line.Length;
+                else if (key == KeyboardTracker.Home)
+                    cursor.X = 0;
+                else if (key == KeyboardTracker.Back)
+                {
+                    if (BufferIndex > 0)
+                    {
+                        Buffer = Buffer.Remove(Math.Max(0, BufferIndex - 1), 1);
+                        cursor.X--;
+                    }
+                }
+                else if (key == KeyboardTracker.Delete)
+                {
+                    if (BufferIndex < Buffer.Length && Buffer.Length > 0)
+                        Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 1), 1);
+                }
+                else
+                {
+                    Buffer = Buffer.Insert(BufferIndex, key);
+                    cursor.X += key.Length;
+                }
 
-        foreach (string key in scene.GetPressedKeys(this))
-        {
-            string line = Lines[cursor.Y];
-            if (key == KeyboardTracker.Directions.Left)
-            {
-                if (cursor.X > 0)
-                    cursor.X--;
+                FixCursor();
             }
-            else if (key == KeyboardTracker.Directions.Up)
-            {
-                if (cursor.Y > 0)
-                {
-                    cursor.Y--;
-                    FixCursor();
-                }
-            }
-            else if (key == KeyboardTracker.Directions.Right)
-            {
-                if (cursor.X < line.Length - 1)
-                    cursor.X++;
-            }
-            else if (key == KeyboardTracker.Directions.Down)
-            {
-                if (cursor.Y < Lines.Length - 1)
-                {
-                    cursor.Y++;
-                    FixCursor();
-                }
-            }
-            else if (key == KeyboardTracker.End)
-                cursor.X = line.Length;
-            else if (key == KeyboardTracker.Home)
-                cursor.X = 0;
-            else if (key == KeyboardTracker.Back)
-            {
-                if (cursor.X > 0)
-                {
-                    Buffer = Buffer.Remove(Math.Max(0, BufferIndex - 1), 1);
-                    cursor.X--;
-                }
-            }
-            else if (key == KeyboardTracker.Delete)
-                Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 1), 1);
-            else
-                Buffer += key;
-        }
 
         drawCursor = (int)time.Millis / 1000 % 2 == 0;
     }
 
     private void FixCursor()
     {
-        int length = Lines[cursor.Y].Length;
-        cursor.X = Math.Min(cursor.X, length);
+        if (cursor.X < 0 && cursor.Y > 0)
+        {
+            cursor.Y--;
+            cursor.X = Lines[cursor.Y].Length;
+        }
+        else
+            cursor.X = Math.Min(cursor.X, Lines[cursor.Y].Length);
     }
 
     protected override void OnClick(Scene scene, FrameTime time)
@@ -428,18 +444,18 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     {
         base.Create(scene, time);
         int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
-        buttons = [..options.Select(o => new RadioButton(this, o, pos + new Point(0, height)))];
+        buttons = [.. options.Select(o => new RadioButton(this, o, pos + new Point(0, height)))];
         foreach (RadioButton b in buttons)
             Add(b, scene, time);
     }
 
     private void DeselectAll()
     {
-        foreach(RadioButton b in buttons ?? [])
+        foreach (RadioButton b in buttons ?? [])
             b.sel = false;
     }
 
-    private class RadioButton(RadioButtonGroup g, Drawable o, Point p) 
+    private class RadioButton(RadioButtonGroup g, Drawable o, Point p)
         : BaseButton(new(Process(g.deselected.Unfocused, o, p), Process(g.deselected.Disabled, o, p), Process(g.deselected.Focused, o, p), Process(g.deselected.Clicked, o, p)), g.click, g.z)
     {
         private readonly Drawable[] selected = Process(g.selected, o, p);
@@ -453,6 +469,6 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             sel = true;
         }
 
-        private static Drawable[] Process(Drawable[] drawables, Drawable option, Point pos) => [..drawables.Append(option).Select(d => d.SetPos(pos.ToVector2()))];
+        private static Drawable[] Process(Drawable[] drawables, Drawable option, Point pos) => [.. drawables.Append(option).Select(d => d.SetPos(pos.ToVector2()))];
     }
 }
