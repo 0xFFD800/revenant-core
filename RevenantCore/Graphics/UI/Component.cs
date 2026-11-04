@@ -308,12 +308,13 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
 /// <param name="background">The background on which the text being input is drawn.</param>
 /// <param name="font">The font in which to draw the text.</param>
 /// <param name="pos">The position on screen at which the text should be drawn.</param>
+/// <param name="maxChars">The maximum number of characters which may be entered into this input.</param>
 /// <param name="interact">The control which, when this input is focused, marks it as active.</param>
 /// <param name="cancel">The control which, when this input is active, marks it as inactive.</param>
 /// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
 /// <param name="textColor">The color in which to draw the text.</param>
 /// <param name="z">The z-value at which this component should be drawn.</param>
-public class TextInput(ButtonDrawables background, IFont font, Point pos, string interact, string cancel, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
+public class TextInput(ButtonDrawables background, IFont font, Point pos, int maxChars, string interact, string cancel, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
 {
     public string Buffer { get; private set; } = "";
     public override bool Active => active;
@@ -326,7 +327,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, string
     {
         get
         {
-            List<Drawable> toDraw = [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
+            List<Drawable> toDraw = [..!Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
             if (Buffer.Length > 0)
                 toDraw.Add(MakeDrawable(Buffer));
             else if (textHint.Length > 0)
@@ -389,7 +390,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, string
                     if (BufferIndex < Buffer.Length && Buffer.Length > 0)
                         Buffer = Buffer.Remove(Math.Min(BufferIndex, Buffer.Length - 1), 1);
                 }
-                else
+                else if (Buffer.Length + key.Length <= maxChars)
                 {
                     Buffer = Buffer.Insert(BufferIndex, key);
                     cursor.X += key.Length;

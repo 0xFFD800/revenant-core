@@ -206,7 +206,6 @@ public class KeyboardTracker : ControlTracker, IControlTracker
             Keys.OemQuotes => shift ? "\"" : "'",
             Keys.OemSemicolon => shift ? ":" : ";",
             Keys.OemTilde => shift ? "~" : "`",
-            Keys.Tab => "\t",
             Keys.Right => Directions.Right,
             Keys.Left => Directions.Left,
             Keys.Up => Directions.Up,
