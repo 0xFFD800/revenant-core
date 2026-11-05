@@ -2,7 +2,6 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using Microsoft.Xna.Framework.Input;
 using RevenantCore.Entities.Spec;
 using RevenantCore.Scenes;
@@ -38,22 +37,22 @@ public enum ControlPositions
     /// A new press.
     /// Was not pressed the previous tick, but is pressed now.
     /// </summary>
-    Press,
+    Press = 2,
     /// <summary>
     /// A sustained press.
     /// Was pressed the previous tick and is pressed now.
     /// </summary>
-    Down,
+    Down = 3,
     /// <summary>
     /// A new release.
     /// Was pressed the previous tick, but is not pressed now.
     /// </summary>
-    Release,
+    Release = 0,
     /// <summary>
     /// Not pressed.
     /// Was pressed neither the previous tick nor this one.
     /// </summary>
-    Up
+    Up = 1
 }
 
 /// <summary>
@@ -61,7 +60,10 @@ public enum ControlPositions
 /// </summary>
 /// <param name="Position">The position which this control is currently in.</param>
 /// <param name="Millis">The number of milliseconds for which this control has been pressed.</param>
-public record struct ControlState(ControlPositions Position, double Millis);
+public record struct ControlState(ControlPositions Position, double Millis)
+{
+    public static ControlState Merge(ControlState primary, ControlState secondary) => primary.Position > secondary.Position ? primary : secondary;
+}
 
 /// <summary>
 /// The result of an attempt to handle control input.
@@ -221,15 +223,18 @@ public class KeyboardTracker : ControlTracker, IControlTracker
         KeyboardState state = core.Inputs.Keyboard;
         foreach (Keys key in Enum.GetValues<Keys>())
         {
-            string? id = GetID(key, state.IsKeyDown(Keys.LeftShift) || state.IsKeyDown(Keys.RightShift), state.CapsLock, state.NumLock);
+            bool shift = state.IsKeyDown(Keys.LeftShift) || state.IsKeyDown(Keys.RightShift);
+            string? id = GetID(key, shift, state.CapsLock, state.NumLock);
             if (id == null) continue;
 
             bool pressed = state.IsKeyDown(key);
+            ControlState complement = prevStates.GetValueOrDefault(GetID(key, !shift, state.CapsLock, state.NumLock) ?? id, new(ControlPositions.Up, 0));
             ControlState currState = GetCurrState(prevStates.GetValueOrDefault(id, new(ControlPositions.Up, 0)), time, pressed);
-            if (currStates.Remove(id, out ControlState existing))
-                currStates.Add(id, currState.Position.In(ControlPositions.Down, ControlPositions.Press) ? currState : existing);
-            else
-                currStates.Add(id, currState);
+            ControlState merged = currStates.Remove(id, out ControlState existing) ? ControlState.Merge(currState, existing) : currState;
+            if ((merged.Position == ControlPositions.Press && complement.Position == ControlPositions.Down) 
+                    || (merged.Position == ControlPositions.Release && complement.Position == ControlPositions.Up))
+                merged = complement;
+            currStates.Add(id, merged);
         }
         States = currStates.ToFrozenDictionary();
     }
