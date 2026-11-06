@@ -63,7 +63,19 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
 
     public Rectangle Area => area;
     public bool Enabled { get; set; } = true;
-    public bool HasFocus { get; set; } = false;
+    public bool HasFocus
+    {
+        get => components.Any(c => c.HasFocus);
+        set
+        {
+            if (value && prevFocused != null)
+                prevFocused.HasFocus = true;
+            else if (value)
+                components.FirstOrDefault(c => c.Enabled)?.HasFocus = true;
+            else
+                components.ForEach(c => c.HasFocus = false);
+        }
+    }
     public bool Active => false;
     public override bool IsDead => components.Count == 0 || components.All(c => c.IsDead);
     public DrawLayer Layer => DrawLayer.UI;
@@ -327,7 +339,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
     {
         get
         {
-            List<Drawable> toDraw = [..!Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
+            List<Drawable> toDraw = [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
             if (Buffer.Length > 0)
                 toDraw.Add(MakeDrawable(Buffer));
             else if (textHint.Length > 0)
@@ -428,7 +440,8 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
 /// <param name="pos">The position of the top left of this radio button group.</param>
 /// <param name="click">The "click" control for this group.</param>
 /// <param name="z">The z-value at which the whole group should be displayed.</param>
-public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Point pos, string click, float z) : Container([])
+public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Point pos, string click, float z) 
+    : Container([], new(pos, new(options.Max(o => o.Area.Width), (int)(options.Max(o => o.Area.Height) * 1.5F))), new())
 {
     private readonly ButtonDrawables deselected = deselected;
     private readonly Drawable[] selected = selected;
@@ -445,7 +458,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     {
         base.Create(scene, time);
         int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
-        buttons = [.. options.Select(o => new RadioButton(this, o, pos + new Point(0, height)))];
+        buttons = [.. options.Select((o, i) => new RadioButton(this, o, new(pos + new Point(0, (int)(height * 1.5F * i)), Area.Size)) { Enabled = Enabled })];
         foreach (RadioButton b in buttons)
             Add(b, scene, time);
     }
@@ -456,10 +469,10 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             b.sel = false;
     }
 
-    private class RadioButton(RadioButtonGroup g, Drawable o, Point p)
-        : BaseButton(new(Process(g.deselected.Unfocused, o, p), Process(g.deselected.Disabled, o, p), Process(g.deselected.Focused, o, p), Process(g.deselected.Clicked, o, p)), g.click, g.z)
+    private class RadioButton(RadioButtonGroup g, Drawable o, Rectangle a)
+        : BaseButton(new(Process(g.deselected.Unfocused, o, a), Process(g.deselected.Disabled, o, a), Process(g.deselected.Focused, o, a), Process(g.deselected.Clicked, o, a)), g.click, g.z)
     {
-        private readonly Drawable[] selected = Process(g.selected, o, p);
+        private readonly Drawable[] selected = Process(g.selected, o, a);
         internal bool sel = false;
 
         protected override Drawable[] ToDraw => sel ? selected : base.ToDraw;
@@ -470,6 +483,8 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             sel = true;
         }
 
-        private static Drawable[] Process(Drawable[] drawables, Drawable option, Point pos) => [.. drawables.Append(option).Select(d => d.SetPos(pos.ToVector2()))];
+        private static Drawable[] Process(Drawable[] drawables, Drawable option, Rectangle area) =>
+            [.. drawables.Append(option.SetOffset(new(12, 0)))
+                .Select(d => d.ShallowCopy().SetOffset(d.Offset - area.Size.ToVector2()).SetPos(area.Location.ToVector2()))];
     }
 }
