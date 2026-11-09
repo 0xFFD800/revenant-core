@@ -287,8 +287,8 @@ public abstract class BaseButton(ButtonDrawables toDraw, string click, float z) 
 {
     private bool isClicked = false;
 
-    protected ButtonDrawables Drawables => toDraw;
-    protected override Drawable[] ToDraw => !Enabled ? toDraw.Disabled : isClicked ? toDraw.Clicked : HasFocus ? toDraw.Focused : toDraw.Unfocused;
+    protected virtual ButtonDrawables Drawables => toDraw;
+    protected override Drawable[] ToDraw => !Enabled ? Drawables.Disabled : isClicked ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused;
 
     public override void Tick(Scene scene, FrameTime time)
     {
