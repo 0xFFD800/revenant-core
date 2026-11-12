@@ -315,6 +315,32 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
 }
 
 /// <summary>
+/// A base input for inputs which have separate "active" and "inactive" modes.
+/// </summary>
+/// <param name="background">The background on which the text being input is drawn.</param>
+/// <param name="interact">The control which, when this input is focused, marks it as active.</param>
+/// <param name="cancel">The control which, when this input is active, marks it as inactive.</param>
+public class ModalInput(ButtonDrawables background, string interact, string cancel, float z) : BaseButton(background, interact, z)
+{
+    public override bool Active => active;
+
+    private bool active = false;
+
+    protected override Drawable[] ToDraw => [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
+
+    public override void Tick(Scene scene, FrameTime time)
+    {
+        base.Tick(scene, time);
+        active &= HasFocus && scene.GetControlState(this, cancel).Position != ControlPositions.Press;
+    }
+
+    protected override void OnClick(Scene scene, FrameTime time)
+    {
+        active = true;
+    }
+}
+
+/// <summary>
 /// A space for the user to input some text.
 /// </summary>
 /// <param name="background">The background on which the text being input is drawn.</param>
@@ -326,26 +352,25 @@ public class Button(ButtonDrawables toDraw, string click, Action<Scene, FrameTim
 /// <param name="textHint">An optional hint to display when the user has not entered any text.</param>
 /// <param name="textColor">The color in which to draw the text.</param>
 /// <param name="z">The z-value at which this component should be drawn.</param>
-public class TextInput(ButtonDrawables background, IFont font, Point pos, int maxChars, string interact, string cancel, string textHint, Color textColor, float z) : BaseButton(background, interact, z), IComponent
+public class TextInput(ButtonDrawables background, IFont font, Point pos, int maxChars, string interact, string cancel, string textHint, Color textColor, float z) : ModalInput(background, interact, cancel, z), IComponent
 {
     public string Buffer { get; private set; } = "";
-    public override bool Active => active;
     private string[] Lines => Buffer.Split('\n');
     private Point cursor = Point.Zero;
     private int BufferIndex => Lines[..cursor.Y].Sum(s => s.Length) + cursor.X;
-    private bool active = false, drawCursor = false;
+    private bool drawCursor = false;
 
     protected override Drawable[] ToDraw
     {
         get
         {
-            List<Drawable> toDraw = [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
+            List<Drawable> toDraw = [.. base.ToDraw];
             if (Buffer.Length > 0)
                 toDraw.Add(MakeDrawable(Buffer));
             else if (textHint.Length > 0)
                 toDraw.Add(MakeDrawable(textHint));
 
-            if (drawCursor && active)
+            if (drawCursor && Active)
                 toDraw.Add(MakeDrawable("|").SetPos(pos.ToVector2() + new Vector2(
                     font.MeasureText(Lines[cursor.Y][..cursor.X]).X,
                     font.MeasureText(string.Join("\n", Lines[..cursor.Y])).Y)));
@@ -361,7 +386,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
     {
         base.Tick(scene, time);
 
-        if (active &= HasFocus && scene.GetControlState(this, cancel).Position != ControlPositions.Press)
+        if (Active)
             foreach (string key in scene.GetPressedKeys(this))
             {
                 string line = Lines[cursor.Y];
@@ -424,11 +449,6 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
         else
             cursor.X = Math.Min(cursor.X, Lines[cursor.Y].Length);
     }
-
-    protected override void OnClick(Scene scene, FrameTime time)
-    {
-        active = true;
-    }
 }
 
 /// <summary>
@@ -487,4 +507,10 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             [.. drawables.Append(option.SetOffset(new(12, 0)))
                 .Select(d => d.ShallowCopy().SetOffset(d.Offset - area.Size.ToVector2()).SetPos(area.Location.ToVector2()))];
     }
+}
+
+public class ComboBox(ButtonDrawables background, Drawable[] combo, Drawable[] options, string interact, string cancel, float z) 
+    : ModalInput(background, interact, cancel, z), IComponent
+{
+
 }
