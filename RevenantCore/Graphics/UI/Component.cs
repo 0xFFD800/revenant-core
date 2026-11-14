@@ -53,6 +53,7 @@ public interface IComponent : IVisible, ITickable, IControllable
 /// <param name="initialComponents"> The list of components which are initially part of this container.</param>
 /// <param name="area">The area which bounds this container. Should contain all of its components' areas.</param>
 /// <param name="controls">The controls which will be used to change focus via the keyboard or gamepad.</param>
+/// <param name="interact">The interaction control.</param>
 public class Container(List<IComponent> initialComponents, Rectangle area, DirectionControlSpec controls) : Scythe, IComponent
 {
     private readonly List<IComponent> components = [];
@@ -237,7 +238,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
         }
     }
 
-    public bool Matches(IControllable other) => other == this;
+    public virtual bool Matches(IControllable other) => other == this;
 
     protected override void Reap(IMortal mortal, Scene scene, FrameTime time)
     {
@@ -324,7 +325,7 @@ public class ModalInput(ButtonDrawables background, string interact, string canc
 {
     public override bool Active => active;
 
-    private bool active = false;
+    protected bool active = false;
 
     protected override Drawable[] ToDraw => [.. !Enabled ? Drawables.Disabled : active ? Drawables.Clicked : HasFocus ? Drawables.Focused : Drawables.Unfocused];
 
@@ -461,7 +462,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
 /// <param name="click">The "click" control for this group.</param>
 /// <param name="z">The z-value at which the whole group should be displayed.</param>
 public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Point pos, string click, float z) 
-    : Container([], new(pos, new(options.Max(o => o.Area.Width), (int)(options.Max(o => o.Area.Height) * 1.5F))), new())
+    : Container([], new(pos, new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
 {
     private readonly ButtonDrawables deselected = deselected;
     private readonly Drawable[] selected = selected;
@@ -472,7 +473,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     /// <summary>
     /// The index of the selected button, if any.
     /// </summary>
-    public int? SelIndex => buttons?.Index().First(b => b.Item.sel).Index;
+    public int? SelIndex => buttons?.Length > 0 ? buttons.Index().FirstOrDefault(b => b.Item.sel).Index : null;
 
     public override void Create(Scene scene, FrameTime time)
     {
@@ -505,12 +506,90 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
 
         private static Drawable[] Process(Drawable[] drawables, Drawable option, Rectangle area) =>
             [.. drawables.Append(option.SetOffset(new(12, 0)))
-                .Select(d => d.ShallowCopy().SetOffset(d.Offset - area.Size.ToVector2()).SetPos(area.Location.ToVector2()))];
+                .Select(d => d.ShallowCopy().SetOffset(d.Offset - new Vector2(area.Size.X, area.Size.Y * 0.3F)).SetPos(area.Location.ToVector2()))];
     }
 }
 
-public class ComboBox(ButtonDrawables background, Drawable[] combo, Drawable[] options, string interact, string cancel, float z) 
-    : ModalInput(background, interact, cancel, z), IComponent
+/// <summary>
+/// A box which brings up a list of choices for the user to select from.
+/// </summary>
+/// <param name="deselected">The drawables to draw when the combo box is not open.</param>
+/// <param name="combo">The drawables to draw as the background when the combo box is open.</param>
+/// <param name="options">The drawables which constitute options to include in the combo box.</param>
+/// <param name="interact">The control which indicates opening the combo box or selecting an option.</param>
+/// <param name="cancel">The control which indicates that the user is canceling the interaction.</param>
+/// <param name="z">The z-value at which the whole group should be displayed.</param>
+public class ComboBox(ButtonDrawables deselected, Drawable[] combo, Drawable[] options, string interact, string cancel, float z) 
+    : ModalInput(deselected, interact, cancel, z), IComponent
 {
+    private readonly ButtonDrawables deselected = deselected;
+    private readonly string interact = interact;
+    private readonly float z = z;
+    private ComboOption[]? buttons;
+    private Container? openComboBox;
 
+    private Rectangle OptionArea => options.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area));
+    protected override Drawable[] ToDraw => Active ? combo : SelIndex.HasValue ? [..base.ToDraw.Append(options[SelIndex.Value])] : base.ToDraw;
+    public int? SelIndex => buttons?.Length > 0 ? buttons.Index().FirstOrDefault(b => b.Item.sel).Index : null;
+
+    public override void Create(Scene scene, FrameTime time)
+    {
+        base.Create(scene, time);
+        openComboBox = new([], OptionArea, new()) { Enabled = true };
+        openComboBox.Create(scene, time);
+        Point pos = new(combo.Min(m => (int)m.Pos.X), combo.Min(m => (int)m.Pos.Y));
+        int height = OptionArea.Height;
+        buttons = [.. options.Select((o, i) => new ComboOption(this, o, new(pos + new Point(0, (int)(height * 1.5F * i)), Area.Size)) { Enabled = Enabled })];
+        foreach (ComboOption b in buttons)
+            openComboBox.Add(b, scene, time);
+    }
+
+    public override void Draw(View view, Camera camera)
+    {
+        base.Draw(view, camera);
+        if (Active)
+            openComboBox?.Draw(view, camera);
+    }
+
+    public override void Tick(Scene scene, FrameTime time)
+    {
+        bool startActive = Active;
+        base.Tick(scene, time);
+        if (startActive)
+        {
+            openComboBox?.HasFocus = HasFocus;
+            openComboBox?.Tick(scene, time);
+        }
+    }
+
+    public override void Glean(Scene scene, FrameTime time)
+    {
+        base.Glean(scene, time);
+        openComboBox?.Glean(scene, time);
+    }
+
+    private void DeselectAll()
+    {
+        foreach (ComboOption b in buttons ?? [])
+            b.sel = false;
+    }
+
+    public override bool Matches(IControllable other) => other == this || (openComboBox?.Matches(other) ?? false);
+
+    private class ComboOption(ComboBox b, Drawable o, Rectangle a)
+        : BaseButton(new(Process(b.deselected.Unfocused, o, a), Process(b.deselected.Disabled, o, a), Process(b.deselected.Focused, o, a), Process(b.deselected.Clicked, o, a)), b.interact, b.z)
+    {
+        internal bool sel = false;
+
+        protected override void OnClick(Scene scene, FrameTime time)
+        {
+            b.DeselectAll();
+            sel = true;
+            b.active = false;
+        }
+
+        private static Drawable[] Process(Drawable[] drawables, Drawable option, Rectangle area) =>
+            [.. drawables.Append(option.SetOffset(new(8, 2)))
+                .Select(d => d.ShallowCopy().SetOffset(d.Offset).SetPos(area.Location.ToVector2()))];
+    }
 }
