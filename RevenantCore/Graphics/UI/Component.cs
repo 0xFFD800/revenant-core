@@ -77,7 +77,7 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
                 components.ForEach(c => c.HasFocus = false);
         }
     }
-    public bool Active => false;
+    public bool Active { get; private set; } = false;
     public override bool IsDead => components.Count == 0 || components.All(c => c.IsDead);
     public DrawLayer Layer => DrawLayer.UI;
     public float Z => components.Max(c => c.Z);
@@ -162,9 +162,10 @@ public class Container(List<IComponent> initialComponents, Rectangle area, Direc
         foreach (IComponent c in components)
         {
             c.Tick(scene, time);
-            c.HasFocus = false;
+            if (!c.Active)
+                c.HasFocus = false;
         }
-        if (!TryUpdateFocus(scene) && prevFocused != null)
+        if (!(Active = TryUpdateFocus(scene)) && prevFocused != null)
             SetFocused(prevFocused);
         base.Tick(scene, time);
     }
@@ -473,7 +474,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     /// <summary>
     /// The index of the selected button, if any.
     /// </summary>
-    public int? SelIndex => buttons?.Length > 0 ? buttons.Index().FirstOrDefault(b => b.Item.sel).Index : null;
+    public int? SelIndex => buttons?.Length > 0 && buttons.Any(b => b.sel) ? buttons.Index().First(b => b.Item.sel).Index : null;
 
     public override void Create(Scene scene, FrameTime time)
     {
@@ -506,7 +507,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
 
         private static Drawable[] Process(Drawable[] drawables, Drawable option, Rectangle area) =>
             [.. drawables.Append(option.SetOffset(new(12, 0)))
-                .Select(d => d.ShallowCopy().SetOffset(d.Offset - new Vector2(area.Size.X, area.Size.Y * 0.3F)).SetPos(area.Location.ToVector2()))];
+                .Select(d => d.ShallowCopy().SetOffset(d.Offset - new Vector2(area.Size.X * 1.5F, area.Size.Y * 0.5F)).SetPos(area.Location.ToVector2()))];
     }
 }
 
@@ -530,8 +531,10 @@ public class ComboBox(ButtonDrawables deselected, ButtonDrawables combo, Drawabl
     private Container? openComboBox;
 
     private Rectangle ComboArea => combo.Unfocused.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area));
-    protected override Drawable[] ToDraw => Active ? [] : SelIndex.HasValue ? [..base.ToDraw.Append(options[SelIndex.Value])] : base.ToDraw;
-    public int? SelIndex => buttons?.Length > 0 ? buttons.Index().FirstOrDefault(b => b.Item.sel).Index : null;
+    protected override Drawable[] ToDraw => Active ? [] // Handled by drawing openComboBox
+        : SelIndex.HasValue ? [..base.ToDraw.Append(options[SelIndex.Value].ShallowCopy().SetPos(Area.Location.ToVector2()))]
+        : base.ToDraw;
+    public int? SelIndex => buttons?.Length > 0 && buttons.Any(b => b.sel) ? buttons.Index().First(b => b.Item.sel).Index : null;
 
     public override void Create(Scene scene, FrameTime time)
     {
