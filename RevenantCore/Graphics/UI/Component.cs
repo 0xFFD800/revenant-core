@@ -195,7 +195,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
     private readonly List<IAnimationHook> hooks = [];
     private bool closing = false;
 
-    public Rectangle Area => toDraw.Aggregate(new Rectangle(toDraw.FirstOrDefault()?.Pos.ToPoint() ?? new(), new()),
+    public virtual Rectangle Area => toDraw.Aggregate(new Rectangle(toDraw.FirstOrDefault()?.Pos.ToPoint() ?? new(), new()),
         (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
     public bool Enabled { get; set; } = false;
     public bool HasFocus { get; set; } = false;
@@ -459,14 +459,16 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
 /// <param name="deselected">The drawables to show when the button is not selected.</param>
 /// <param name="selected">The drawables to show when the button is selected.</param>
 /// <param name="options">The drawables which constitute options to the radio button list.</param>
-/// <param name="pos">The position of the top left of this radio button group.</param>
+/// <param name="origin">The position of the top left of this radio button group's parent container.</param>
+/// <param name="pos">The position of the top left of this radio button relative to <paramref name="origin"/>.</param>
 /// <param name="click">The "click" control for this group.</param>
 /// <param name="z">The z-value at which the whole group should be displayed.</param>
-public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Point pos, string click, float z) 
-    : Container([], new(pos, new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
+public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Vector2 origin, Vector2 pos, string click, float z) 
+    : Container([], new(pos.ToPoint(), new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
 {
     private readonly ButtonDrawables deselected = deselected;
     private readonly Drawable[] selected = selected;
+    private readonly Vector2 origin = origin;
     private readonly string click = click;
     private readonly float z = z;
     private RadioButton[]? buttons;
@@ -480,7 +482,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     {
         base.Create(scene, time);
         int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
-        buttons = [.. options.Select((o, i) => new RadioButton(this, o, new(pos + new Point(0, (int)(height * 1.5F * i)), Area.Size)) { Enabled = Enabled })];
+        buttons = [.. options.Select((o, i) => new RadioButton(this, o, pos + new Vector2(0, height * 1.5F * i)) { Enabled = Enabled })];
         foreach (RadioButton b in buttons)
             Add(b, scene, time);
     }
@@ -491,13 +493,15 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             b.sel = false;
     }
 
-    private class RadioButton(RadioButtonGroup g, Drawable o, Rectangle a)
-        : BaseButton(new(Process(g.deselected.Unfocused, o, a), Process(g.deselected.Disabled, o, a), Process(g.deselected.Focused, o, a), Process(g.deselected.Clicked, o, a)), g.click, g.z)
+    private class RadioButton(RadioButtonGroup g, Drawable o, Vector2 p)
+        : BaseButton(new(Process(g.deselected.Unfocused, o, p), Process(g.deselected.Disabled, o, p), Process(g.deselected.Focused, o, p), Process(g.deselected.Clicked, o, p)), g.click, g.z)
     {
-        private readonly Drawable[] selected = Process(g.selected, o, a);
+        private const int xOffset = 12;
+        private readonly Drawable[] selected = Process(g.selected, o, p);
         internal bool sel = false;
 
         protected override Drawable[] ToDraw => sel ? selected : base.ToDraw;
+        public override Rectangle Area => new(base.Area.Location + g.origin.ToPoint(), base.Area.Size + new Point(xOffset, 0));
 
         protected override void OnClick(Scene scene, FrameTime time)
         {
@@ -505,9 +509,9 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
             sel = true;
         }
 
-        private static Drawable[] Process(Drawable[] drawables, Drawable option, Rectangle area) =>
-            [.. drawables.Append(option.SetOffset(new(12, 0)))
-                .Select(d => d.ShallowCopy().SetOffset(d.Offset - new Vector2(area.Size.X * 1.5F, area.Size.Y * 0.5F)).SetPos(area.Location.ToVector2()))];
+        private static Drawable[] Process(Drawable[] drawables, Drawable option, Vector2 pos) =>
+            [.. drawables.Append(option.SetOffset(new(xOffset, 0)))
+                .Select(d => d.ShallowCopy().SetOffset(d.Offset).SetPos(pos))];
     }
 }
 
@@ -542,7 +546,7 @@ public class ComboBox(ButtonDrawables deselected, ButtonDrawables combo, Drawabl
         openComboBox = new([], ComboArea, new()) { Enabled = true };
         openComboBox.Create(scene, time);
         int height = ComboArea.Height;
-        buttons = [.. options.Select((o, i) => new ComboOption(this, o, new(comboPos + new Point(0, (int)(height * i)), Area.Size)) { Enabled = Enabled })];
+        buttons = [.. options.Select((o, i) => new ComboOption(this, o, new(comboPos + new Point(0, height * i), Area.Size)) { Enabled = Enabled })];
         foreach (ComboOption b in buttons)
             openComboBox.Add(b, scene, time);
     }
