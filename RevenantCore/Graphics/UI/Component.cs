@@ -202,7 +202,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
     public virtual bool Active => false;
     public override bool IsDead => closing && hooks.Count == 0;
     public DrawLayer Layer => DrawLayer.UI;
-    public float Z => z;
+    public virtual float Z => z;
 
     protected virtual Drawable[] ToDraw => toDraw;
 
@@ -464,7 +464,7 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
 /// <param name="click">The "click" control for this group.</param>
 /// <param name="z">The z-value at which the whole group should be displayed.</param>
 public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Vector2 origin, Vector2 pos, string click, float z) 
-    : Container([], new(pos.ToPoint(), new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
+    : Container([], new((pos + origin).ToPoint(), new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
 {
     private readonly ButtonDrawables deselected = deselected;
     private readonly Drawable[] selected = selected;
@@ -482,7 +482,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
     {
         base.Create(scene, time);
         int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
-        buttons = [.. options.Select((o, i) => new RadioButton(this, o, pos + new Vector2(0, height * 1.5F * i)) { Enabled = Enabled })];
+        buttons = [.. options.Select((o, i) => new RadioButton(this, o, pos + new Vector2(-height, height * 1.5F * i - height / 2)) { Enabled = Enabled })];
         foreach (RadioButton b in buttons)
             Add(b, scene, time);
     }
@@ -511,7 +511,7 @@ public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, D
 
         private static Drawable[] Process(Drawable[] drawables, Drawable option, Vector2 pos) =>
             [.. drawables.Append(option.SetOffset(new(xOffset, 0)))
-                .Select(d => d.ShallowCopy().SetOffset(d.Offset).SetPos(pos))];
+                .Select(d => d.ShallowCopy().SetPos(pos))];
     }
 }
 
@@ -539,6 +539,7 @@ public class ComboBox(ButtonDrawables deselected, ButtonDrawables combo, Drawabl
         : SelIndex.HasValue ? [..base.ToDraw.Append(options[SelIndex.Value].ShallowCopy().SetPos(Area.Location.ToVector2()))]
         : base.ToDraw;
     public int? SelIndex => buttons?.Length > 0 && buttons.Any(b => b.sel) ? buttons.Index().First(b => b.Item.sel).Index : null;
+    public override float Z => active ? z - 2 : z;
 
     public override void Create(Scene scene, FrameTime time)
     {
