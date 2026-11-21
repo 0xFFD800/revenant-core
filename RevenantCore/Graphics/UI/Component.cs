@@ -277,7 +277,14 @@ public class AnimatedLabel(AnimationCollection animations, string id, Vector2 ce
 /// <param name="Disabled">The components to draw when this component is disabled.</param>
 /// <param name="Focused">The components to draw when this component is focused.</param> 
 /// <param name="Clicked">The components to draw when this component is clicked.</param>
-public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, Drawable[] Focused, Drawable[] Clicked);
+public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, Drawable[] Focused, Drawable[] Clicked)
+{
+    public static ButtonDrawables operator +(ButtonDrawables left, ButtonDrawables right) => new(
+        [..left.Unfocused.Concat(right.Unfocused)], 
+        [..left.Disabled.Concat(right.Disabled)], 
+        [..left.Focused.Concat(right.Focused)], 
+        [..left.Clicked.Concat(right.Clicked)]);
+}
 
 /// <summary>
 /// Base class for a component which performs an action when interacted with.
