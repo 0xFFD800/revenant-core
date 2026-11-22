@@ -249,6 +249,13 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
     }
 }
 
+/// <summary>
+/// A label which draws its appearance from an animation sourced from an animation collection.
+/// </summary>
+/// <param name="animations">The animation collection from which to obtain this label's appearance.</param>
+/// <param name="id">The ID of the animation to draw on this label.</param>
+/// <param name="center">The center of the position where this label should be drawn.</param>
+/// <param name="z">The z-value at which this label should be drawn.</param>
 public class AnimatedLabel(AnimationCollection animations, string id, Vector2 center, float z) : Label([animations.GetFrame(id, new(new()))], z)
 {
     private FrameTime frame = new(new());
