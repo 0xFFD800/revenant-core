@@ -279,6 +279,25 @@ public class AnimatedLabel(AnimationCollection animations, string id, Vector2 ce
 /// <param name="Clicked">The components to draw when this component is clicked.</param>
 public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, Drawable[] Focused, Drawable[] Clicked)
 {
+    /// <summary>
+    /// Applies ShallowCopy to all sub-drawables.
+    /// </summary>
+    public ButtonDrawables ShallowCopy() => new(
+        [..Unfocused.Select(d => d.ShallowCopy())],
+        [..Disabled.Select(d => d.ShallowCopy())],
+        [..Focused.Select(d => d.ShallowCopy())],
+        [..Clicked.Select(d => d.ShallowCopy())]);
+
+    /// <summary>
+    /// Applies SetPos to all sub-drawables with the provided position vectory.
+    /// </summary>
+    /// <param name="pos">The position to set all sub-drawables to the position of.</param>
+    public ButtonDrawables SetPos(Vector2 pos) => new(
+        [..Unfocused.Select(d => d.SetPos(pos))],
+        [..Disabled.Select(d => d.SetPos(pos))],
+        [..Focused.Select(d => d.SetPos(pos))],
+        [..Clicked.Select(d => d.SetPos(pos))]);
+
     public static ButtonDrawables operator +(ButtonDrawables left, ButtonDrawables right) => new(
         [..left.Unfocused.Concat(right.Unfocused)], 
         [..left.Disabled.Concat(right.Disabled)], 
@@ -464,61 +483,48 @@ public class TextInput(ButtonDrawables background, IFont font, Point pos, int ma
 /// A group of buttons of which at most one may be selected at a time.
 /// </summary>
 /// <param name="deselected">The drawables to show when the button is not selected.</param>
-/// <param name="selected">The drawables to show when the button is selected.</param>
 /// <param name="options">The drawables which constitute options to the radio button list.</param>
-/// <param name="origin">The position of the top left of this radio button group's parent container.</param>
-/// <param name="pos">The position of the top left of this radio button relative to <paramref name="origin"/>.</param>
+/// <param name="selected">The drawables to show when the button is selected.</param>
 /// <param name="click">The "click" control for this group.</param>
 /// <param name="z">The z-value at which the whole group should be displayed.</param>
-public class RadioButtonGroup(ButtonDrawables deselected, Drawable[] selected, Drawable[] options, Vector2 origin, Vector2 pos, string click, float z) 
-    : Container([], new((pos + origin).ToPoint(), new(options.Max(o => o.Area.Width), (int)(options.Sum(o => o.Area.Height) * 1.5F))), new())
+public class RadioGroup(ButtonDrawables deselected, ButtonDrawables[] options, Drawable[] selected, string click, float z)
 {
-    private readonly ButtonDrawables deselected = deselected;
-    private readonly Drawable[] selected = selected;
-    private readonly Vector2 origin = origin;
-    private readonly string click = click;
-    private readonly float z = z;
-    private RadioButton[]? buttons;
+    public int? SelIndex { get; set; }
 
-    /// <summary>
-    /// The index of the selected button, if any.
-    /// </summary>
-    public int? SelIndex => buttons?.Length > 0 && buttons.Any(b => b.sel) ? buttons.Index().First(b => b.Item.sel).Index : null;
-
-    public override void Create(Scene scene, FrameTime time)
+    public RadioButton[] Create()
     {
-        base.Create(scene, time);
-        int height = selected.Aggregate(new Rectangle(), (r, c) => Rectangle.Union(r, c.Area)).Height;
-        buttons = [.. options.Select((o, i) => new RadioButton(this, o, pos + new Vector2(-height, height * 1.5F * i - height / 2)) { Enabled = Enabled })];
-        foreach (RadioButton b in buttons)
-            Add(b, scene, time);
-    }
-
-    private void DeselectAll()
-    {
-        foreach (RadioButton b in buttons ?? [])
-            b.sel = false;
-    }
-
-    private class RadioButton(RadioButtonGroup g, Drawable o, Vector2 p)
-        : BaseButton(new(Process(g.deselected.Unfocused, o, p), Process(g.deselected.Disabled, o, p), Process(g.deselected.Focused, o, p), Process(g.deselected.Clicked, o, p)), g.click, g.z)
-    {
-        private const int xOffset = 12;
-        private readonly Drawable[] selected = Process(g.selected, o, p);
-        internal bool sel = false;
-
-        protected override Drawable[] ToDraw => sel ? selected : base.ToDraw;
-        public override Rectangle Area => new(base.Area.Location + g.origin.ToPoint(), base.Area.Size + new Point(xOffset, 0));
-
-        protected override void OnClick(Scene scene, FrameTime time)
+        List<RadioButton> buttons = [];
+        Drawable[] u = deselected.Unfocused;
+        Rectangle a = u.Aggregate(new Rectangle(new((int)u.Min(d => d.Pos.X), (int)u.Min(d => d.Pos.Y)), new()), (r, c) => Rectangle.Union(r, c.Area));
+        for (int i = 0; i < options.Length; i++)
         {
-            g.DeselectAll();
-            sel = true;
+            float h = options[i].Unfocused.Max(o => o.Area.Height);
+            float y = a.Y + i * a.Height * 1.5F;
+            options[i].SetPos(new(a.X + a.Width * 1.5F, y + a.Height / 2 - h / 2));
+            ButtonDrawables d = deselected.ShallowCopy().SetPos(new(a.X, y));
+            Drawable[] s = [..selected.Select(sel => sel.ShallowCopy().SetPos(new(a.X, y)))];
+            buttons.Add(new(this, i, d + options[i], [..s.Concat(options[i].Clicked)], click, z) { Enabled = true });
         }
+        return [..buttons];
+    }
+}
 
-        private static Drawable[] Process(Drawable[] drawables, Drawable option, Vector2 pos) =>
-            [.. drawables.Append(option.SetOffset(new(xOffset, 0)))
-                .Select(d => d.ShallowCopy().SetPos(pos))];
+/// <summary>
+/// An element of a radio button group. Becomes selected and deselected in tandem with other members of its group.
+/// </summary>
+/// <param name="g">The group this button is a part of. Includes information on what index is currently selected.</param>
+/// <param name="index">The index of this button within its group.</param>
+/// <param name="deselected">The drawables to show when the button is not selected.</param>
+/// <param name="selected">The drawables to show when the button is selected.</param>
+/// <param name="click">The "click" control for this button.</param>
+/// <param name="z">The z-value at which the button should be displayed.</param>
+public class RadioButton(RadioGroup g, int index, ButtonDrawables deselected, Drawable[] selected, string click, float z) : BaseButton(deselected, click, z)
+{
+    protected override Drawable[] ToDraw => g.SelIndex == index ? selected : base.ToDraw;
+
+    protected override void OnClick(Scene scene, FrameTime time)
+    {
+        g.SelIndex = index;
     }
 }
 
