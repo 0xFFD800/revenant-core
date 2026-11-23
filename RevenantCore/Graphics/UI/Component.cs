@@ -196,7 +196,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
     private bool closing = false;
 
     public virtual Rectangle Area => toDraw.Aggregate(new Rectangle(toDraw.FirstOrDefault()?.Pos.ToPoint() ?? new(), new()),
-        (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Size.ToPoint())));
+        (r, d) => Rectangle.Union(r, new(d.Pos.ToPoint(), d.Area.Size)));
     public bool Enabled { get; set; } = false;
     public bool HasFocus { get; set; } = false;
     public virtual bool Active => false;
@@ -289,7 +289,7 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
     /// <summary>
     /// Applies ShallowCopy to all sub-drawables.
     /// </summary>
-    public ButtonDrawables ShallowCopy() => new(
+    public readonly ButtonDrawables ShallowCopy() => new(
         [..Unfocused.Select(d => d.ShallowCopy())],
         [..Disabled.Select(d => d.ShallowCopy())],
         [..Focused.Select(d => d.ShallowCopy())],
@@ -299,7 +299,7 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
     /// Applies SetPos to all sub-drawables with the provided position vectory.
     /// </summary>
     /// <param name="pos">The position to set all sub-drawables to the position of.</param>
-    public ButtonDrawables SetPos(Vector2 pos) => new(
+    public readonly ButtonDrawables SetPos(Vector2 pos) => new(
         [..Unfocused.Select(d => d.SetPos(pos))],
         [..Disabled.Select(d => d.SetPos(pos))],
         [..Focused.Select(d => d.SetPos(pos))],
