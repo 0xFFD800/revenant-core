@@ -22,7 +22,7 @@ public class Animation(Drawable[] sprites, int millisPerFrame)
     /// </summary>
     /// <param name="time">The time of the frame currently being drawn.</param>
     /// <returns>The animation frame to display for the provided frame time.</returns>
-    public Drawable GetFrame(FrameTime time) => sprites[(int)Math.Floor(time.Millis / millisPerFrame) % sprites.Length];
+    public Drawable GetFrame(FrameTime time) => sprites[(int)Math.Floor(time.Millis / millisPerFrame) % sprites.Length].ClearOverlay().ShallowCopy();
 }
 
 /// <summary>

@@ -259,7 +259,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
 public class AnimatedLabel(AnimationCollection animations, string id, Vector2 center, float z) : Label([animations.GetFrame(id, new(new()))], z)
 {
     private FrameTime frame = new(new());
-    protected override Drawable[] ToDraw => [animations.GetFrame(id, frame).ShallowCopy().SetCenter(center)];
+    protected override Drawable[] ToDraw => [animations.GetFrame(id, frame).SetCenter(center)];
 
     public override void Create(Scene scene, FrameTime time)
     {

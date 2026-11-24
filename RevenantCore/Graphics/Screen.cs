@@ -361,8 +361,8 @@ public class Sprite : Drawable
     public override Drawable MergeDown(Drawable layer)
     {
         // First, apply the masks since we can't mask the separate portions separately.
-        Data = [..Data.Select(d => d * Mask/*Color.Lerp(d, Mask, 0.5F)*/)];
-        layer.Data = [..layer.Data.Select(d => d * layer.Mask/*Color.Lerp(d, layer.Mask, 0.5F)*/)];
+        Data = [..Data.Select(d => d * Mask)];
+        layer.Data = [..layer.Data.Select(d => d * layer.Mask)];
         Mask = Color.White;
         layer.Mask = Color.White;
         return MergeWith(layer, (p, op) => Color.Lerp(op, p, p.A), p => p);
