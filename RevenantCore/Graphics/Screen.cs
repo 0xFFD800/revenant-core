@@ -325,18 +325,10 @@ public abstract class Drawable
 /// </summary>
 /// <param name="texture">The texture which this Sprite should be drawn as.</param>
 [ExcludeFromCodeCoverage]
-public class Sprite : Drawable
+public class Sprite(Texture2D texture) : Drawable
 {
-    private readonly Texture2D original, toDraw;
-
-    public Sprite(Texture2D texture)
-    {
-        original = texture;
-        toDraw = new(texture.GraphicsDevice, original.Width, original.Height);
-        Color[] data = new Color[texture.Width * texture.Height];
-        original.GetData(data);
-        toDraw.SetData(data);
-    }
+    private readonly Texture2D original = texture;
+    private Texture2D toDraw = DeepCopy(texture);
 
     public override void Draw(ISpriteBuffer buffer)
     {
@@ -350,7 +342,8 @@ public class Sprite : Drawable
         get
         {
             Color[] data = new Color[toDraw.Width * toDraw.Height];
-            toDraw.GetData(data);
+            Texture2D copy = DeepCopy(toDraw);
+            copy.GetData(data);
             return data;
         }
         set { toDraw.SetData(value); }
@@ -384,13 +377,21 @@ public class Sprite : Drawable
 
     public override Drawable ClearOverlay()
     {
-        Color[] data = new Color[original.Width * original.Height];
-        original.GetData(data);
-        toDraw.SetData(data);
+        toDraw = DeepCopy(original);
         return this;
     }
 
     protected override Drawable CopyData() => new Sprite(toDraw);
+
+    private static Texture2D DeepCopy(Texture2D texture)
+    {
+        Color[] data = new Color[texture.Width * texture.Height], copy = new Color[texture.Width * texture.Height];
+        texture.GetData(data);
+        data.CopyTo(copy);
+        Texture2D result = new(texture.GraphicsDevice, texture.Width, texture.Height);
+        result.SetData(data);
+        return result;
+    }
 }
 
 /// <summary>
