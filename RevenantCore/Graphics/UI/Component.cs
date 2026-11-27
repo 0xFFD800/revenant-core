@@ -297,7 +297,7 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
         [..Clicked.Select(d => d.ShallowCopy())]);
 
     /// <summary>
-    /// Applies SetPos to all sub-drawables with the provided position vectory.
+    /// Applies SetPos to all sub-drawables with the provided position vector.
     /// </summary>
     /// <param name="pos">The position to set all sub-drawables to the position of.</param>
     public readonly ButtonDrawables SetPos(Vector2 pos) => new(
@@ -305,6 +305,16 @@ public record struct ButtonDrawables(Drawable[] Unfocused, Drawable[] Disabled, 
         [..Disabled.Select(d => d.SetPos(pos))],
         [..Focused.Select(d => d.SetPos(pos))],
         [..Clicked.Select(d => d.SetPos(pos))]);
+
+    /// <summary>
+    /// Applies SetCenter to all sub-drawables with the provided position vector.
+    /// </summary>
+    /// <param name="pos">The position to center all sub-drawables at.</param>
+    public readonly ButtonDrawables SetCenter(Vector2 pos) => new(
+        [..Unfocused.Select(d => d.SetCenter(pos))],
+        [..Disabled.Select(d => d.SetCenter(pos))],
+        [..Focused.Select(d => d.SetCenter(pos))],
+        [..Clicked.Select(d => d.SetCenter(pos))]);
 
     public static ButtonDrawables operator +(ButtonDrawables left, ButtonDrawables right) => new(
         [..left.Unfocused.Concat(right.Unfocused)], 
