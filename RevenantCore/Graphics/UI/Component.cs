@@ -204,6 +204,7 @@ public class Label(Drawable[] toDraw, float z) : Scythe, IComponent
     public DrawLayer Layer => DrawLayer.UI;
     public virtual float Z => z;
 
+    protected IAnimationHook[] Hooks => [..hooks];
     protected virtual Drawable[] ToDraw => toDraw;
 
     public override void Add(IMortal mortal, Scene scene, FrameTime time)

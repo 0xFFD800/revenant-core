@@ -129,29 +129,6 @@ public class RotateAnimation(double lengthMillis, float radians) : TimedAnimatio
 }
 
 /// <summary>
-/// An animation which overlays drawables to which it is applied onto other drawables.
-/// </summary>
-/// <param name="lengthMillis">The amount of time the overlay should be active.</param>
-/// <param name="overlayBase">The drawable on which to overlay applied subjects.</param>
-public class OverlayAnimation(double lengthMillis, Drawable overlayBase) : TimedAnimation(lengthMillis), IAnimationHook
-{
-    private Drawable? drawable;
-
-    public override void Apply(Drawable drawable, FrameTime time)
-    {
-        this.drawable = drawable;
-        drawable.OverlayOnto(overlayBase);
-        base.Apply(drawable, time);
-    }
-
-    public override void Glean(Scene scene, FrameTime time)
-    {
-        drawable?.ClearOverlay();
-        base.Glean(scene, time);
-    }
-}
-
-/// <summary>
 /// Repeatedly loops the provided animations until the parent object is removed or all animations become permanently inactive.
 /// </summary>
 /// <param name="animations">The animations to cycle through.</param>
