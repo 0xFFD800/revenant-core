@@ -342,8 +342,7 @@ public class Sprite(Texture2D texture) : Drawable
         get
         {
             Color[] data = new Color[toDraw.Width * toDraw.Height];
-            Texture2D copy = DeepCopy(toDraw);
-            copy.GetData(data);
+            toDraw.GetData(data);
             return data;
         }
         set { toDraw.SetData(value); }
@@ -354,8 +353,8 @@ public class Sprite(Texture2D texture) : Drawable
     public override Drawable MergeDown(Drawable layer)
     {
         // First, apply the masks since we can't mask the separate portions separately.
-        Data = [..Data.Select(d => d * Mask)];
-        layer.Data = [..layer.Data.Select(d => d * layer.Mask)];
+        Data = [.. Data.Select(d => d * Mask)];
+        layer.Data = [.. layer.Data.Select(d => d * layer.Mask)];
         Mask = Color.White;
         layer.Mask = Color.White;
         return MergeWith(layer, (p, op) => Color.Lerp(op, p, p.A), p => p);
@@ -381,7 +380,7 @@ public class Sprite(Texture2D texture) : Drawable
         return this;
     }
 
-    protected override Drawable CopyData() => new Sprite(toDraw);
+    protected override Drawable CopyData() => new Sprite(original) { Data = Data };
 
     private static Texture2D DeepCopy(Texture2D texture)
     {
