@@ -200,7 +200,7 @@ public abstract class Drawable
     /// The data array of pixel colors within this drawable.
     /// Currently only supported for sprites.
     /// </summary>
-    public abstract Color[] Data { get; set; }
+    public abstract Color[] Data { get; }
 
     private Vector2 Base => new(Size.X / 2, Size.Y);
     private Vector2 Center => new(Size.X / 2, Size.Y / 2);
@@ -286,25 +286,6 @@ public abstract class Drawable
 
     public Drawable AddEffects(SpriteEffects effects) => SetEffects(Effects | effects);
 
-    /// <summary>
-    /// Overlays this onto another drawable, only drawing the pixels which intersect with the base drawable.
-    /// Currently only supported for sprites.
-    /// </summary>
-    /// <param name="drawable">The base drawable onto which this is being overlaid.</param>
-    public abstract Drawable OverlayOnto(Drawable drawable);
-
-    /// <summary>
-    /// Merges this image onto layer, treating the parameter as the bottom layer.
-    /// </summary>
-    /// <param name="layer">The layer to treat as the bottom layer.</param>
-    /// <returns>A merged image, with the pixels of this image merged on top of the one provided.</returns>
-    public abstract Drawable MergeDown(Drawable layer);
-
-    /// <summary>
-    /// Clears the overlay, restoring the original drawn data.
-    /// </summary>
-    public abstract Drawable ClearOverlay();
-
     protected abstract Drawable CopyData();
 
     /// <summary>
@@ -327,70 +308,24 @@ public abstract class Drawable
 [ExcludeFromCodeCoverage]
 public class Sprite(Texture2D texture) : Drawable
 {
-    private readonly Texture2D original = texture;
-    private Texture2D toDraw = DeepCopy(texture);
-
     public override void Draw(ISpriteBuffer buffer)
     {
-        buffer.Draw(toDraw, DrawPos, Source, Mask, Rotation, Origin, Effects);
+        buffer.Draw(texture, DrawPos, Source, Mask, Rotation, Origin, Effects);
     }
 
-    public override Vector2 Size => new(toDraw.Width, toDraw.Height);
+    public override Vector2 Size => new(texture.Width, texture.Height);
 
     public override Color[] Data
     {
         get
         {
-            Color[] data = new Color[toDraw.Width * toDraw.Height];
-            toDraw.GetData(data);
+            Color[] data = new Color[texture.Width * texture.Height];
+            texture.GetData(data);
             return data;
         }
-        set { toDraw.SetData(value); }
     }
-
-    public override Drawable OverlayOnto(Drawable drawable) => MergeWith(drawable, (p, op) => p * op.A, p => p * 0);
-
-    public override Drawable MergeDown(Drawable layer)
-    {
-        // First, apply the masks since we can't mask the separate portions separately.
-        Data = [.. Data.Select(d => d * Mask)];
-        layer.Data = [.. layer.Data.Select(d => d * layer.Mask)];
-        Mask = Color.White;
-        layer.Mask = Color.White;
-        return MergeWith(layer, (p, op) => Color.Lerp(op, p, p.A), p => p);
-    }
-
-    private Sprite MergeWith(Drawable other, Func<Color, Color, Color> mergePixel, Func<Color, Color> noMatch)
-    {
-        Point relativePos = (DrawPos - other.DrawPos).ToPoint();
-        Color[] data = Data, otherData = other.Data;
-        for (int x = 0; x < toDraw.Width; x++)
-            for (int y = 0; y < toDraw.Height; y++)
-                if (x + relativePos.X >= 0 && x + relativePos.X < other.Size.X && y + relativePos.Y >= 0 && y + relativePos.Y < other.Size.Y)
-                    data[x + (y * toDraw.Width)] = mergePixel(data[x + (y * toDraw.Width)], otherData[x + relativePos.X + ((y + relativePos.Y) * (int)other.Size.X)]);
-                else
-                    data[x + (y * toDraw.Width)] = noMatch(data[x + (y * toDraw.Width)]);
-        toDraw.SetData(data);
-        return this;
-    }
-
-    public override Drawable ClearOverlay()
-    {
-        toDraw = DeepCopy(original);
-        return this;
-    }
-
-    protected override Drawable CopyData() => new Sprite(original) { Data = Data };
-
-    private static Texture2D DeepCopy(Texture2D texture)
-    {
-        Color[] data = new Color[texture.Width * texture.Height], copy = new Color[texture.Width * texture.Height];
-        texture.GetData(data);
-        data.CopyTo(copy);
-        Texture2D result = new(texture.GraphicsDevice, texture.Width, texture.Height);
-        result.SetData(data);
-        return result;
-    }
+   
+    protected override Drawable CopyData() => new Sprite(texture);
 }
 
 /// <summary>
@@ -408,13 +343,7 @@ public class DrawableText(string text, SpriteFont font) : Drawable
 
     public override Vector2 Size => font.MeasureString(text);
 
-    public override Color[] Data { get => []; set { } }
-
-    public override Drawable OverlayOnto(Drawable drawable) => this;
-
-    public override Drawable MergeDown(Drawable layer) => this;
-
-    public override Drawable ClearOverlay() => this;
+    public override Color[] Data { get => []; }
 
     protected override Drawable CopyData() => new DrawableText(text, font);
 }
